@@ -1,0 +1,14 @@
+{
+  "name": "gastronomia",
+  "private": true,
+  "scripts": {
+    "dev:frontend": "npm --prefix frontend run dev",
+    "dev:backend": "cd backend && python -m uvicorn app.main:app --reload",
+    "lint:frontend": "npm --prefix frontend run lint",
+    "typecheck:frontend": "npm --prefix frontend run typecheck",
+    "test:frontend": "npm --prefix frontend run test",
+    "lint:backend": "cd backend && python -m ruff check app tests",
+    "typecheck:backend": "cd backend && python -m mypy app",
+    "test:backend": "cd backend && python -m pytest"
+  }
+}
