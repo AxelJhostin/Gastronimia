@@ -1,198 +1,72 @@
 {
-  "info": {
-    "_postman_id": "b4823b3d-29c5-4a9c-b0a0-8024578f2d43",
-    "name": "Gastronomía API",
-    "description": "Pruebas manuales y repetibles de Auth, autorización y configuración académica. Importa también el environment template y completa las variables solo en tu equipo.",
-    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
-  },
-  "event": [
-    {
-      "listen": "prerequest",
-      "script": {
-        "type": "text/javascript",
-        "exec": [
-          "const apiBaseUrl = pm.environment.get('api_base_url');",
-          "if (!apiBaseUrl || !apiBaseUrl.startsWith('http')) {",
-          "  throw new Error('Selecciona el entorno Gastronomía local y define api_base_url antes de ejecutar la colección.');",
-          "}"
-        ]
-      }
-    }
-  ],
-  "item": [
-    {
-      "name": "Health",
-      "item": [
-        {
-          "name": "API health",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": "{{api_base_url}}/api/v1/health"
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('responde 200', () => pm.response.to.have.status(200));",
-                  "pm.expect(pm.response.json().status).to.eql('ok');"
-                ]
-              }
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "name": "Auth",
-      "item": [
-        {
-          "name": "Login administrador",
-          "request": {
-            "method": "POST",
-            "header": [
-              { "key": "apikey", "value": "{{supabase_publishable_key}}" },
-              { "key": "Content-Type", "value": "application/json" }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"email\": \"{{admin_email}}\",\n  \"password\": \"{{admin_password}}\"\n}"
-            },
-            "url": "{{supabase_url}}/auth/v1/token?grant_type=password"
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('login exitoso', () => pm.response.to.have.status(200));",
-                  "const body = pm.response.json();",
-                  "pm.expect(body.access_token).to.be.a('string').and.not.empty;",
-                  "pm.environment.set('access_token', body.access_token);",
-                  "pm.environment.set('admin_user_id', body.user.id);"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "Mi perfil y roles",
-          "request": {
-            "method": "GET",
-            "header": [
-              { "key": "Authorization", "value": "Bearer {{access_token}}" }
-            ],
-            "url": "{{api_base_url}}/api/v1/auth/me"
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('usuario autenticado', () => pm.response.to.have.status(200));",
-                  "pm.expect(pm.response.json().roles).to.include('ADMIN');"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "Mi perfil sin token devuelve 401",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": "{{api_base_url}}/api/v1/auth/me"
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('sin sesión se rechaza', () => pm.response.to.have.status(401));"
-                ]
-              }
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "name": "Administración",
-      "item": [
-        {
-          "name": "Listar usuarios como ADMIN",
-          "request": {
-            "method": "GET",
-            "header": [
-              { "key": "Authorization", "value": "Bearer {{access_token}}" }
-            ],
-            "url": "{{api_base_url}}/api/v1/admin/users"
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('ADMIN puede listar usuarios', () => pm.response.to.have.status(200));",
-                  "pm.expect(pm.response.json()).to.be.an('array');"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "Listar usuarios sin token devuelve 401",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": "{{api_base_url}}/api/v1/admin/users"
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('sin sesión se rechaza', () => pm.response.to.have.status(401));"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "Crear período académico",
-          "request": {
-            "method": "POST",
-            "header": [
-              { "key": "Authorization", "value": "Bearer {{access_token}}" },
-              { "key": "Content-Type", "value": "application/json" }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"name\": \"Período de prueba {{$timestamp}}\",\n  \"start_date\": \"2026-09-01\",\n  \"end_date\": \"2027-02-28\",\n  \"is_active\": true\n}"
-            },
-            "url": "{{api_base_url}}/api/v1/admin/academic/periods"
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('ADMIN puede crear período', () => pm.response.to.have.status(201));",
-                  "pm.environment.set('academic_period_id', pm.response.json().id);"
-                ]
-              }
-            }
-          ]
-        }
-      ]
-    }
+  "info":{"name":"Gastronomía API — pruebas manuales","description":"Ejecuta una petición a la vez en orden. Las creaciones guardan UUID en el entorno activo.","schema":"https://schema.getpostman.com/json/collection/v2.1.0/collection.json"},
+  "auth":{"type":"bearer","bearer":[{"key":"token","value":"{{access_token}}","type":"string"}]},
+  "event":[{"listen":"prerequest","script":{"type":"text/javascript","exec":["const url = pm.environment.get('api_base_url');","if (!url || !url.startsWith('http')) throw new Error('Selecciona el entorno Gastronomía local y define api_base_url.');"]}},{"listen":"test","script":{"type":"text/javascript","exec":["pm.test('respuesta HTTP exitosa', () => pm.expect(pm.response.code).to.be.within(200, 299));"]}}],
+  "item":[
+    {"name":"00. Autenticación","item":[
+      {"name":"Health","auth":{"type":"noauth"},"request":{"method":"GET","url":"{{api_base_url}}/api/v1/health"}},
+      {"name":"Login ADMIN — guardar token","auth":{"type":"noauth"},"request":{"method":"POST","header":[{"key":"apikey","value":"{{supabase_publishable_key}}"},{"key":"Content-Type","value":"application/json"}],"body":{"mode":"raw","raw":"{\n  \"email\": \"{{admin_email}}\",\n  \"password\": \"{{admin_password}}\"\n}"},"url":"{{supabase_url}}/auth/v1/token?grant_type=password"},"event":[{"listen":"test","script":{"type":"text/javascript","exec":["const body = pm.response.json();","pm.environment.set('access_token', body.access_token);","pm.environment.set('admin_user_id', body.user.id);"]}}]},
+      {"name":"Mi perfil — confirmar ADMIN","request":{"method":"GET","url":"{{api_base_url}}/api/v1/auth/me"}},
+      {"name":"Listar usuarios","request":{"method":"GET","url":"{{api_base_url}}/api/v1/admin/users"}},
+      {"name":"Asignar rol TEACHER (manual)","request":{"method":"PUT","header":[{"key":"Content-Type","value":"application/json"}],"body":{"mode":"raw","raw":"{\n  \"roles\": [\"TEACHER\"]\n}"},"url":"{{api_base_url}}/api/v1/admin/users/{{teacher_user_id}}/roles"}}
+    ]},
+    {"name":"01. Académico (ADMIN)","item":[
+      {"name":"Listar períodos","request":{"method":"GET","url":"{{api_base_url}}/api/v1/admin/academic/periods"}},
+      {"name":"Crear período","request":{"method":"POST","header":[{"key":"Content-Type","value":"application/json"}],"body":{"mode":"raw","raw":"{\"name\":\"Periodo {{$timestamp}}\",\"start_date\":\"2026-09-01\",\"end_date\":\"2027-02-28\",\"is_active\":true}"},"url":"{{api_base_url}}/api/v1/admin/academic/periods"},"event":[{"listen":"test","script":{"type":"text/javascript","exec":["pm.environment.set('academic_period_id', pm.response.json().id);"]}}]},
+      {"name":"Listar materias","request":{"method":"GET","url":"{{api_base_url}}/api/v1/admin/academic/subjects"}},
+      {"name":"Crear materia","request":{"method":"POST","header":[{"key":"Content-Type","value":"application/json"}],"body":{"mode":"raw","raw":"{\"code\":\"GAS-{{$timestamp}}\",\"name\":\"Materia prueba\",\"is_active\":true}"},"url":"{{api_base_url}}/api/v1/admin/academic/subjects"},"event":[{"listen":"test","script":{"type":"text/javascript","exec":["pm.environment.set('subject_id', pm.response.json().id);"]}}]},
+      {"name":"Listar laboratorios","request":{"method":"GET","url":"{{api_base_url}}/api/v1/admin/academic/laboratories"}},
+      {"name":"Crear laboratorio","request":{"method":"POST","header":[{"key":"Content-Type","value":"application/json"}],"body":{"mode":"raw","raw":"{\"code\":\"LAB-{{$timestamp}}\",\"name\":\"Laboratorio prueba\",\"is_active\":true}"},"url":"{{api_base_url}}/api/v1/admin/academic/laboratories"},"event":[{"listen":"test","script":{"type":"text/javascript","exec":["pm.environment.set('laboratory_id', pm.response.json().id);"]}}]},
+      {"name":"Listar perfiles docentes","request":{"method":"GET","url":"{{api_base_url}}/api/v1/admin/academic/teachers"}},
+      {"name":"Crear perfil docente","request":{"method":"POST","header":[{"key":"Content-Type","value":"application/json"}],"body":{"mode":"raw","raw":"{\"user_id\":\"{{teacher_user_id}}\",\"employee_code\":\"DOC-{{$timestamp}}\",\"is_active\":true}"},"url":"{{api_base_url}}/api/v1/admin/academic/teachers"},"event":[{"listen":"test","script":{"type":"text/javascript","exec":["pm.environment.set('teacher_profile_id', pm.response.json().id);"]}}]},
+      {"name":"Listar secciones","request":{"method":"GET","url":"{{api_base_url}}/api/v1/admin/academic/course-sections"}},
+      {"name":"Crear sección","request":{"method":"POST","header":[{"key":"Content-Type","value":"application/json"}],"body":{"mode":"raw","raw":"{\"academic_period_id\":\"{{academic_period_id}}\",\"subject_id\":\"{{subject_id}}\",\"code\":\"SEC-{{$timestamp}}\",\"teacher_id\":\"{{teacher_profile_id}}\",\"is_active\":true}"},"url":"{{api_base_url}}/api/v1/admin/academic/course-sections"},"event":[{"listen":"test","script":{"type":"text/javascript","exec":["pm.environment.set('course_section_id', pm.response.json().id);"]}}]}
+    ]},
+    {"name":"02. Inventario (ADMIN)","item":[
+      {"name":"Listar categorías","request":{"method":"GET","url":"{{api_base_url}}/api/v1/admin/inventory/categories"}},
+      {"name":"Crear categoría","request":{"method":"POST","header":[{"key":"Content-Type","value":"application/json"}],"body":{"mode":"raw","raw":"{\"name\":\"Categoría {{$timestamp}}\",\"is_active\":true}"},"url":"{{api_base_url}}/api/v1/admin/inventory/categories"},"event":[{"listen":"test","script":{"type":"text/javascript","exec":["pm.environment.set('inventory_category_id', pm.response.json().id);"]}}]},
+      {"name":"Listar ubicaciones","request":{"method":"GET","url":"{{api_base_url}}/api/v1/admin/inventory/locations"}},
+      {"name":"Crear ubicación","request":{"method":"POST","header":[{"key":"Content-Type","value":"application/json"}],"body":{"mode":"raw","raw":"{\"code\":\"BOD-{{$timestamp}}\",\"name\":\"Bodega prueba\",\"is_active\":true}"},"url":"{{api_base_url}}/api/v1/admin/inventory/locations"},"event":[{"listen":"test","script":{"type":"text/javascript","exec":["pm.environment.set('inventory_location_id', pm.response.json().id);"]}}]},
+      {"name":"Listar ítems","request":{"method":"GET","url":"{{api_base_url}}/api/v1/admin/inventory/items"}},
+      {"name":"Crear ítem por cantidad","request":{"method":"POST","header":[{"key":"Content-Type","value":"application/json"}],"body":{"mode":"raw","raw":"{\"category_id\":\"{{inventory_category_id}}\",\"code\":\"CANT-{{$timestamp}}\",\"name\":\"Insumo cantidad\",\"tracking_mode\":\"QUANTITY\",\"unit_of_measure\":\"unidad\",\"is_active\":true}"},"url":"{{api_base_url}}/api/v1/admin/inventory/items"},"event":[{"listen":"test","script":{"type":"text/javascript","exec":["pm.environment.set('quantity_item_id', pm.response.json().id);"]}}]},
+      {"name":"Crear ítem individual","request":{"method":"POST","header":[{"key":"Content-Type","value":"application/json"}],"body":{"mode":"raw","raw":"{\"category_id\":\"{{inventory_category_id}}\",\"code\":\"IND-{{$timestamp}}\",\"name\":\"Equipo individual\",\"tracking_mode\":\"INDIVIDUAL\",\"unit_of_measure\":\"unidad\",\"is_active\":true}"},"url":"{{api_base_url}}/api/v1/admin/inventory/items"},"event":[{"listen":"test","script":{"type":"text/javascript","exec":["pm.environment.set('individual_item_id', pm.response.json().id);"]}}]},
+      {"name":"Registrar stock inicial","request":{"method":"POST","header":[{"key":"Content-Type","value":"application/json"}],"body":{"mode":"raw","raw":"{\"inventory_item_id\":\"{{quantity_item_id}}\",\"location_id\":\"{{inventory_location_id}}\",\"movement_type\":\"INITIAL_STOCK\",\"quantity\":10,\"notes\":\"Prueba Postman\"}"},"url":"{{api_base_url}}/api/v1/admin/inventory/movements"}},
+      {"name":"Listar movimientos","request":{"method":"GET","url":"{{api_base_url}}/api/v1/admin/inventory/movements"}},
+      {"name":"Ver stock","request":{"method":"GET","url":"{{api_base_url}}/api/v1/admin/inventory/stock"}},
+      {"name":"Crear unidad individual","request":{"method":"POST","header":[{"key":"Content-Type","value":"application/json"}],"body":{"mode":"raw","raw":"{\"inventory_item_id\":\"{{individual_item_id}}\",\"location_id\":\"{{inventory_location_id}}\",\"asset_tag\":\"ACT-{{$timestamp}}\",\"status\":\"AVAILABLE\",\"condition\":\"GOOD\",\"is_active\":true}"},"url":"{{api_base_url}}/api/v1/admin/inventory/units"},"event":[{"listen":"test","script":{"type":"text/javascript","exec":["pm.environment.set('inventory_unit_id', pm.response.json().id);"]}}]},
+      {"name":"Listar unidades","request":{"method":"GET","url":"{{api_base_url}}/api/v1/admin/inventory/units"}},
+      {"name":"Historial de unidad","request":{"method":"GET","url":"{{api_base_url}}/api/v1/admin/inventory/units/{{inventory_unit_id}}/history"}},
+      {"name":"Disponibilidad","request":{"method":"GET","url":"{{api_base_url}}/api/v1/admin/inventory/availability?inventory_item_id={{quantity_item_id}}&start_at=2026-10-01T08:00:00Z&end_at=2026-10-01T10:00:00Z"}}
+    ]},
+    {"name":"03. Solicitudes (docente)","item":[
+      {"name":"Login TEACHER — guardar token","auth":{"type":"noauth"},"request":{"method":"POST","header":[{"key":"apikey","value":"{{supabase_publishable_key}}"},{"key":"Content-Type","value":"application/json"}],"body":{"mode":"raw","raw":"{\"email\":\"{{teacher_email}}\",\"password\":\"{{teacher_password}}\"}"},"url":"{{supabase_url}}/auth/v1/token?grant_type=password"},"event":[{"listen":"test","script":{"type":"text/javascript","exec":["const body = pm.response.json();","pm.environment.set('teacher_access_token', body.access_token);","pm.environment.set('teacher_user_id', body.user.id);"]}}]},
+      {"name":"Crear borrador","auth":{"type":"bearer","bearer":[{"key":"token","value":"{{teacher_access_token}}","type":"string"}]},"request":{"method":"POST","header":[{"key":"Content-Type","value":"application/json"}],"body":{"mode":"raw","raw":"{\"course_section_id\":\"{{course_section_id}}\",\"laboratory_id\":\"{{laboratory_id}}\",\"start_at\":\"2026-10-01T08:00:00Z\",\"end_at\":\"2026-10-01T10:00:00Z\",\"purpose\":\"Prueba manual\",\"items\":[{\"inventory_item_id\":\"{{quantity_item_id}}\",\"requested_quantity\":2}]}"},"url":"{{api_base_url}}/api/v1/requests/drafts"},"event":[{"listen":"test","script":{"type":"text/javascript","exec":["pm.environment.set('equipment_request_id', pm.response.json().id);"]}}]},
+      {"name":"Mis solicitudes","auth":{"type":"bearer","bearer":[{"key":"token","value":"{{teacher_access_token}}","type":"string"}]},"request":{"method":"GET","url":"{{api_base_url}}/api/v1/requests/mine"}},
+      {"name":"Enviar solicitud","auth":{"type":"bearer","bearer":[{"key":"token","value":"{{teacher_access_token}}","type":"string"}]},"request":{"method":"POST","url":"{{api_base_url}}/api/v1/requests/{{equipment_request_id}}/submit"}}
+    ]},
+    {"name":"04. Operación, mantenimiento y reportes (ADMIN)","item":[
+      {"name":"Pendientes","request":{"method":"GET","url":"{{api_base_url}}/api/v1/admin/requests/pending"}},
+      {"name":"Aprobar solicitud","request":{"method":"POST","header":[{"key":"Content-Type","value":"application/json"}],"body":{"mode":"raw","raw":"{\"items\":[{\"equipment_request_item_id\":\"{{equipment_request_item_id}}\",\"approved_quantity\":2}]}"},"url":"{{api_base_url}}/api/v1/admin/requests/{{equipment_request_id}}/approve"}},
+      {"name":"Rechazar solicitud (alternativa)","request":{"method":"POST","header":[{"key":"Content-Type","value":"application/json"}],"body":{"mode":"raw","raw":"{\"reason\":\"Prueba de rechazo\"}"},"url":"{{api_base_url}}/api/v1/admin/requests/{{equipment_request_id}}/reject"}},
+      {"name":"Iniciar preparación","request":{"method":"POST","url":"{{api_base_url}}/api/v1/admin/requests/{{equipment_request_id}}/preparation/start"}},
+      {"name":"Registrar preparación","request":{"method":"POST","header":[{"key":"Content-Type","value":"application/json"}],"body":{"mode":"raw","raw":"{\"items\":[{\"equipment_reservation_detail_id\":\"{{equipment_reservation_detail_id}}\",\"prepared_quantity\":2}]}"},"url":"{{api_base_url}}/api/v1/admin/requests/{{equipment_request_id}}/preparation/items"}},
+      {"name":"Completar preparación","request":{"method":"POST","url":"{{api_base_url}}/api/v1/admin/requests/{{equipment_request_id}}/preparation/complete"}},
+      {"name":"Inspección salida","request":{"method":"POST","header":[{"key":"Content-Type","value":"application/json"}],"body":{"mode":"raw","raw":"{\"notes\":\"Salida revisada\",\"items\":[]}"},"url":"{{api_base_url}}/api/v1/admin/inspections/requests/{{equipment_request_id}}/outbound"}},
+      {"name":"Generar QR","request":{"method":"POST","url":"{{api_base_url}}/api/v1/admin/deliveries/requests/{{equipment_request_id}}/qr"},"event":[{"listen":"test","script":{"type":"text/javascript","exec":["pm.environment.set('qr_token', pm.response.json().token);"]}}]},
+      {"name":"Registrar entrega","request":{"method":"POST","header":[{"key":"Content-Type","value":"application/json"}],"body":{"mode":"raw","raw":"{\"qr_token\":\"{{qr_token}}\",\"collected_by_name\":\"Persona de prueba\",\"quantity_locations\":[{\"equipment_reservation_detail_id\":\"{{equipment_reservation_detail_id}}\",\"location_id\":\"{{inventory_location_id}}\",\"loaned_quantity\":2}]}"},"url":"{{api_base_url}}/api/v1/admin/deliveries/deliver"},"event":[{"listen":"test","script":{"type":"text/javascript","exec":["pm.environment.set('equipment_loan_id', pm.response.json().id);"]}}]},
+      {"name":"Préstamos activos","request":{"method":"GET","url":"{{api_base_url}}/api/v1/admin/returns/loans"}},
+      {"name":"Pendiente devolución","request":{"method":"GET","url":"{{api_base_url}}/api/v1/admin/returns/loans/{{equipment_loan_id}}/pending"}},
+      {"name":"Registrar devolución","request":{"method":"POST","header":[{"key":"Content-Type","value":"application/json"}],"body":{"mode":"raw","raw":"{\"returned_by_name\":\"Persona de prueba\",\"quantity_details\":[{\"equipment_loan_detail_id\":\"{{equipment_loan_detail_id}}\",\"returned_quantity\":2,\"location_id\":\"{{inventory_location_id}}\"}]}"},"url":"{{api_base_url}}/api/v1/admin/returns/loans/{{equipment_loan_id}}"},"event":[{"listen":"test","script":{"type":"text/javascript","exec":["pm.environment.set('equipment_return_id', pm.response.json().id);"]}}]},
+      {"name":"Inspección devolución","request":{"method":"POST","header":[{"key":"Content-Type","value":"application/json"}],"body":{"mode":"raw","raw":"{\"notes\":\"Devolución revisada\",\"items\":[]}"},"url":"{{api_base_url}}/api/v1/admin/inspections/returns/{{equipment_return_id}}"}},
+      {"name":"Iniciar mantenimiento","request":{"method":"POST","header":[{"key":"Content-Type","value":"application/json"}],"body":{"mode":"raw","raw":"{\"inventory_unit_id\":\"{{inventory_unit_id}}\",\"maintenance_type\":\"PREVENTIVE\",\"reason\":\"Prueba Postman\"}"},"url":"{{api_base_url}}/api/v1/admin/maintenance"},"event":[{"listen":"test","script":{"type":"text/javascript","exec":["pm.environment.set('maintenance_id', pm.response.json().id);"]}}]},
+      {"name":"Completar mantenimiento","request":{"method":"POST","header":[{"key":"Content-Type","value":"application/json"}],"body":{"mode":"raw","raw":"{\"resolution\":\"Completado\",\"final_status\":\"AVAILABLE\",\"final_condition\":\"GOOD\"}"},"url":"{{api_base_url}}/api/v1/admin/maintenance/{{maintenance_id}}/complete"}},
+      {"name":"Evidencia mantenimiento (sube archivo antes)","request":{"method":"POST","header":[{"key":"Content-Type","value":"application/json"}],"body":{"mode":"raw","raw":"{\"storage_path\":\"{{evidence_storage_path}}\"}"},"url":"{{api_base_url}}/api/v1/admin/maintenance/{{maintenance_id}}/evidences"}},
+      {"name":"Evidencia incidente (requiere incident_id)","request":{"method":"POST","header":[{"key":"Content-Type","value":"application/json"}],"body":{"mode":"raw","raw":"{\"storage_path\":\"{{evidence_storage_path}}\"}"},"url":"{{api_base_url}}/api/v1/admin/inspections/incidents/{{equipment_incident_id}}/evidences"}},
+      {"name":"Reportes — solicitudes","request":{"method":"GET","url":"{{api_base_url}}/api/v1/admin/reports/requests"}},
+      {"name":"Reportes — préstamos","request":{"method":"GET","url":"{{api_base_url}}/api/v1/admin/reports/loans"}},
+      {"name":"Reportes — incidentes","request":{"method":"GET","url":"{{api_base_url}}/api/v1/admin/reports/incidents"}},
+      {"name":"Reportes — stock","request":{"method":"GET","url":"{{api_base_url}}/api/v1/admin/reports/stock"}},
+      {"name":"Reportes — kardex","request":{"method":"GET","url":"{{api_base_url}}/api/v1/admin/reports/kardex?inventory_item_id={{quantity_item_id}}"}}
+    ]}
   ]
 }

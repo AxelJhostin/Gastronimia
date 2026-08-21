@@ -309,7 +309,7 @@ Criterio de salida:
 - `[ ]` Estados de carga, vacío, error, éxito y sin permisos en todas las áreas.
 - `[ ]` Revisión responsive final.
 - `[ ]` Revisión de accesibilidad y teclado.
-- `[~]` Prueba de flujo completo con datos representativos. La colección Postman ejecutable y la prueba real opt-in Auth → JWT → API están preparadas; falta correrlas con cuentas y datos de prueba del equipo.
+- `[~]` Prueba de flujo completo con datos representativos. La colección Postman manual cubre Auth, académico, inventario, solicitudes, operación, mantenimiento y reportes; la prueba real opt-in Auth → JWT → API está preparada. Falta ejecutarlas con cuentas y datos de prueba del equipo. Los IDs internos de reserva/préstamo deben copiarse desde Supabase hasta exponer su endpoint de detalle.
 - `[ ]` Revisión de seguridad, RLS y secretos.
 - `[~]` Revisión del README y guías de inicio. El contrato de backend/Supabase para frontend y las guías de entorno ya se actualizaron; falta documentación propia de pantallas y despliegue final del frontend.
 - `[ ]` Despliegue de prueba en Vercel.
