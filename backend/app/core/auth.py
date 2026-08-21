@@ -1,14 +1,29 @@
+from enum import Enum
 from functools import lru_cache
-from typing import Any, Optional
+from typing import Any, Callable, Optional
 
+import httpx
 import jwt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jwt import PyJWKClient
+from pydantic import BaseModel, Field
 
 from app.core.config import settings
 
 bearer_scheme = HTTPBearer(auto_error=False)
+
+
+class RoleCode(str, Enum):
+    ADMIN = "ADMIN"
+    MANAGER = "MANAGER"
+    TEACHER = "TEACHER"
+
+
+class AuthenticatedUser(BaseModel):
+    id: str
+    email: Optional[str] = None
+    access_token: str = Field(repr=False)
 
 
 @lru_cache
@@ -50,7 +65,66 @@ def decode_supabase_token(token: str) -> dict[str, Any]:
 
 def get_current_user(
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(bearer_scheme),  # noqa: B008
-) -> dict[str, Any]:
+) -> AuthenticatedUser:
     if credentials is None or credentials.scheme.lower() != "bearer":
         raise _unauthorized("Se requiere un token Bearer.")
-    return decode_supabase_token(credentials.credentials)
+    claims = decode_supabase_token(credentials.credentials)
+    return AuthenticatedUser(
+        id=claims["sub"],
+        email=claims.get("email"),
+        access_token=credentials.credentials,
+    )
+
+
+def get_current_user_roles(
+    current_user: AuthenticatedUser = Depends(get_current_user),  # noqa: B008
+) -> set[RoleCode]:
+    if settings.supabase_url is None or settings.supabase_publishable_key is None:
+        raise RuntimeError("Las variables públicas de Supabase no están configuradas.")
+
+    try:
+        response = httpx.get(
+            f"{str(settings.supabase_url).rstrip('/')}/rest/v1/user_roles",
+            params={
+                "select": "roles(code)",
+                "user_id": f"eq.{current_user.id}",
+            },
+            headers={
+                "apikey": settings.supabase_publishable_key,
+                "Authorization": f"Bearer {current_user.access_token}",
+            },
+            timeout=5.0,
+        )
+        response.raise_for_status()
+    except httpx.HTTPError as error:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="No fue posible consultar los roles del usuario.",
+        ) from error
+
+    roles: set[RoleCode] = set()
+    for assignment in response.json():
+        role = assignment.get("roles")
+        if not isinstance(role, dict) or not isinstance(role.get("code"), str):
+            continue
+        try:
+            roles.add(RoleCode(role["code"]))
+        except ValueError:
+            continue
+    return roles
+
+
+def require_roles(
+    *required_roles: RoleCode,
+) -> Callable[..., set[RoleCode]]:
+    def role_dependency(
+        current_roles: set[RoleCode] = Depends(get_current_user_roles),  # noqa: B008
+    ) -> set[RoleCode]:
+        if current_roles.isdisjoint(required_roles):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="No tienes permisos para realizar esta operación.",
+            )
+        return current_roles
+
+    return role_dependency
