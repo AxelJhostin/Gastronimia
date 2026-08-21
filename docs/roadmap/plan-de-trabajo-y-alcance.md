@@ -304,8 +304,8 @@ Criterio de salida:
 - `[ ]` Dashboard del docente: solicitudes, estados, préstamos y notificaciones.
 - `[ ]` Dashboard del encargado: pendientes, preparaciones, préstamos, devoluciones, novedades e inventario.
 - `[ ]` Dashboard del administrador: usuarios, configuración, reportes y auditoría.
-- `[ ]` Reportes operativos mínimos.
-- `[ ]` Reportes históricos mínimos.
+- `[x]` Reportes operativos mínimos. Endpoints tipados para solicitudes, préstamos, novedades, stock y kardex.
+- `[x]` Reportes históricos mínimos. Kardex filtrable y hoja de vida por unidad disponibles para el frontend.
 - `[ ]` Estados de carga, vacío, error, éxito y sin permisos en todas las áreas.
 - `[ ]` Revisión responsive final.
 - `[ ]` Revisión de accesibilidad y teclado.

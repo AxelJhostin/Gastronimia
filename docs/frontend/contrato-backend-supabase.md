@@ -104,6 +104,11 @@ Todos los paths siguientes son relativos a `/api/v1`. Las rutas `ADMIN/MANAGER` 
 | `POST /admin/maintenance/{id}/cancel` | Personal | Cancela con estado final seguro. |
 | `POST /admin/maintenance/{id}/evidences` | Personal | Asocia foto ya cargada. |
 | `POST /admin/inspections/incidents/{id}/evidences` | Personal | Asocia foto a una novedad. |
+| `GET /admin/reports/requests` | Personal | Resumen operativo de solicitudes. |
+| `GET /admin/reports/loans` | Personal | Resumen y conteos de préstamos/devoluciones. |
+| `GET /admin/reports/incidents` | Personal | Novedades y conteo de evidencias. |
+| `GET /admin/reports/stock` | Personal | Stock por artículo y ubicación. |
+| `GET /admin/reports/kardex?inventory_item_id=` | Personal | Kardex; filtro opcional por artículo. |
 
 ## Payloads esenciales
 
