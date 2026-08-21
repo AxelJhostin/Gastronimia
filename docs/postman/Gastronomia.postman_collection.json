@@ -5,6 +5,20 @@
     "description": "Pruebas manuales y repetibles de Auth, autorización y configuración académica. Importa también el environment template y completa las variables solo en tu equipo.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "const apiBaseUrl = pm.environment.get('api_base_url');",
+          "if (!apiBaseUrl || !apiBaseUrl.startsWith('http')) {",
+          "  throw new Error('Selecciona el entorno Gastronomía local y define api_base_url antes de ejecutar la colección.');",
+          "}"
+        ]
+      }
+    }
+  ],
   "item": [
     {
       "name": "Health",
