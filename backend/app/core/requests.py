@@ -17,6 +17,8 @@ class EquipmentRequestStatus(str, Enum):
     APPROVED = "APPROVED"
     PARTIALLY_APPROVED = "PARTIALLY_APPROVED"
     REJECTED = "REJECTED"
+    PREPARING = "PREPARING"
+    PREPARED = "PREPARED"
 
 
 class EquipmentRequestItemCreate(BaseModel):
@@ -73,6 +75,25 @@ class EquipmentRequestApprovalCreate(BaseModel):
 
 class EquipmentRequestRejectionCreate(BaseModel):
     reason: str = Field(min_length=1, max_length=1000)
+
+
+class EquipmentPreparationItemCreate(BaseModel):
+    equipment_reservation_detail_id: UUID
+    prepared_quantity: Decimal = Field(gt=0, max_digits=14, decimal_places=3)
+    inventory_unit_ids: Optional[list[UUID]] = None
+
+
+class EquipmentPreparationCreate(BaseModel):
+    items: list[EquipmentPreparationItemCreate] = Field(min_length=1)
+
+
+class EquipmentPreparation(BaseModel):
+    id: UUID
+    equipment_request_id: UUID
+    started_by_user_id: UUID
+    started_at: datetime
+    completed_by_user_id: Optional[UUID] = None
+    completed_at: Optional[datetime] = None
 
 
 def _request_error(detail: str, error: httpx.HTTPError) -> HTTPException:
@@ -248,3 +269,69 @@ def reject_equipment_request(
     if isinstance(data, list):
         data = data[0]
     return EquipmentRequest.model_validate(data)
+
+
+def _preparation_rpc(
+    function_name: str,
+    rpc_payload: dict[str, object],
+    error_detail: str,
+) -> EquipmentPreparation:
+    try:
+        response = httpx.post(
+            f"{_supabase_url()}/rest/v1/rpc/{function_name}",
+            json=rpc_payload,
+            headers=_service_headers(),
+            timeout=5.0,
+        )
+        response.raise_for_status()
+    except httpx.HTTPError as error:
+        raise _request_error(error_detail, error) from error
+
+    data = response.json()
+    if isinstance(data, list):
+        data = data[0]
+    return EquipmentPreparation.model_validate(data)
+
+
+def start_equipment_preparation(
+    equipment_request_id: UUID,
+    user_id: str,
+) -> EquipmentPreparation:
+    return _preparation_rpc(
+        "start_equipment_preparation",
+        {
+            "p_equipment_request_id": str(equipment_request_id),
+            "p_started_by_user_id": user_id,
+        },
+        "No fue posible iniciar la preparación.",
+    )
+
+
+def record_equipment_preparation(
+    equipment_request_id: UUID,
+    payload: EquipmentPreparationCreate,
+    user_id: str,
+) -> EquipmentPreparation:
+    return _preparation_rpc(
+        "record_equipment_preparation",
+        {
+            "p_equipment_request_id": str(equipment_request_id),
+            "p_prepared_by_user_id": user_id,
+            "p_items": [item.model_dump(mode="json") for item in payload.items],
+        },
+        "No fue posible registrar la preparación.",
+    )
+
+
+def complete_equipment_preparation(
+    equipment_request_id: UUID,
+    user_id: str,
+) -> EquipmentPreparation:
+    return _preparation_rpc(
+        "complete_equipment_preparation",
+        {
+            "p_equipment_request_id": str(equipment_request_id),
+            "p_completed_by_user_id": user_id,
+        },
+        "No fue posible finalizar la preparación.",
+    )

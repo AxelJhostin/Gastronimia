@@ -196,11 +196,11 @@ Criterio de salida:
 - `[~]` Crear reservas al aprobar. Trigger transaccional crea reserva y detalles para cantidades aprobadas; falta prueba real.
 - `[ ]` Liberar reservas al cancelar cuando la política lo permita.
 - `[~]` Implementar estados de solicitud y transiciones válidas. `DRAFT → PENDING → APPROVED/PARTIALLY_APPROVED/REJECTED` está controlado por RPC; faltan cancelación, preparación y entrega.
-- `[ ]` Iniciar preparación solo desde una solicitud aprobada.
-- `[ ]` Seleccionar unidades individuales cuando corresponda.
-- `[ ]` Registrar cantidades preparadas.
-- `[ ]` Impedir preparar más de lo aprobado.
-- `[ ]` Finalizar preparación en estado `PREPARED`.
+- `[~]` Iniciar preparación solo desde una solicitud aprobada. RPC requiere solicitud aprobada y reserva activa; falta prueba real.
+- `[~]` Seleccionar unidades individuales cuando corresponda. Las unidades deben estar activas, disponibles y no seleccionadas en un intervalo superpuesto; falta prueba real.
+- `[~]` Registrar cantidades preparadas. La preparación admite registros parciales por detalle reservado; falta interfaz y prueba real.
+- `[~]` Impedir preparar más de lo aprobado. La RPC bloquea cualquier cantidad acumulada superior a la reserva.
+- `[~]` Finalizar preparación en estado `PREPARED`. Solo permite cerrar cuando todos los detalles reservados están completos y las unidades individuales fueron seleccionadas.
 
 Criterio de salida:
 
