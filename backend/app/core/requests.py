@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from decimal import Decimal
 from enum import Enum
 from typing import Optional
@@ -19,6 +19,8 @@ class EquipmentRequestStatus(str, Enum):
     REJECTED = "REJECTED"
     PREPARING = "PREPARING"
     PREPARED = "PREPARED"
+    DELIVERED = "DELIVERED"
+    CLOSED = "CLOSED"
 
 
 class EquipmentRequestItemCreate(BaseModel):
@@ -121,6 +123,51 @@ class EquipmentLoan(BaseModel):
     delivered_by_user_id: UUID
     delivered_at: datetime
     created_at: datetime
+    status: str = "ACTIVE"
+    closed_at: Optional[datetime] = None
+    is_overdue: bool = False
+
+
+class EquipmentReturnQuantityDetail(BaseModel):
+    equipment_loan_detail_id: UUID
+    returned_quantity: Decimal = Field(gt=0, max_digits=14, decimal_places=3)
+    location_id: UUID
+
+
+class EquipmentReturnCreate(BaseModel):
+    returned_by_name: str = Field(min_length=1, max_length=160)
+    quantity_details: list[EquipmentReturnQuantityDetail] = Field(default_factory=list)
+    loan_unit_ids: list[UUID] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def has_returned_resources(self) -> "EquipmentReturnCreate":
+        if not self.quantity_details and not self.loan_unit_ids:
+            raise ValueError(
+                "Debe registrar al menos una cantidad o una unidad devuelta."
+            )
+        return self
+
+
+class EquipmentReturn(BaseModel):
+    id: UUID
+    equipment_loan_id: UUID
+    returned_by_name: str
+    received_by_user_id: UUID
+    returned_at: datetime
+
+
+class EquipmentLoanPendingQuantity(BaseModel):
+    equipment_loan_detail_id: UUID
+    inventory_item_id: UUID
+    loaned_quantity: Decimal
+    returned_quantity: Decimal
+    pending_quantity: Decimal
+
+
+class EquipmentLoanPending(BaseModel):
+    loan: EquipmentLoan
+    quantity_details: list[EquipmentLoanPendingQuantity]
+    unit_ids_pending: list[UUID]
 
 
 def _request_error(detail: str, error: httpx.HTTPError) -> HTTPException:
@@ -417,3 +464,83 @@ def deliver_equipment_request(
     if isinstance(data, list):
         data = data[0]
     return EquipmentLoan.model_validate(data)
+
+
+def record_equipment_return(
+    equipment_loan_id: UUID,
+    payload: EquipmentReturnCreate,
+    user_id: str,
+) -> EquipmentReturn:
+    try:
+        response = httpx.post(
+            f"{_supabase_url()}/rest/v1/rpc/record_equipment_return",
+            json={
+                "p_equipment_loan_id": str(equipment_loan_id),
+                "p_returned_by_name": payload.returned_by_name,
+                "p_received_by_user_id": user_id,
+                "p_quantity_details": [
+                    item.model_dump(mode="json") for item in payload.quantity_details
+                ],
+                "p_loan_unit_ids": [str(unit_id) for unit_id in payload.loan_unit_ids],
+            },
+            headers=_service_headers(),
+            timeout=5.0,
+        )
+        response.raise_for_status()
+    except httpx.HTTPError as error:
+        raise _request_error(
+            "No fue posible registrar la devolución.", error
+        ) from error
+
+    data = response.json()
+    if isinstance(data, list):
+        data = data[0]
+    return EquipmentReturn.model_validate(data)
+
+
+def list_active_equipment_loans() -> list[EquipmentLoan]:
+    try:
+        response = httpx.get(
+            f"{_supabase_url()}/rest/v1/equipment_loans",
+            params={
+                "select": "*,equipment_requests!inner(end_at)",
+                "status": "in.(ACTIVE,PARTIALLY_RETURNED)",
+                "order": "delivered_at.asc",
+            },
+            headers=_service_headers(),
+            timeout=5.0,
+        )
+        response.raise_for_status()
+    except httpx.HTTPError as error:
+        raise _request_error(
+            "No fue posible consultar los préstamos activos.", error
+        ) from error
+    loans: list[EquipmentLoan] = []
+    for row in response.json():
+        request = row.pop("equipment_requests", {})
+        end_at = datetime.fromisoformat(request["end_at"].replace("Z", "+00:00"))
+        row["is_overdue"] = end_at < datetime.now(timezone.utc)
+        loans.append(EquipmentLoan.model_validate(row))
+    return loans
+
+
+def get_equipment_loan_pending(equipment_loan_id: UUID) -> EquipmentLoanPending:
+    try:
+        response = httpx.post(
+            f"{_supabase_url()}/rest/v1/rpc/get_equipment_loan_pending",
+            json={"p_equipment_loan_id": str(equipment_loan_id)},
+            headers=_service_headers(),
+            timeout=5.0,
+        )
+        response.raise_for_status()
+    except httpx.HTTPError as error:
+        raise _request_error(
+            "No fue posible consultar los pendientes del préstamo.", error
+        ) from error
+    data = response.json()
+    if not data:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Préstamo no encontrado.",
+        )
+    return EquipmentLoanPending.model_validate(data)

@@ -231,18 +231,18 @@ Criterio de salida:
 
 ### Fase 8 — Préstamos y devoluciones
 
-- `[ ]` Mostrar préstamos activos y vencidos.
-- `[ ]` Mostrar cantidades y unidades pendientes.
-- `[ ]` Registrar quién devuelve.
-- `[ ]` Registrar quién recibe.
-- `[ ]` Permitir devoluciones parciales.
-- `[ ]` Impedir devolver más de lo prestado.
-- `[ ]` Crear `return` y `return_details`.
-- `[ ]` Crear movimiento `RETURN_IN`.
-- `[ ]` Actualizar estados de unidades y stock.
-- `[ ]` Actualizar el estado del préstamo.
-- `[ ]` Cerrar la solicitud cuando corresponda.
-- `[ ]` Auditar la devolución.
+- `[x]` Mostrar préstamos activos y vencidos. El listado expone préstamos `ACTIVE` y `PARTIALLY_RETURNED` con `is_overdue`, calculado frente al fin programado de la solicitud.
+- `[x]` Mostrar cantidades y unidades pendientes. Un endpoint dedicado calcula cantidades prestadas/devueltas/pendientes y unidades físicas aún no devueltas.
+- `[x]` Registrar quién devuelve.
+- `[x]` Registrar quién recibe.
+- `[x]` Permitir devoluciones parciales.
+- `[x]` Impedir devolver más de lo prestado.
+- `[x]` Crear `return` y `return_details`.
+- `[x]` Crear movimiento `RETURN_IN`.
+- `[x]` Actualizar estados de unidades y stock. Las unidades devueltas pasan a `AVAILABLE` y dejan de bloquear preparaciones futuras.
+- `[x]` Actualizar el estado del préstamo. Estados: `ACTIVE`, `PARTIALLY_RETURNED` y `CLOSED`.
+- `[x]` Cerrar la solicitud cuando corresponda. Se cierra al cuadrar todas las cantidades y unidades del préstamo.
+- `[x]` Auditar la devolución. Quedan registrados emisor, receptor, fecha y movimientos de inventario.
 
 Criterio de salida:
 
