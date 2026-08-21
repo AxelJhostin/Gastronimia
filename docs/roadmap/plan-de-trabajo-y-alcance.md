@@ -136,10 +136,10 @@ Criterio de salida:
 
 ### Fase 3 — Inventario
 
-- `[ ]` Crear categorías y ubicaciones.
-- `[ ]` Crear artículos controlados por cantidad.
-- `[ ]` Crear artículos individualizados.
-- `[ ]` Crear, editar, desactivar y consultar unidades físicas.
+- `[~]` Crear categorías y ubicaciones. Migración y endpoints administrativos de creación/consulta listos; faltan edición, desactivación y prueba real.
+- `[~]` Crear artículos controlados por cantidad. Modelo `QUANTITY` y endpoints administrativos listos; falta registrar movimientos y probar flujo real.
+- `[~]` Crear artículos individualizados. Modelo `INDIVIDUAL`, validación de unidades y endpoints administrativos listos; falta probar flujo real.
+- `[~]` Crear, editar, desactivar y consultar unidades físicas. Creación/consulta y restricciones de integridad listas; faltan edición, desactivación y prueba real.
 - `[ ]` Registrar condición física y disponibilidad separadamente.
 - `[ ]` Validar cantidades no negativas.
 - `[ ]` Registrar entradas y ajustes iniciales.
