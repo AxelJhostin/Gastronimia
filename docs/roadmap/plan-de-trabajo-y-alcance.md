@@ -103,7 +103,7 @@ Criterio de salida:
 - `[x]` Crear la migración inicial de extensiones, enums/checks y funciones auxiliares.
 - `[x]` Crear tablas de usuarios, roles y perfiles docentes.
 - `[x]` Definir RLS por rol: administrador, encargado y docente.
-- `[ ]` Definir políticas de Storage privado para evidencias.
+- `[~]` Definir políticas de Storage privado para evidencias. Migración del bucket privado y políticas RLS preparada; falta aplicar en Supabase y probar con una cuenta real.
 - `[~]` Crear tipos o contratos compartidos para respuestas de la API. Contratos iniciales de Auth y administración de roles listos.
 - `[~]` Documentar qué operaciones usan RPC/transacción. `replace_user_roles` queda documentada e implementada; faltan los flujos operativos.
 - `[~]` Probar que una cuenta no puede leer ni modificar información ajena. Cubiertos JWT/RLS sin sesión y denegación por rol; falta prueba entre dos cuentas reales.
