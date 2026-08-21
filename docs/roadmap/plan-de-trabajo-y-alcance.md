@@ -173,12 +173,12 @@ Criterio de salida:
 
 ### Fase 5 — Solicitudes
 
-- `[ ]` Permitir al docente crear un borrador.
-- `[ ]` Seleccionar asignatura/curso, laboratorio, fecha y horario.
-- `[ ]` Seleccionar artículos y cantidades.
-- `[ ]` Mostrar disponibilidad durante la creación.
-- `[ ]` Enviar solicitud a estado `PENDING`.
-- `[ ]` Permitir consultar solicitudes propias.
+- `[~]` Permitir al docente crear un borrador. API y RPC transaccional listas; falta prueba real con un perfil docente.
+- `[~]` Seleccionar asignatura/curso, laboratorio, fecha y horario. La base valida que el curso activo pertenece al docente y que el laboratorio e intervalo son válidos.
+- `[~]` Seleccionar artículos y cantidades. El borrador incorpora los ítems en la misma transacción; se validan artículos activos y cantidades enteras para unidades individuales.
+- `[~]` Mostrar disponibilidad durante la creación. La consulta de disponibilidad ya admite docentes autenticados; falta integración de interfaz y prueba real.
+- `[~]` Enviar solicitud a estado `PENDING`. RPC controlada por propietario e ítems mínimos lista; falta prueba real.
+- `[~]` Permitir consultar solicitudes propias. Endpoint de listado propio listo; falta detalle e interfaz.
 - `[ ]` Permitir al encargado revisar solicitudes pendientes.
 - `[ ]` Permitir aprobar completamente.
 - `[ ]` Permitir aprobar parcialmente.

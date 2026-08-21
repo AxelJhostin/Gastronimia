@@ -28,6 +28,11 @@ from app.core.inventory import (
 
 router = APIRouter(prefix="/admin/inventory")
 require_inventory_staff = require_roles(RoleCode.ADMIN, RoleCode.MANAGER)
+require_inventory_availability_user = require_roles(
+    RoleCode.ADMIN,
+    RoleCode.MANAGER,
+    RoleCode.TEACHER,
+)
 
 
 @router.get("/categories", response_model=list[InventoryCategory])
@@ -194,7 +199,7 @@ def get_inventory_availability(
     inventory_item_id: UUID,
     start_at: datetime,
     end_at: datetime,
-    _: set[RoleCode] = Depends(require_inventory_staff),  # noqa: B008
+    _: set[RoleCode] = Depends(require_inventory_availability_user),  # noqa: B008
 ) -> InventoryAvailability:
     if end_at <= start_at:
         raise HTTPException(

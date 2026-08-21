@@ -2,7 +2,10 @@ from datetime import datetime, timezone
 from unittest.mock import Mock, patch
 from uuid import UUID
 
-from app.api.v1.endpoints.inventory import require_inventory_staff
+from app.api.v1.endpoints.inventory import (
+    require_inventory_availability_user,
+    require_inventory_staff,
+)
 from app.core.auth import AuthenticatedUser, RoleCode, get_current_user
 from app.core.inventory import (
     InventoryAvailability,
@@ -52,7 +55,9 @@ def test_inventory_availability_requires_inventory_staff() -> None:
 
 def test_manager_can_consult_inventory_availability() -> None:
     client = TestClient(app)
-    app.dependency_overrides[require_inventory_staff] = lambda: {RoleCode.MANAGER}
+    app.dependency_overrides[require_inventory_availability_user] = lambda: {
+        RoleCode.MANAGER
+    }
     try:
         with patch(
             "app.api.v1.endpoints.inventory.calculate_inventory_availability",
@@ -79,7 +84,9 @@ def test_manager_can_consult_inventory_availability() -> None:
 
 def test_inventory_availability_rejects_invalid_interval() -> None:
     client = TestClient(app)
-    app.dependency_overrides[require_inventory_staff] = lambda: {RoleCode.MANAGER}
+    app.dependency_overrides[require_inventory_availability_user] = lambda: {
+        RoleCode.MANAGER
+    }
     try:
         response = client.get(
             "/api/v1/admin/inventory/availability",

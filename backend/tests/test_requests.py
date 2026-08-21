@@ -1,0 +1,142 @@
+from datetime import datetime, timezone
+from unittest.mock import Mock, patch
+from uuid import UUID
+
+from app.api.v1.endpoints.requests import require_teacher
+from app.core.auth import AuthenticatedUser, RoleCode, get_current_user
+from app.core.requests import (
+    EquipmentRequest,
+    EquipmentRequestDraftCreate,
+    EquipmentRequestStatus,
+    create_equipment_request_draft,
+    submit_equipment_request,
+)
+from app.main import app
+from fastapi.testclient import TestClient
+
+REQUEST_ID = UUID("02cb3581-36fa-4b79-9a57-4142c23c8587")
+USER_ID = "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+
+
+def _request(
+    status: EquipmentRequestStatus = EquipmentRequestStatus.DRAFT,
+) -> EquipmentRequest:
+    return EquipmentRequest(
+        id=REQUEST_ID,
+        teacher_id=UUID("e152d7d4-3eb0-4e7f-b2ff-1f7acb1f1450"),
+        course_section_id=UUID("9e152d7d-3eb0-4e7f-b2ff-1f7acb1f1450"),
+        laboratory_id=UUID("8e152d7d-3eb0-4e7f-b2ff-1f7acb1f1450"),
+        start_at=datetime(2026, 8, 22, 8, tzinfo=timezone.utc),
+        end_at=datetime(2026, 8, 22, 10, tzinfo=timezone.utc),
+        purpose="Práctica de laboratorio",
+        status=status,
+        submitted_at=None,
+        created_at=datetime(2026, 8, 21, tzinfo=timezone.utc),
+        updated_at=datetime(2026, 8, 21, tzinfo=timezone.utc),
+    )
+
+
+def _draft_payload() -> dict[str, object]:
+    return {
+        "course_section_id": "9e152d7d-3eb0-4e7f-b2ff-1f7acb1f1450",
+        "laboratory_id": "8e152d7d-3eb0-4e7f-b2ff-1f7acb1f1450",
+        "start_at": "2026-08-22T08:00:00Z",
+        "end_at": "2026-08-22T10:00:00Z",
+        "purpose": "Práctica de laboratorio",
+        "items": [{
+            "inventory_item_id": "e152d7d4-3eb0-4e7f-b2ff-1f7acb1f1450",
+            "requested_quantity": "4",
+        }],
+    }
+
+
+def _teacher_user() -> AuthenticatedUser:
+    return AuthenticatedUser(
+        id=USER_ID,
+        email="teacher@example.com",
+        access_token="token",
+    )
+
+
+def test_request_draft_requires_teacher() -> None:
+    response = TestClient(app).post("/api/v1/requests/drafts", json=_draft_payload())
+
+    assert response.status_code == 401
+
+
+def test_teacher_can_create_request_draft() -> None:
+    client = TestClient(app)
+    app.dependency_overrides[require_teacher] = lambda: {RoleCode.TEACHER}
+    app.dependency_overrides[get_current_user] = _teacher_user
+    try:
+        with patch(
+            "app.api.v1.endpoints.requests.create_equipment_request_draft",
+            return_value=_request(),
+        ):
+            response = client.post("/api/v1/requests/drafts", json=_draft_payload())
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 201
+    assert response.json()["status"] == "DRAFT"
+
+
+def test_draft_rejects_invalid_interval() -> None:
+    payload = _draft_payload()
+    payload["end_at"] = "2026-08-22T08:00:00Z"
+
+    client = TestClient(app)
+    app.dependency_overrides[require_teacher] = lambda: {RoleCode.TEACHER}
+    app.dependency_overrides[get_current_user] = _teacher_user
+    try:
+        response = client.post("/api/v1/requests/drafts", json=payload)
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 422
+
+
+def test_create_draft_calls_atomic_rpc() -> None:
+    response = Mock()
+    response.json.return_value = _request().model_dump(mode="json")
+    payload = EquipmentRequestDraftCreate.model_validate(_draft_payload())
+
+    with patch("app.core.requests.httpx.post", return_value=response) as post:
+        request = create_equipment_request_draft(payload, USER_ID)
+
+    assert request.status is EquipmentRequestStatus.DRAFT
+    assert post.call_args.kwargs["json"]["p_teacher_user_id"] == USER_ID
+    assert post.call_args.kwargs["json"]["p_items"][0]["requested_quantity"] == "4"
+
+
+def test_teacher_can_submit_request() -> None:
+    client = TestClient(app)
+    app.dependency_overrides[require_teacher] = lambda: {RoleCode.TEACHER}
+    app.dependency_overrides[get_current_user] = _teacher_user
+    submitted = _request(EquipmentRequestStatus.PENDING)
+    submitted.submitted_at = datetime(2026, 8, 21, 12, tzinfo=timezone.utc)
+    try:
+        with patch(
+            "app.api.v1.endpoints.requests.submit_equipment_request",
+            return_value=submitted,
+        ) as submit:
+            response = client.post(f"/api/v1/requests/{REQUEST_ID}/submit")
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 200
+    assert response.json()["status"] == "PENDING"
+    assert submit.call_args.args == (REQUEST_ID, USER_ID)
+
+
+def test_submit_request_calls_rpc() -> None:
+    submitted = _request(EquipmentRequestStatus.PENDING)
+    submitted.submitted_at = datetime(2026, 8, 21, 12, tzinfo=timezone.utc)
+    response = Mock()
+    response.json.return_value = submitted.model_dump(mode="json")
+
+    with patch("app.core.requests.httpx.post", return_value=response) as post:
+        request = submit_equipment_request(REQUEST_ID, USER_ID)
+
+    assert request.status is EquipmentRequestStatus.PENDING
+    assert post.call_args.kwargs["json"]["p_equipment_request_id"] == str(REQUEST_ID)
