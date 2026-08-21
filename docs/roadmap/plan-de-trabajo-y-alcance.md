@@ -141,10 +141,10 @@ Criterio de salida:
 - `[~]` Crear artículos individualizados. Modelo `INDIVIDUAL`, validación de unidades y endpoints administrativos listos; falta probar flujo real.
 - `[~]` Crear, editar, desactivar y consultar unidades físicas. Creación/consulta y restricciones de integridad listas; faltan edición, desactivación y prueba real.
 - `[ ]` Registrar condición física y disponibilidad separadamente.
-- `[ ]` Validar cantidades no negativas.
-- `[ ]` Registrar entradas y ajustes iniciales.
-- `[ ]` Registrar movimientos de inventario.
-- `[ ]` Crear vista de stock actual.
+- `[~]` Validar cantidades no negativas. RPC transaccional y saldo por ubicación listos; falta prueba real de concurrencia.
+- `[~]` Registrar entradas y ajustes iniciales. Endpoint y kardex atómico para `INITIAL_STOCK`, `ADJUSTMENT_IN` y `ADJUSTMENT_OUT` listos; falta prueba real.
+- `[~]` Registrar movimientos de inventario. Kardex inmutable para artículos `QUANTITY` listo; faltan movimientos de préstamos/devoluciones y unidades individuales.
+- `[~]` Crear vista de stock actual. Vista protegida y endpoint administrativo listos; falta prueba real.
 - `[ ]` Crear historial básico por unidad.
 - `[ ]` Diseñar interfaz operativa para escritorio, tablet y teléfono.
 

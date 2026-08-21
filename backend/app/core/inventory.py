@@ -1,4 +1,5 @@
 from datetime import datetime
+from decimal import Decimal
 from enum import Enum
 from typing import Optional, TypeVar
 from uuid import UUID
@@ -89,6 +90,40 @@ class InventoryUnit(InventoryUnitCreate):
     updated_at: datetime
 
 
+class InventoryMovementType(str, Enum):
+    INITIAL_STOCK = "INITIAL_STOCK"
+    ADJUSTMENT_IN = "ADJUSTMENT_IN"
+    ADJUSTMENT_OUT = "ADJUSTMENT_OUT"
+
+
+class QuantityStockMovementCreate(BaseModel):
+    inventory_item_id: UUID
+    location_id: UUID
+    movement_type: InventoryMovementType
+    quantity: Decimal = Field(gt=0, max_digits=14, decimal_places=3)
+    notes: Optional[str] = None
+    occurred_at: Optional[datetime] = None
+
+
+class InventoryMovement(QuantityStockMovementCreate):
+    id: UUID
+    balance_after: Decimal
+    performed_by_user_id: UUID
+    created_at: datetime
+
+
+class InventoryCurrentStock(BaseModel):
+    inventory_item_id: UUID
+    inventory_item_code: Optional[str] = None
+    inventory_item_name: str
+    unit_of_measure: str
+    location_id: UUID
+    location_code: Optional[str] = None
+    location_name: str
+    quantity: Decimal
+    updated_at: datetime
+
+
 def _inventory_error(detail: str, error: httpx.HTTPError) -> HTTPException:
     if isinstance(error, httpx.HTTPStatusError) and error.response.status_code in {
         status.HTTP_400_BAD_REQUEST,
@@ -143,3 +178,38 @@ def list_inventory_resources(
         ) from error
 
     return [model.model_validate(row) for row in response.json()]
+
+
+def record_quantity_stock_movement(
+    payload: QuantityStockMovementCreate,
+    performed_by_user_id: str,
+) -> InventoryMovement:
+    rpc_payload: dict[str, object] = {
+        "p_inventory_item_id": str(payload.inventory_item_id),
+        "p_location_id": str(payload.location_id),
+        "p_movement_type": payload.movement_type.value,
+        "p_quantity": str(payload.quantity),
+        "p_notes": payload.notes,
+        "p_performed_by_user_id": performed_by_user_id,
+    }
+    if payload.occurred_at is not None:
+        rpc_payload["p_occurred_at"] = payload.occurred_at.isoformat()
+
+    try:
+        response = httpx.post(
+            f"{_supabase_url()}/rest/v1/rpc/record_quantity_stock_movement",
+            json=rpc_payload,
+            headers=_service_headers(),
+            timeout=5.0,
+        )
+        response.raise_for_status()
+    except httpx.HTTPError as error:
+        raise _inventory_error(
+            "No fue posible registrar el movimiento de inventario.",
+            error,
+        ) from error
+
+    data = response.json()
+    if isinstance(data, list):
+        data = data[0]
+    return InventoryMovement.model_validate(data)

@@ -1,17 +1,21 @@
 from fastapi import APIRouter, Depends, status
 
-from app.core.auth import RoleCode, require_roles
+from app.core.auth import AuthenticatedUser, RoleCode, get_current_user, require_roles
 from app.core.inventory import (
     InventoryCategory,
     InventoryCategoryCreate,
+    InventoryCurrentStock,
     InventoryItem,
     InventoryItemCreate,
     InventoryLocation,
     InventoryLocationCreate,
+    InventoryMovement,
     InventoryUnit,
     InventoryUnitCreate,
+    QuantityStockMovementCreate,
     create_inventory_resource,
     list_inventory_resources,
+    record_quantity_stock_movement,
 )
 
 router = APIRouter(prefix="/admin/inventory")
@@ -100,3 +104,38 @@ def create_inventory_unit(
     _: set[RoleCode] = Depends(require_inventory_staff),  # noqa: B008
 ) -> InventoryUnit:
     return create_inventory_resource("inventory_units", payload, InventoryUnit)
+
+
+@router.get("/stock", response_model=list[InventoryCurrentStock])
+def get_current_inventory_stock(
+    _: set[RoleCode] = Depends(require_inventory_staff),  # noqa: B008
+) -> list[InventoryCurrentStock]:
+    return list_inventory_resources(
+        "inventory_current_stock",
+        InventoryCurrentStock,
+        "inventory_item_name.asc,location_name.asc",
+    )
+
+
+@router.get("/movements", response_model=list[InventoryMovement])
+def get_inventory_movements(
+    _: set[RoleCode] = Depends(require_inventory_staff),  # noqa: B008
+) -> list[InventoryMovement]:
+    return list_inventory_resources(
+        "inventory_movements",
+        InventoryMovement,
+        "occurred_at.desc",
+    )
+
+
+@router.post(
+    "/movements",
+    response_model=InventoryMovement,
+    status_code=status.HTTP_201_CREATED,
+)
+def create_quantity_stock_movement(
+    payload: QuantityStockMovementCreate,
+    current_user: AuthenticatedUser = Depends(get_current_user),  # noqa: B008
+    _: set[RoleCode] = Depends(require_inventory_staff),  # noqa: B008
+) -> InventoryMovement:
+    return record_quantity_stock_movement(payload, current_user.id)
