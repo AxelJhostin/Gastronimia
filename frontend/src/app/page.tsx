@@ -1,22 +1,29 @@
-export default function Home() {
+import { Sidebar } from '@/components/layout/Sidebar';
+import Link from 'next/link';
+
+export default function HomePage() {
   return (
-    <main className="flex flex-1 items-center justify-center bg-stone-50 p-6 text-stone-900">
-      <section className="w-full max-w-2xl rounded-2xl border border-stone-200 bg-white p-10 shadow-sm">
-        <p className="mb-3 text-sm font-semibold uppercase tracking-[0.2em] text-amber-700">
-          Gastronomía
-        </p>
-        <h1 className="text-3xl font-semibold tracking-tight">
-          Gestión de inventario, préstamos y trazabilidad
-        </h1>
-        <p className="mt-4 leading-7 text-stone-600">
-          La base técnica está lista. El desarrollo funcional comenzará por
-          autenticación, configuración académica e inventario.
-        </p>
-        <p className="mt-8 text-sm text-stone-500">
-          Consulta el README del repositorio para iniciar los servicios y ejecutar
-          las pruebas.
-        </p>
-      </section>
-    </main>
+    <div className="flex min-h-screen">
+      <Sidebar />
+      <main className="flex-1 p-8 bg-slate-50">
+        <h1 className="text-2xl font-bold text-slate-900 mb-2">Panel de Control</h1>
+        <p className="text-slate-600 mb-6">Selecciona un módulo para comenzar la gestión.</p>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <Link 
+            href="/academia" 
+            className="p-6 bg-white border border-slate-200 rounded-lg shadow-sm hover:shadow-md transition-shadow"
+          >
+            <h2 className="text-lg font-semibold text-slate-900 mb-1">Módulo Academia</h2>
+            <p className="text-slate-500 text-sm">Administración de asignaturas, profesores y grupos.</p>
+          </Link>
+          
+          <div className="p-6 bg-slate-100 border border-slate-200 rounded-lg opacity-60">
+            <h2 className="text-lg font-semibold text-slate-900 mb-1">Módulo Inventario</h2>
+            <p className="text-slate-500 text-sm">Próximamente: Catálogo de insumos y recursos.</p>
+          </div>
+        </div>
+      </main>
+    </div>
   );
 }
