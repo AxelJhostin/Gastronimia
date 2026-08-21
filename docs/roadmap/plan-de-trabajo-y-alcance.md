@@ -121,10 +121,10 @@ Criterio de salida:
 - `[ ]` Implementar protección de rutas en Next.js.
 - `[x]` Resolver el rol del usuario de forma segura desde la base de datos.
 - `[~]` Crear gestión de usuarios y asignación de roles para administrador. API y RPC listas; falta aplicar la migración y crear el primer ADMIN.
-- `[~]` Crear periodos académicos. Migración y RLS listos; falta aplicar y exponer la gestión administrativa.
-- `[~]` Crear asignaturas. Migración y RLS listos; falta aplicar y exponer la gestión administrativa.
-- `[~]` Crear cursos/paralelos asociados a docente y periodo. Migración y RLS listos; falta aplicar y exponer la gestión administrativa.
-- `[~]` Crear laboratorios. Migración y RLS listos; falta aplicar y exponer la gestión administrativa.
+- `[~]` Crear periodos académicos. Migración, RLS y endpoints administrativos listos; falta aplicar y probar el flujo real.
+- `[~]` Crear asignaturas. Migración, RLS y endpoints administrativos listos; falta aplicar y probar el flujo real.
+- `[~]` Crear cursos/paralelos asociados a docente y periodo. Migración, RLS y endpoints administrativos listos; falta aplicar y probar el flujo real.
+- `[~]` Crear laboratorios. Migración, RLS y endpoints administrativos listos; falta aplicar y probar el flujo real.
 - `[ ]` Aplicar permisos por pantalla y por operación.
 
 Criterio de salida:
