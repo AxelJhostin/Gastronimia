@@ -98,15 +98,15 @@ Criterio de salida:
 
 ### Fase 1 — Contratos, seguridad y Supabase
 
-- `[ ]` Crear o confirmar el proyecto compartido de Supabase.
+- `[x]` Crear o confirmar el proyecto compartido de Supabase.
 - `[ ]` Definir convenciones de nombres, fechas, zonas horarias e identificadores.
-- `[ ]` Crear la migración inicial de extensiones, enums/checks y funciones auxiliares.
-- `[ ]` Crear tablas de usuarios, roles y perfiles docentes.
-- `[ ]` Definir RLS por rol: administrador, encargado y docente.
+- `[x]` Crear la migración inicial de extensiones, enums/checks y funciones auxiliares.
+- `[x]` Crear tablas de usuarios, roles y perfiles docentes.
+- `[x]` Definir RLS por rol: administrador, encargado y docente.
 - `[ ]` Definir políticas de Storage privado para evidencias.
-- `[ ]` Crear tipos o contratos compartidos para respuestas de la API.
-- `[ ]` Documentar qué operaciones usan RPC/transacción.
-- `[ ]` Probar que una cuenta no puede leer ni modificar información ajena.
+- `[~]` Crear tipos o contratos compartidos para respuestas de la API. Contratos iniciales de Auth y administración de roles listos.
+- `[~]` Documentar qué operaciones usan RPC/transacción. `replace_user_roles` queda documentada e implementada; faltan los flujos operativos.
+- `[~]` Probar que una cuenta no puede leer ni modificar información ajena. Cubiertos JWT/RLS sin sesión y denegación por rol; falta prueba entre dos cuentas reales.
 
 Criterio de salida:
 
@@ -119,8 +119,8 @@ Criterio de salida:
 
 - `[ ]` Implementar inicio y cierre de sesión con Supabase Auth.
 - `[ ]` Implementar protección de rutas en Next.js.
-- `[ ]` Resolver el rol del usuario de forma segura desde la base de datos.
-- `[ ]` Crear gestión de usuarios y asignación de roles para administrador.
+- `[x]` Resolver el rol del usuario de forma segura desde la base de datos.
+- `[~]` Crear gestión de usuarios y asignación de roles para administrador. API y RPC listas; falta aplicar la migración y crear el primer ADMIN.
 - `[ ]` Crear periodos académicos.
 - `[ ]` Crear asignaturas.
 - `[ ]` Crear cursos/paralelos asociados a docente y periodo.
