@@ -6,15 +6,15 @@ El alcance funcional completo está documentado en [`docs/requirements/`](/Users
 
 ## Estado actual
 
-La estructura inicial está preparada y verificada para desarrollo local:
+El backend y Supabase del MVP están implementados y verificados para desarrollo local:
 
 - Frontend Next.js con TypeScript estricto, Tailwind, ESLint y Vitest.
 - Backend FastAPI con configuración tipada, endpoint de salud, Ruff, mypy y pytest.
-- Preparación para Supabase (PostgreSQL, Auth, Storage y migraciones).
+- Supabase con PostgreSQL, Auth, RLS, Storage privado y migraciones aplicadas.
 - Plantillas de variables de entorno sin secretos.
 - Flujo de CI para validar ambas aplicaciones.
 
-Los módulos de negocio aún no están implementados; se construirán en el orden definido en la documentación funcional: autenticación, academia, inventario, disponibilidad, solicitudes, reservas, preparación, entrega, devoluciones, novedades, mantenimiento, reportes y auditoría.
+Están disponibles autenticación, academia, inventario, disponibilidad, solicitudes, reservas, preparación, entrega, devoluciones, novedades, mantenimiento, kardex e historial/auditoría. La referencia única para consumirlos desde Next.js es el [contrato de frontend](/Users/hernandezaxel/proyectos/Gastronimia/docs/frontend/contrato-backend-supabase.md).
 
 ## Arquitectura
 

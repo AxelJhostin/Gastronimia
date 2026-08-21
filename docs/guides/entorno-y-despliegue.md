@@ -16,9 +16,9 @@ Después debe sustituir todos los valores de ejemplo. `frontend/.env.local` pued
 1. Crear un proyecto compartido de Supabase.
 2. Obtener URL, publishable key y service-role key desde **Connect**.
 3. Configurar las dos primeras en el frontend y las tres en el backend.
-4. Aplicar las migraciones SQL que se crearán en `supabase/migrations/`.
-5. Activar RLS y definir políticas por rol antes de exponer módulos funcionales.
-6. Crear un bucket privado para evidencias cuando se implemente ese módulo.
+4. Enlazar y aplicar las migraciones: `supabase link --project-ref <ref>` y `supabase db push`.
+5. Ejecutar `supabase db lint --linked` y `supabase db advisors --linked` antes de publicar cambios.
+6. El bucket privado `evidence`, RLS y las políticas por rol ya están versionados en las migraciones.
 
 ## Vercel
 
@@ -35,7 +35,7 @@ Configurar las variables de cada servicio en Vercel, nunca en el código. En el 
 
 ## Trabajo entre dos personas
 
-- Usar una rama por cambio: `feat/inventario`, `feat/solicitudes`, `fix/...`.
+- Actualmente se trabaja directamente sobre `main` por decisión del equipo; cada bloque terminado se valida, confirma y sube en un commit específico.
 - No mezclar cambios funcionales con refactorizaciones extensas en un mismo pull request.
 - Ejecutar las validaciones indicadas en el README antes de abrir un PR.
 - Revisar mutuamente las migraciones, RLS y cambios que afecten autorizaciones.

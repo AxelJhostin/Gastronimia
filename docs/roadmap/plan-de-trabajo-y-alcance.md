@@ -311,7 +311,7 @@ Criterio de salida:
 - `[ ]` Revisión de accesibilidad y teclado.
 - `[ ]` Prueba de flujo completo con datos representativos.
 - `[ ]` Revisión de seguridad, RLS y secretos.
-- `[ ]` Revisión del README y guías de inicio.
+- `[~]` Revisión del README y guías de inicio. El contrato de backend/Supabase para frontend y las guías de entorno ya se actualizaron; falta documentación propia de pantallas y despliegue final del frontend.
 - `[ ]` Despliegue de prueba en Vercel.
 
 Criterio de salida:
