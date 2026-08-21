@@ -28,6 +28,11 @@ jobs:
   backend:
     name: Backend
     runs-on: ubuntu-latest
+    env:
+      SUPABASE_URL: https://example.supabase.co
+      SUPABASE_JWKS_URL: https://example.supabase.co/auth/v1/.well-known/jwks.json
+      SUPABASE_PUBLISHABLE_KEY: ci-publishable-key
+      SUPABASE_SERVICE_ROLE_KEY: ci-service-role-key
     defaults:
       run:
         working-directory: backend
