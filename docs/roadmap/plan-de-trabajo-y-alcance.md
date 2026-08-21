@@ -117,8 +117,8 @@ Criterio de salida:
 
 ### Fase 2 — Autenticación y configuración académica
 
-- `[ ]` Implementar inicio y cierre de sesión con Supabase Auth.
-- `[ ]` Implementar protección de rutas en Next.js.
+- `[~]` Implementar inicio y cierre de sesión con Supabase Auth. Cliente SSR, formulario de inicio y cierre de sesión listos; falta prueba manual con una cuenta real.
+- `[~]` Implementar protección de rutas en Next.js. El panel usa `getClaims()` validado y el proxy renueva cookies; falta prueba manual de redirección con sesión expirada.
 - `[x]` Resolver el rol del usuario de forma segura desde la base de datos.
 - `[~]` Crear gestión de usuarios y asignación de roles para administrador. API y RPC listas; falta aplicar la migración y crear el primer ADMIN.
 - `[~]` Crear periodos académicos. Migración, RLS y endpoints administrativos listos; falta aplicar y probar el flujo real.

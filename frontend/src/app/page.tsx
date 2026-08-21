@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 export default function Home() {
   return (
     <main className="flex flex-1 items-center justify-center bg-stone-50 p-6 text-stone-900">
@@ -16,6 +18,12 @@ export default function Home() {
           Consulta el README del repositorio para iniciar los servicios y ejecutar
           las pruebas.
         </p>
+        <Link
+          className="mt-8 inline-block rounded-lg bg-amber-700 px-4 py-2.5 font-semibold text-white hover:bg-amber-800"
+          href="/login"
+        >
+          Iniciar sesión
+        </Link>
       </section>
     </main>
   );
