@@ -32,6 +32,16 @@ class InventoryUnitCondition(str, Enum):
     DAMAGED = "DAMAGED"
 
 
+class InventoryUnitHistoryEvent(str, Enum):
+    CREATED = "CREATED"
+    UPDATED = "UPDATED"
+    STATUS_CHANGED = "STATUS_CHANGED"
+    CONDITION_CHANGED = "CONDITION_CHANGED"
+    LOCATION_CHANGED = "LOCATION_CHANGED"
+    DEACTIVATED = "DEACTIVATED"
+    REACTIVATED = "REACTIVATED"
+
+
 class InventoryCategoryCreate(BaseModel):
     name: str = Field(min_length=1, max_length=160)
     description: Optional[str] = None
@@ -88,6 +98,21 @@ class InventoryUnit(InventoryUnitCreate):
     id: UUID
     created_at: datetime
     updated_at: datetime
+
+
+class InventoryUnitHistory(BaseModel):
+    id: UUID
+    inventory_unit_id: UUID
+    event_type: InventoryUnitHistoryEvent
+    previous_status: Optional[InventoryUnitStatus] = None
+    current_status: InventoryUnitStatus
+    previous_condition: Optional[InventoryUnitCondition] = None
+    current_condition: InventoryUnitCondition
+    previous_location_id: Optional[UUID] = None
+    current_location_id: Optional[UUID] = None
+    previous_is_active: Optional[bool] = None
+    current_is_active: bool
+    recorded_at: datetime
 
 
 class InventoryMovementType(str, Enum):
@@ -178,6 +203,58 @@ def list_inventory_resources(
         ) from error
 
     return [model.model_validate(row) for row in response.json()]
+
+
+def update_inventory_resource(
+    resource: str,
+    resource_id: UUID,
+    payload: BaseModel,
+    model: type[ModelType],
+) -> ModelType:
+    try:
+        response = httpx.patch(
+            f"{_supabase_url()}/rest/v1/{resource}",
+            params={"id": f"eq.{resource_id}"},
+            json=payload.model_dump(mode="json"),
+            headers={**_service_headers(), "Prefer": "return=representation"},
+            timeout=5.0,
+        )
+        response.raise_for_status()
+    except httpx.HTTPError as error:
+        raise _inventory_error(
+            "No fue posible actualizar el recurso de inventario.",
+            error,
+        ) from error
+
+    rows = response.json()
+    if not rows:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No se encontró el recurso de inventario.",
+        )
+    return model.model_validate(rows[0])
+
+
+def list_inventory_unit_history(unit_id: UUID) -> list[InventoryUnitHistory]:
+    try:
+        response = httpx.get(
+            f"{_supabase_url()}/rest/v1/inventory_unit_history",
+            params={
+                "select": "*",
+                "inventory_unit_id": f"eq.{unit_id}",
+                "order": "recorded_at.desc",
+            },
+            headers=_service_headers(),
+            timeout=5.0,
+        )
+        response.raise_for_status()
+    except httpx.HTTPError as error:
+        raise _inventory_error(
+            "No fue posible consultar la hoja de vida de la unidad.",
+            error,
+        ) from error
+
+    return [InventoryUnitHistory.model_validate(row) for row in response.json()]
 
 
 def record_quantity_stock_movement(

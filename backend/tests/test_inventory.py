@@ -12,6 +12,7 @@ from app.core.inventory import (
     QuantityStockMovementCreate,
     create_inventory_resource,
     record_quantity_stock_movement,
+    update_inventory_resource,
 )
 from app.main import app
 from fastapi.testclient import TestClient
@@ -67,6 +68,45 @@ def test_create_inventory_resource_posts_json_payload() -> None:
 
     assert created == _category()
     assert post.call_args.kwargs["json"]["name"] == "Utensilios"
+
+
+def test_manager_can_update_inventory_category() -> None:
+    client = TestClient(app)
+    app.dependency_overrides[require_inventory_staff] = lambda: {RoleCode.MANAGER}
+    try:
+        with patch(
+            "app.api.v1.endpoints.inventory.update_inventory_resource",
+            return_value=_category(),
+        ):
+            response = client.patch(
+                "/api/v1/admin/inventory/categories/e152d7d4-3eb0-4e7f-b2ff-1f7acb1f1450",
+                json={"name": "Utensilios", "is_active": False},
+            )
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 200
+    assert response.json()["name"] == "Utensilios"
+
+
+def test_update_inventory_resource_uses_patch() -> None:
+    response = Mock()
+    response.json.return_value = [_category().model_dump(mode="json")]
+    payload = InventoryCategoryCreate(name="Utensilios", is_active=False)
+
+    with patch(
+        "app.core.inventory.httpx.patch",
+        return_value=response,
+    ) as patch_request:
+        updated = update_inventory_resource(
+            "inventory_categories",
+            UUID("e152d7d4-3eb0-4e7f-b2ff-1f7acb1f1450"),
+            payload,
+            InventoryCategory,
+        )
+
+    assert updated == _category()
+    assert patch_request.call_args.kwargs["params"]["id"].startswith("eq.")
 
 
 def test_manager_can_record_quantity_stock_movement() -> None:

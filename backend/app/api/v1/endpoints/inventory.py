@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from fastapi import APIRouter, Depends, status
 
 from app.core.auth import AuthenticatedUser, RoleCode, get_current_user, require_roles
@@ -12,10 +14,13 @@ from app.core.inventory import (
     InventoryMovement,
     InventoryUnit,
     InventoryUnitCreate,
+    InventoryUnitHistory,
     QuantityStockMovementCreate,
     create_inventory_resource,
     list_inventory_resources,
+    list_inventory_unit_history,
     record_quantity_stock_movement,
+    update_inventory_resource,
 )
 
 router = APIRouter(prefix="/admin/inventory")
@@ -45,6 +50,20 @@ def create_inventory_category(
     return create_inventory_resource("inventory_categories", payload, InventoryCategory)
 
 
+@router.patch("/categories/{category_id}", response_model=InventoryCategory)
+def update_inventory_category(
+    category_id: UUID,
+    payload: InventoryCategoryCreate,
+    _: set[RoleCode] = Depends(require_inventory_staff),  # noqa: B008
+) -> InventoryCategory:
+    return update_inventory_resource(
+        "inventory_categories",
+        category_id,
+        payload,
+        InventoryCategory,
+    )
+
+
 @router.get("/locations", response_model=list[InventoryLocation])
 def get_inventory_locations(
     _: set[RoleCode] = Depends(require_inventory_staff),  # noqa: B008
@@ -68,6 +87,20 @@ def create_inventory_location(
     return create_inventory_resource("inventory_locations", payload, InventoryLocation)
 
 
+@router.patch("/locations/{location_id}", response_model=InventoryLocation)
+def update_inventory_location(
+    location_id: UUID,
+    payload: InventoryLocationCreate,
+    _: set[RoleCode] = Depends(require_inventory_staff),  # noqa: B008
+) -> InventoryLocation:
+    return update_inventory_resource(
+        "inventory_locations",
+        location_id,
+        payload,
+        InventoryLocation,
+    )
+
+
 @router.get("/items", response_model=list[InventoryItem])
 def get_inventory_items(
     _: set[RoleCode] = Depends(require_inventory_staff),  # noqa: B008
@@ -87,6 +120,20 @@ def create_inventory_item(
     return create_inventory_resource("inventory_items", payload, InventoryItem)
 
 
+@router.patch("/items/{item_id}", response_model=InventoryItem)
+def update_inventory_item(
+    item_id: UUID,
+    payload: InventoryItemCreate,
+    _: set[RoleCode] = Depends(require_inventory_staff),  # noqa: B008
+) -> InventoryItem:
+    return update_inventory_resource(
+        "inventory_items",
+        item_id,
+        payload,
+        InventoryItem,
+    )
+
+
 @router.get("/units", response_model=list[InventoryUnit])
 def get_inventory_units(
     _: set[RoleCode] = Depends(require_inventory_staff),  # noqa: B008
@@ -104,6 +151,28 @@ def create_inventory_unit(
     _: set[RoleCode] = Depends(require_inventory_staff),  # noqa: B008
 ) -> InventoryUnit:
     return create_inventory_resource("inventory_units", payload, InventoryUnit)
+
+
+@router.patch("/units/{unit_id}", response_model=InventoryUnit)
+def update_inventory_unit(
+    unit_id: UUID,
+    payload: InventoryUnitCreate,
+    _: set[RoleCode] = Depends(require_inventory_staff),  # noqa: B008
+) -> InventoryUnit:
+    return update_inventory_resource(
+        "inventory_units",
+        unit_id,
+        payload,
+        InventoryUnit,
+    )
+
+
+@router.get("/units/{unit_id}/history", response_model=list[InventoryUnitHistory])
+def get_inventory_unit_history(
+    unit_id: UUID,
+    _: set[RoleCode] = Depends(require_inventory_staff),  # noqa: B008
+) -> list[InventoryUnitHistory]:
+    return list_inventory_unit_history(unit_id)
 
 
 @router.get("/stock", response_model=list[InventoryCurrentStock])
