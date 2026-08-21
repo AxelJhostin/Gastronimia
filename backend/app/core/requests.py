@@ -170,6 +170,47 @@ class EquipmentLoanPending(BaseModel):
     unit_ids_pending: list[UUID]
 
 
+class EquipmentInspectionIncidentCreate(BaseModel):
+    incident_type: str = Field(min_length=1, max_length=32)
+    severity: str = Field(min_length=1, max_length=16)
+    description: str = Field(min_length=1, max_length=2000)
+
+
+class EquipmentInspectionItemCreate(BaseModel):
+    inventory_unit_id: UUID
+    observed_condition: str = Field(min_length=1, max_length=16)
+    is_complete: bool = True
+    incidents: list[EquipmentInspectionIncidentCreate] = Field(default_factory=list)
+
+
+class EquipmentInspectionCreate(BaseModel):
+    notes: Optional[str] = Field(default=None, max_length=2000)
+    items: list[EquipmentInspectionItemCreate] = Field(default_factory=list)
+
+
+class EquipmentInspection(BaseModel):
+    id: UUID
+    equipment_request_id: UUID
+    equipment_loan_id: Optional[UUID] = None
+    equipment_return_id: Optional[UUID] = None
+    stage: str
+    inspected_by_user_id: UUID
+    inspected_at: datetime
+    notes: Optional[str] = None
+
+
+class EquipmentIncidentEvidenceCreate(BaseModel):
+    storage_path: str = Field(min_length=5, max_length=1024)
+
+
+class EquipmentIncidentEvidence(BaseModel):
+    id: UUID
+    equipment_incident_id: UUID
+    storage_path: str
+    uploaded_by_user_id: UUID
+    created_at: datetime
+
+
 def _request_error(detail: str, error: httpx.HTTPError) -> HTTPException:
     if isinstance(error, httpx.HTTPStatusError) and error.response.status_code in {
         status.HTTP_400_BAD_REQUEST,
@@ -544,3 +585,78 @@ def get_equipment_loan_pending(equipment_loan_id: UUID) -> EquipmentLoanPending:
             detail="Préstamo no encontrado.",
         )
     return EquipmentLoanPending.model_validate(data)
+
+
+def _inspection_rpc(
+    function_name: str,
+    rpc_payload: dict[str, object],
+    error_detail: str,
+    response_model: type[BaseModel],
+) -> BaseModel:
+    try:
+        response = httpx.post(
+            f"{_supabase_url()}/rest/v1/rpc/{function_name}",
+            json=rpc_payload,
+            headers=_service_headers(),
+            timeout=5.0,
+        )
+        response.raise_for_status()
+    except httpx.HTTPError as error:
+        raise _request_error(error_detail, error) from error
+    data = response.json()
+    if isinstance(data, list):
+        data = data[0]
+    return response_model.model_validate(data)
+
+
+def record_outbound_inspection(
+    equipment_request_id: UUID,
+    payload: EquipmentInspectionCreate,
+    user_id: str,
+) -> EquipmentInspection:
+    return _inspection_rpc(
+        "record_outbound_inspection",
+        {
+            "p_equipment_request_id": str(equipment_request_id),
+            "p_inspected_by_user_id": user_id,
+            "p_notes": payload.notes,
+            "p_items": [item.model_dump(mode="json") for item in payload.items],
+        },
+        "No fue posible registrar la inspección de salida.",
+        EquipmentInspection,
+    )  # type: ignore[return-value]
+
+
+def record_return_inspection(
+    equipment_return_id: UUID,
+    payload: EquipmentInspectionCreate,
+    user_id: str,
+) -> EquipmentInspection:
+    return _inspection_rpc(
+        "record_return_inspection",
+        {
+            "p_equipment_return_id": str(equipment_return_id),
+            "p_inspected_by_user_id": user_id,
+            "p_notes": payload.notes,
+            "p_items": [item.model_dump(mode="json") for item in payload.items],
+        },
+        "No fue posible registrar la inspección de devolución.",
+        EquipmentInspection,
+    )  # type: ignore[return-value]
+
+
+def register_equipment_incident_evidence(
+    equipment_incident_id: UUID,
+    payload: EquipmentIncidentEvidenceCreate,
+    user_id: str,
+) -> EquipmentIncidentEvidence:
+    return _inspection_rpc(
+        "register_equipment_incident_evidence",
+        {
+            "p_equipment_incident_id": str(equipment_incident_id),
+            "p_storage_path": payload.storage_path,
+            "p_uploaded_by_user_id": user_id,
+        },
+        "No fue posible registrar la evidencia de la novedad.",
+        EquipmentIncidentEvidence,
+    )  # type: ignore[return-value]

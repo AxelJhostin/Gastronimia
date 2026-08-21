@@ -252,15 +252,15 @@ Criterio de salida:
 
 ### Fase 9 — Inspecciones, novedades y evidencias
 
-- `[ ]` Registrar inspección previa y de devolución.
-- `[ ]` Comparar condición de salida y de regreso.
-- `[ ]` Registrar faltantes, daños, roturas, suciedad, incompletos, desgaste y fallas.
-- `[ ]` Registrar severidad y descripción.
-- `[ ]` Crear seguimiento de novedades.
-- `[ ]` Adjuntar fotografías opcionales.
-- `[ ]` Mantener evidencias en Storage privado.
-- `[ ]` Cambiar la disponibilidad de la unidad cuando una novedad lo requiera.
-- `[ ]` Cerrar préstamos con y sin novedades correctamente.
+- `[x]` Registrar inspección previa y de devolución. La entrega exige inspección previa; cada devolución de unidades se inspecciona por separado.
+- `[x]` Comparar condición de salida y de regreso.
+- `[x]` Registrar faltantes, daños, roturas, suciedad, incompletos, desgaste y fallas.
+- `[x]` Registrar severidad y descripción.
+- `[x]` Crear seguimiento de novedades. Las novedades se vinculan a detalle de inspección y unidad física.
+- `[x]` Adjuntar fotografías opcionales.
+- `[x]` Mantener evidencias en Storage privado. Se reutiliza el bucket privado `evidence`; el registro verifica que la ruta corresponda a la carpeta del usuario responsable.
+- `[x]` Cambiar la disponibilidad de la unidad cuando una novedad lo requiera. Una devolución queda en `MAINTENANCE` hasta la inspección; daño, faltante, rotura o falla la mantienen fuera de disponibilidad.
+- `[x]` Cerrar préstamos con y sin novedades correctamente. El cierre de devolución es trazable y la inspección posterior determina la disponibilidad segura de cada unidad.
 
 Criterio de salida:
 
