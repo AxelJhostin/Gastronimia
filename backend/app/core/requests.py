@@ -14,6 +14,9 @@ from app.core.admin import _service_headers, _supabase_url
 class EquipmentRequestStatus(str, Enum):
     DRAFT = "DRAFT"
     PENDING = "PENDING"
+    APPROVED = "APPROVED"
+    PARTIALLY_APPROVED = "PARTIALLY_APPROVED"
+    REJECTED = "REJECTED"
 
 
 class EquipmentRequestItemCreate(BaseModel):
@@ -57,6 +60,19 @@ class EquipmentRequestItem(EquipmentRequestItemCreate):
     equipment_request_id: UUID
     created_at: datetime
     updated_at: datetime
+
+
+class EquipmentRequestApprovalItem(BaseModel):
+    equipment_request_item_id: UUID
+    approved_quantity: Decimal = Field(ge=0, max_digits=14, decimal_places=3)
+
+
+class EquipmentRequestApprovalCreate(BaseModel):
+    items: list[EquipmentRequestApprovalItem] = Field(min_length=1)
+
+
+class EquipmentRequestRejectionCreate(BaseModel):
+    reason: str = Field(min_length=1, max_length=1000)
 
 
 def _request_error(detail: str, error: httpx.HTTPError) -> HTTPException:
@@ -158,3 +174,77 @@ def list_own_equipment_requests(teacher_user_id: str) -> list[EquipmentRequest]:
         ) from error
 
     return [EquipmentRequest.model_validate(row) for row in response.json()]
+
+
+def list_pending_equipment_requests() -> list[EquipmentRequest]:
+    try:
+        response = httpx.get(
+            f"{_supabase_url()}/rest/v1/equipment_requests",
+            params={
+                "select": "*",
+                "status": "eq.PENDING",
+                "order": "submitted_at.asc",
+            },
+            headers=_service_headers(),
+            timeout=5.0,
+        )
+        response.raise_for_status()
+    except httpx.HTTPError as error:
+        raise _request_error(
+            "No fue posible consultar las solicitudes pendientes.",
+            error,
+        ) from error
+
+    return [EquipmentRequest.model_validate(row) for row in response.json()]
+
+
+def approve_equipment_request(
+    equipment_request_id: UUID,
+    payload: EquipmentRequestApprovalCreate,
+    reviewer_user_id: str,
+) -> EquipmentRequest:
+    try:
+        response = httpx.post(
+            f"{_supabase_url()}/rest/v1/rpc/approve_equipment_request",
+            json={
+                "p_equipment_request_id": str(equipment_request_id),
+                "p_reviewer_user_id": reviewer_user_id,
+                "p_items": [item.model_dump(mode="json") for item in payload.items],
+            },
+            headers=_service_headers(),
+            timeout=5.0,
+        )
+        response.raise_for_status()
+    except httpx.HTTPError as error:
+        raise _request_error("No fue posible aprobar la solicitud.", error) from error
+
+    data = response.json()
+    if isinstance(data, list):
+        data = data[0]
+    return EquipmentRequest.model_validate(data)
+
+
+def reject_equipment_request(
+    equipment_request_id: UUID,
+    payload: EquipmentRequestRejectionCreate,
+    reviewer_user_id: str,
+) -> EquipmentRequest:
+    try:
+        response = httpx.post(
+            f"{_supabase_url()}/rest/v1/rpc/reject_equipment_request",
+            json={
+                "p_equipment_request_id": str(equipment_request_id),
+                "p_reviewer_user_id": reviewer_user_id,
+                "p_reason": payload.reason,
+            },
+            headers=_service_headers(),
+            timeout=5.0,
+        )
+        response.raise_for_status()
+    except httpx.HTTPError as error:
+        raise _request_error("No fue posible rechazar la solicitud.", error) from error
+
+    data = response.json()
+    if isinstance(data, list):
+        data = data[0]
+    return EquipmentRequest.model_validate(data)

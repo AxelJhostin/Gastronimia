@@ -179,11 +179,11 @@ Criterio de salida:
 - `[~]` Mostrar disponibilidad durante la creación. La consulta de disponibilidad ya admite docentes autenticados; falta integración de interfaz y prueba real.
 - `[~]` Enviar solicitud a estado `PENDING`. RPC controlada por propietario e ítems mínimos lista; falta prueba real.
 - `[~]` Permitir consultar solicitudes propias. Endpoint de listado propio listo; falta detalle e interfaz.
-- `[ ]` Permitir al encargado revisar solicitudes pendientes.
-- `[ ]` Permitir aprobar completamente.
-- `[ ]` Permitir aprobar parcialmente.
-- `[ ]` Permitir rechazar con motivo.
-- `[ ]` Registrar revisión y auditoría.
+- `[~]` Permitir al encargado revisar solicitudes pendientes. Endpoint administrativo de listado listo; falta interfaz y prueba real.
+- `[~]` Permitir aprobar completamente. RPC transaccional valida estado, propietario revisor, cantidades solicitadas y disponibilidad actual; falta crear reservas en Fase 6 y prueba real.
+- `[~]` Permitir aprobar parcialmente. Cada ítem debe recibir una cantidad aprobada entre cero y lo solicitado; el estado se deriva de forma automática.
+- `[~]` Permitir rechazar con motivo. RPC y endpoint exigen un motivo no vacío; falta prueba real.
+- `[~]` Registrar revisión y auditoría. Se guarda revisor, estado previo, decisión, motivo y fecha; falta exponer el detalle en interfaz.
 
 Criterio de salida:
 
