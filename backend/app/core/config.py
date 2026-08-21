@@ -15,6 +15,7 @@ class Settings(BaseSettings):
         default_factory=lambda: [AnyHttpUrl("http://localhost:3000")]
     )
     supabase_url: Optional[AnyHttpUrl] = None
+    supabase_jwks_url: Optional[AnyHttpUrl] = None
     supabase_publishable_key: Optional[str] = None
     supabase_service_role_key: Optional[str] = None
 
