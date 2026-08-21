@@ -149,6 +149,12 @@ class InventoryCurrentStock(BaseModel):
     updated_at: datetime
 
 
+class InventoryAvailability(BaseModel):
+    tracking_mode: InventoryTrackingMode
+    quantity_available: Decimal
+    units_available: int
+
+
 def _inventory_error(detail: str, error: httpx.HTTPError) -> HTTPException:
     if isinstance(error, httpx.HTTPStatusError) and error.response.status_code in {
         status.HTTP_400_BAD_REQUEST,
@@ -290,3 +296,32 @@ def record_quantity_stock_movement(
     if isinstance(data, list):
         data = data[0]
     return InventoryMovement.model_validate(data)
+
+
+def calculate_inventory_availability(
+    inventory_item_id: UUID,
+    start_at: datetime,
+    end_at: datetime,
+) -> InventoryAvailability:
+    try:
+        response = httpx.post(
+            f"{_supabase_url()}/rest/v1/rpc/calculate_inventory_availability",
+            json={
+                "p_inventory_item_id": str(inventory_item_id),
+                "p_start_at": start_at.isoformat(),
+                "p_end_at": end_at.isoformat(),
+            },
+            headers=_service_headers(),
+            timeout=5.0,
+        )
+        response.raise_for_status()
+    except httpx.HTTPError as error:
+        raise _inventory_error(
+            "No fue posible consultar la disponibilidad del artículo.",
+            error,
+        ) from error
+
+    data = response.json()
+    if isinstance(data, list):
+        data = data[0]
+    return InventoryAvailability.model_validate(data)

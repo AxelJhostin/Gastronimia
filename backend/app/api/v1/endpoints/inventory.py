@@ -1,9 +1,11 @@
+from datetime import datetime
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.core.auth import AuthenticatedUser, RoleCode, get_current_user, require_roles
 from app.core.inventory import (
+    InventoryAvailability,
     InventoryCategory,
     InventoryCategoryCreate,
     InventoryCurrentStock,
@@ -16,6 +18,7 @@ from app.core.inventory import (
     InventoryUnitCreate,
     InventoryUnitHistory,
     QuantityStockMovementCreate,
+    calculate_inventory_availability,
     create_inventory_resource,
     list_inventory_resources,
     list_inventory_unit_history,
@@ -184,6 +187,21 @@ def get_current_inventory_stock(
         InventoryCurrentStock,
         "inventory_item_name.asc,location_name.asc",
     )
+
+
+@router.get("/availability", response_model=InventoryAvailability)
+def get_inventory_availability(
+    inventory_item_id: UUID,
+    start_at: datetime,
+    end_at: datetime,
+    _: set[RoleCode] = Depends(require_inventory_staff),  # noqa: B008
+) -> InventoryAvailability:
+    if end_at <= start_at:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail="La fecha de fin debe ser posterior a la fecha de inicio.",
+        )
+    return calculate_inventory_availability(inventory_item_id, start_at, end_at)
 
 
 @router.get("/movements", response_model=list[InventoryMovement])

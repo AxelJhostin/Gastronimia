@@ -5,11 +5,13 @@ from uuid import UUID
 from app.api.v1.endpoints.inventory import require_inventory_staff
 from app.core.auth import AuthenticatedUser, RoleCode, get_current_user
 from app.core.inventory import (
+    InventoryAvailability,
     InventoryCategory,
     InventoryCategoryCreate,
     InventoryMovement,
     InventoryMovementType,
     QuantityStockMovementCreate,
+    calculate_inventory_availability,
     create_inventory_resource,
     record_quantity_stock_movement,
     update_inventory_resource,
@@ -33,6 +35,64 @@ def test_inventory_categories_require_inventory_staff() -> None:
     response = TestClient(app).get("/api/v1/admin/inventory/categories")
 
     assert response.status_code == 401
+
+
+def test_inventory_availability_requires_inventory_staff() -> None:
+    response = TestClient(app).get(
+        "/api/v1/admin/inventory/availability",
+        params={
+            "inventory_item_id": "e152d7d4-3eb0-4e7f-b2ff-1f7acb1f1450",
+            "start_at": "2026-08-21T08:00:00Z",
+            "end_at": "2026-08-21T10:00:00Z",
+        },
+    )
+
+    assert response.status_code == 401
+
+
+def test_manager_can_consult_inventory_availability() -> None:
+    client = TestClient(app)
+    app.dependency_overrides[require_inventory_staff] = lambda: {RoleCode.MANAGER}
+    try:
+        with patch(
+            "app.api.v1.endpoints.inventory.calculate_inventory_availability",
+            return_value=InventoryAvailability(
+                tracking_mode="QUANTITY",
+                quantity_available="12",
+                units_available=0,
+            ),
+        ):
+            response = client.get(
+                "/api/v1/admin/inventory/availability",
+                params={
+                    "inventory_item_id": "e152d7d4-3eb0-4e7f-b2ff-1f7acb1f1450",
+                    "start_at": "2026-08-21T08:00:00Z",
+                    "end_at": "2026-08-21T10:00:00Z",
+                },
+            )
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 200
+    assert response.json()["quantity_available"] == "12"
+
+
+def test_inventory_availability_rejects_invalid_interval() -> None:
+    client = TestClient(app)
+    app.dependency_overrides[require_inventory_staff] = lambda: {RoleCode.MANAGER}
+    try:
+        response = client.get(
+            "/api/v1/admin/inventory/availability",
+            params={
+                "inventory_item_id": "e152d7d4-3eb0-4e7f-b2ff-1f7acb1f1450",
+                "start_at": "2026-08-21T10:00:00Z",
+                "end_at": "2026-08-21T08:00:00Z",
+            },
+        )
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 422
 
 
 def test_manager_can_create_inventory_category() -> None:
@@ -179,3 +239,22 @@ def test_record_quantity_stock_movement_calls_atomic_rpc() -> None:
 
     assert movement.balance_after == 12
     assert post.call_args.kwargs["json"]["p_quantity"] == "12"
+
+
+def test_calculate_inventory_availability_calls_rpc() -> None:
+    response = Mock()
+    response.json.return_value = [{
+        "tracking_mode": "INDIVIDUAL",
+        "quantity_available": "0",
+        "units_available": 3,
+    }]
+
+    with patch("app.core.inventory.httpx.post", return_value=response) as post:
+        availability = calculate_inventory_availability(
+            UUID("e152d7d4-3eb0-4e7f-b2ff-1f7acb1f1450"),
+            datetime(2026, 8, 21, 8, tzinfo=timezone.utc),
+            datetime(2026, 8, 21, 10, tzinfo=timezone.utc),
+        )
+
+    assert availability.units_available == 3
+    assert post.call_args.kwargs["json"]["p_start_at"] == "2026-08-21T08:00:00+00:00"

@@ -157,13 +157,13 @@ Criterio de salida:
 
 ### Fase 4 — Disponibilidad temporal
 
-- `[ ]` Implementar consulta por artículo, fecha y horario.
-- `[ ]` Considerar existencia física, reservas, préstamos, mantenimiento y bajas.
-- `[ ]` Separar el cálculo para artículos por cantidad y unidades individuales.
-- `[ ]` Validar intervalos inválidos.
+- `[~]` Implementar consulta por artículo, fecha y horario. RPC y endpoint administrativo listos; falta prueba real con datos.
+- `[~]` Considerar existencia física, reservas, préstamos, mantenimiento y bajas. La base actual considera stock, unidades activas, mantenimiento y bajas; reservas y préstamos se descuentan al implementar sus flujos operativos.
+- `[~]` Separar el cálculo para artículos por cantidad y unidades individuales. La consulta suma stock para `QUANTITY` y cuenta unidades activas `AVAILABLE` para `INDIVIDUAL`.
+- `[~]` Validar intervalos inválidos. API y RPC rechazan intervalos sin duración positiva.
 - `[ ]` Evitar disponibilidad negativa.
 - `[ ]` Crear pruebas de intervalos superpuestos, consecutivos y sin conflicto.
-- `[ ]` Preparar la revalidación transaccional del servidor.
+- `[~]` Preparar la revalidación transaccional del servidor. La consulta queda centralizada en la RPC de base de datos; la revalidación contra reservas se completa junto con aprobación de solicitudes.
 
 Criterio de salida:
 
