@@ -103,8 +103,8 @@ Criterio de salida:
 - `[x]` Crear la migración inicial de extensiones, enums/checks y funciones auxiliares.
 - `[x]` Crear tablas de usuarios, roles y perfiles docentes.
 - `[x]` Definir RLS por rol: administrador, encargado y docente.
-- `[~]` Definir políticas de Storage privado para evidencias. Migración del bucket privado y políticas RLS preparada; falta aplicar en Supabase y probar con una cuenta real.
-- `[~]` Crear tipos o contratos compartidos para respuestas de la API. Contratos iniciales de Auth y administración de roles listos.
+- `[~]` Definir políticas de Storage privado para evidencias. Bucket privado y políticas RLS aplicados y verificados; falta prueba con dos cuentas reales.
+- `[~]` Crear tipos o contratos compartidos para respuestas de la API. Contratos iniciales de Auth, administración y configuración académica listos.
 - `[~]` Documentar qué operaciones usan RPC/transacción. `replace_user_roles` queda documentada e implementada; faltan los flujos operativos.
 - `[~]` Probar que una cuenta no puede leer ni modificar información ajena. Cubiertos JWT/RLS sin sesión y denegación por rol; falta prueba entre dos cuentas reales.
 
@@ -120,11 +120,11 @@ Criterio de salida:
 - `[~]` Implementar inicio y cierre de sesión con Supabase Auth. Cliente SSR, formulario de inicio y cierre de sesión listos; falta prueba manual con una cuenta real.
 - `[~]` Implementar protección de rutas en Next.js. El panel usa `getClaims()` validado y el proxy renueva cookies; falta prueba manual de redirección con sesión expirada.
 - `[x]` Resolver el rol del usuario de forma segura desde la base de datos.
-- `[~]` Crear gestión de usuarios y asignación de roles para administrador. API y RPC listas; falta aplicar la migración y crear el primer ADMIN.
-- `[~]` Crear periodos académicos. Migración, RLS y endpoints administrativos listos; falta aplicar y probar el flujo real.
-- `[~]` Crear asignaturas. Migración, RLS y endpoints administrativos listos; falta aplicar y probar el flujo real.
-- `[~]` Crear cursos/paralelos asociados a docente y periodo. Migración, RLS y endpoints administrativos listos; falta aplicar y probar el flujo real.
-- `[~]` Crear laboratorios. Migración, RLS y endpoints administrativos listos; falta aplicar y probar el flujo real.
+- `[~]` Crear gestión de usuarios y asignación de roles para administrador. Migración, API y RPC aplicadas; falta crear/probar el primer ADMIN real.
+- `[~]` Crear periodos académicos. Migración, RLS y endpoints administrativos aplicados; falta probar el flujo real.
+- `[~]` Crear asignaturas. Migración, RLS y endpoints administrativos aplicados; falta probar el flujo real.
+- `[~]` Crear cursos/paralelos asociados a docente y periodo. Migración, RLS y endpoints administrativos aplicados; falta probar el flujo real.
+- `[~]` Crear laboratorios. Migración, RLS y endpoints administrativos aplicados; falta probar el flujo real.
 - `[ ]` Aplicar permisos por pantalla y por operación.
 
 Criterio de salida:

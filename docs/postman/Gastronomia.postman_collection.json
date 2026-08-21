@@ -1,0 +1,184 @@
+{
+  "info": {
+    "_postman_id": "b4823b3d-29c5-4a9c-b0a0-8024578f2d43",
+    "name": "Gastronomía API",
+    "description": "Pruebas manuales y repetibles de Auth, autorización y configuración académica. Importa también el environment template y completa las variables solo en tu equipo.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "API health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{api_base_url}}/api/v1/health"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 200', () => pm.response.to.have.status(200));",
+                  "pm.expect(pm.response.json().status).to.eql('ok');"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Login administrador",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "apikey", "value": "{{supabase_publishable_key}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{admin_email}}\",\n  \"password\": \"{{admin_password}}\"\n}"
+            },
+            "url": "{{supabase_url}}/auth/v1/token?grant_type=password"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('login exitoso', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.expect(body.access_token).to.be.a('string').and.not.empty;",
+                  "pm.environment.set('access_token', body.access_token);",
+                  "pm.environment.set('admin_user_id', body.user.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Mi perfil y roles",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "url": "{{api_base_url}}/api/v1/auth/me"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('usuario autenticado', () => pm.response.to.have.status(200));",
+                  "pm.expect(pm.response.json().roles).to.include('ADMIN');"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Mi perfil sin token devuelve 401",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{api_base_url}}/api/v1/auth/me"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('sin sesión se rechaza', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Administración",
+      "item": [
+        {
+          "name": "Listar usuarios como ADMIN",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "url": "{{api_base_url}}/api/v1/admin/users"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('ADMIN puede listar usuarios', () => pm.response.to.have.status(200));",
+                  "pm.expect(pm.response.json()).to.be.an('array');"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Listar usuarios sin token devuelve 401",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{api_base_url}}/api/v1/admin/users"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('sin sesión se rechaza', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Crear período académico",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Período de prueba {{$timestamp}}\",\n  \"start_date\": \"2026-09-01\",\n  \"end_date\": \"2027-02-28\",\n  \"is_active\": true\n}"
+            },
+            "url": "{{api_base_url}}/api/v1/admin/academic/periods"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('ADMIN puede crear período', () => pm.response.to.have.status(201));",
+                  "pm.environment.set('academic_period_id', pm.response.json().id);"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
