@@ -96,6 +96,33 @@ class EquipmentPreparation(BaseModel):
     completed_at: Optional[datetime] = None
 
 
+class EquipmentDeliveryQr(BaseModel):
+    token: str
+    expires_at: datetime
+
+
+class EquipmentDeliveryLocation(BaseModel):
+    equipment_reservation_detail_id: UUID
+    location_id: UUID
+    loaned_quantity: Decimal = Field(gt=0, max_digits=14, decimal_places=3)
+
+
+class EquipmentDeliveryCreate(BaseModel):
+    qr_token: str = Field(min_length=1, max_length=256)
+    collected_by_name: str = Field(min_length=1, max_length=160)
+    quantity_locations: list[EquipmentDeliveryLocation] = Field(default_factory=list)
+
+
+class EquipmentLoan(BaseModel):
+    id: UUID
+    equipment_request_id: UUID
+    responsible_teacher_id: UUID
+    collected_by_name: str
+    delivered_by_user_id: UUID
+    delivered_at: datetime
+    created_at: datetime
+
+
 def _request_error(detail: str, error: httpx.HTTPError) -> HTTPException:
     if isinstance(error, httpx.HTTPStatusError) and error.response.status_code in {
         status.HTTP_400_BAD_REQUEST,
@@ -335,3 +362,58 @@ def complete_equipment_preparation(
         },
         "No fue posible finalizar la preparación.",
     )
+
+
+def generate_equipment_delivery_qr(
+    equipment_request_id: UUID,
+    user_id: str,
+) -> EquipmentDeliveryQr:
+    try:
+        response = httpx.post(
+            f"{_supabase_url()}/rest/v1/rpc/generate_equipment_delivery_qr",
+            json={
+                "p_equipment_request_id": str(equipment_request_id),
+                "p_generated_by_user_id": user_id,
+            },
+            headers=_service_headers(),
+            timeout=5.0,
+        )
+        response.raise_for_status()
+    except httpx.HTTPError as error:
+        raise _request_error(
+            "No fue posible generar el QR de entrega.",
+            error,
+        ) from error
+
+    data = response.json()
+    if isinstance(data, list):
+        data = data[0]
+    return EquipmentDeliveryQr.model_validate(data)
+
+
+def deliver_equipment_request(
+    payload: EquipmentDeliveryCreate,
+    user_id: str,
+) -> EquipmentLoan:
+    try:
+        response = httpx.post(
+            f"{_supabase_url()}/rest/v1/rpc/deliver_equipment_request",
+            json={
+                "p_qr_token": payload.qr_token,
+                "p_collected_by_name": payload.collected_by_name,
+                "p_delivered_by_user_id": user_id,
+                "p_quantity_locations": [
+                    item.model_dump(mode="json") for item in payload.quantity_locations
+                ],
+            },
+            headers=_service_headers(),
+            timeout=5.0,
+        )
+        response.raise_for_status()
+    except httpx.HTTPError as error:
+        raise _request_error("No fue posible entregar los recursos.", error) from error
+
+    data = response.json()
+    if isinstance(data, list):
+        data = data[0]
+    return EquipmentLoan.model_validate(data)

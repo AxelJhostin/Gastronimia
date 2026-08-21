@@ -210,17 +210,17 @@ Criterio de salida:
 
 ### Fase 7 — QR y entrega
 
-- `[ ]` Generar QR asociado a la solicitud.
-- `[ ]` Usar un identificador/token verificable, sin información sensible.
+- `[~]` Generar QR asociado a la solicitud. Endpoint y RPC generan token efímero para solicitudes `PREPARED`; falta interfaz visual QR y prueba real.
+- `[~]` Usar un identificador/token verificable, sin información sensible. Solo se persiste el hash del token, expira en 30 minutos y se consume una vez.
 - `[ ]` Permitir leer el QR desde teléfono o tablet.
-- `[ ]` Validar estado antes de entregar.
-- `[ ]` Registrar docente responsable.
-- `[ ]` Registrar persona que retira: docente, estudiante u otra.
-- `[ ]` Registrar encargado que entrega.
-- `[ ]` Crear préstamo y detalles.
-- `[ ]` Cambiar unidades a `LOANED` cuando corresponda.
-- `[ ]` Consumir reservas.
-- `[ ]` Crear movimiento `LOAN_OUT`.
+- `[~]` Validar estado antes de entregar. La RPC exige QR válido y solicitud `PREPARED`.
+- `[~]` Registrar docente responsable. Se deriva de la solicitud y se guarda en el préstamo.
+- `[~]` Registrar persona que retira: docente, estudiante u otra. Se registra nombre obligatorio al entregar.
+- `[~]` Registrar encargado que entrega. Se registra el usuario ADMIN/MANAGER responsable.
+- `[~]` Crear préstamo y detalles. Operación atómica con detalles por ubicación y unidades físicas.
+- `[~]` Cambiar unidades a `LOANED` cuando corresponda. Se actualizan las unidades preparadas al confirmar entrega.
+- `[~]` Consumir reservas. La reserva se marca `CONSUMED` al crear el préstamo.
+- `[~]` Crear movimiento `LOAN_OUT`. Cada salida `QUANTITY` por ubicación queda en kardex.
 - `[ ]` Auditar la entrega.
 
 Criterio de salida:
