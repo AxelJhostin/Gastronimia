@@ -1,13 +1,11 @@
 export interface Insumo {
   id: string;
-  codigo: string;
   nombre: string;
-  categoria: 'Lácteos' | 'Carnes' | 'Verduras' | 'Granos' | 'Especias' | 'Otros';
-  unidadMedida: 'Kg' | 'L' | 'Unidad' | 'Gramos';
+  categoria: string;
   stockActual: number;
   stockMinimo: number;
-  precioUnitario: number;
-  is_active: boolean;
+  unidadMedida: string;
+  ubicacion?: string; // Usa 'ubicacion: string;' si es obligatorio
 }
 
-export type CrearInsumoDTO = Omit<Insumo, 'id' | 'is_active'>;
+export type CrearInsumoDTO = Omit<Insumo, 'id'>;

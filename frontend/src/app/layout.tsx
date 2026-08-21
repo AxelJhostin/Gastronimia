@@ -1,14 +1,15 @@
-import type { Metadata } from "next";
+import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
+import './globals.css';
+import { AuthProvider } from '@/context/AuthContext';
 import { QueryProvider } from '@/providers/QueryProvider';
-import "./globals.css";
+import { Navbar } from '@/components/layout/Navbar'; 
 
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: "Gastronomía | Gestión de inventario",
-  description:
-    "Sistema de gestión de inventario, préstamos y trazabilidad para Gastronomía.",
+  title: 'GastroGestión',
+  description: 'Sistema de Gestión Gastronómica y Académica',
 };
 
 export default function RootLayout({
@@ -18,9 +19,12 @@ export default function RootLayout({
 }) {
   return (
     <html lang="es">
-      <body>
+      <body className={inter.className}>
         <QueryProvider>
-          {children}
+          <AuthProvider>
+            <Navbar />
+            <main className="min-h-screen bg-slate-50">{children}</main>
+          </AuthProvider>
         </QueryProvider>
       </body>
     </html>

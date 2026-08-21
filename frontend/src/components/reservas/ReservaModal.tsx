@@ -2,45 +2,27 @@
 
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { reservasService } from '@/services/reservas.service';
 
-interface ReservaModalProps {
+interface Props {
   isOpen: boolean;
   onClose: () => void;
 }
 
-const ESPACIOS = [
-  'Cocina A - Panadería',
-  'Cocina B - Calientes',
-  'Taller de Repostería',
-  'Laboratorio de Análisis Sensorial',
-  'Aula Magna',
-];
-
-export function ReservaModal({ isOpen, onClose }: ReservaModalProps) {
+export function ReservaModal({ isOpen, onClose }: Props) {
   const queryClient = useQueryClient();
-  const [formData, setFormData] = useState({
-    espacio: ESPACIOS[0],
-    profesorNombre: '',
-    asignatura: '',
-    fecha: new Date().toISOString().split('T')[0],
-    horaInicio: '08:00',
-    horaFin: '11:00',
-  });
+  const [espacio, setEspacio] = useState('Cocina Caliente A');
+  const [fecha, setFecha] = useState('');
+  const [horaInicio, setHoraInicio] = useState('08:00');
+  const [horaFin, setHoraFin] = useState('10:00');
 
   const mutation = useMutation({
-    mutationFn: (data: typeof formData) => reservasService.crearReserva(data),
+    mutationFn: async () => {
+      await new Promise((res) => setTimeout(res, 300));
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['reservas'] });
       onClose();
-      setFormData({
-        espacio: ESPACIOS[0],
-        profesorNombre: '',
-        asignatura: '',
-        fecha: new Date().toISOString().split('T')[0],
-        horaInicio: '08:00',
-        horaFin: '11:00',
-      });
+      setFecha('');
     },
   });
 
@@ -48,101 +30,81 @@ export function ReservaModal({ isOpen, onClose }: ReservaModalProps) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-lg">
-        <h2 className="mb-4 text-xl font-bold text-slate-900">Reservar Espacio / Cocina</h2>
+      <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl space-y-4">
+        <div className="flex justify-between items-center border-b pb-3">
+          <h3 className="text-lg font-bold text-slate-900">Reservar Espacio / Taller</h3>
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600">✕</button>
+        </div>
 
         <form
           onSubmit={(e) => {
             e.preventDefault();
-            mutation.mutate(formData);
+            mutation.mutate();
           }}
-          className="space-y-4"
+          className="space-y-4 text-xs sm:text-sm"
         >
           <div>
-            <label className="block text-sm font-medium text-slate-700">Espacio o Taller</label>
+            <label className="block font-semibold text-slate-700 mb-1">Espacio / Taller</label>
             <select
-              className="mt-1 w-full rounded-md border border-slate-300 p-2 text-sm focus:border-amber-500 focus:outline-none"
-              value={formData.espacio}
-              onChange={(e) => setFormData({ ...formData, espacio: e.target.value })}
+              value={espacio}
+              onChange={(e) => setEspacio(e.target.value)}
+              className="w-full rounded-lg border p-2 text-slate-900"
             >
-              {ESPACIOS.map((esp) => (
-                <option key={esp} value={esp}>
-                  {esp}
-                </option>
-              ))}
+              <option value="Cocina Caliente A">Cocina Caliente A</option>
+              <option value="Cocina Fría B">Cocina Fría B</option>
+              <option value="Taller de Pastelería">Taller de Pastelería</option>
+              <option value="Laboratorio de Bebidas">Laboratorio de Bebidas</option>
             </select>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-700">Profesor / Encargado</label>
-            <input
-              type="text"
-              required
-              className="mt-1 w-full rounded-md border border-slate-300 p-2 text-sm focus:border-amber-500 focus:outline-none"
-              value={formData.profesorNombre}
-              onChange={(e) => setFormData({ ...formData, profesorNombre: e.target.value })}
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-slate-700">Asignatura / Taller</label>
-            <input
-              type="text"
-              required
-              className="mt-1 w-full rounded-md border border-slate-300 p-2 text-sm focus:border-amber-500 focus:outline-none"
-              value={formData.asignatura}
-              onChange={(e) => setFormData({ ...formData, asignatura: e.target.value })}
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-slate-700">Fecha</label>
+            <label className="block font-semibold text-slate-700 mb-1">Fecha</label>
             <input
               type="date"
               required
-              className="mt-1 w-full rounded-md border border-slate-300 p-2 text-sm focus:border-amber-500 focus:outline-none"
-              value={formData.fecha}
-              onChange={(e) => setFormData({ ...formData, fecha: e.target.value })}
+              value={fecha}
+              onChange={(e) => setFecha(e.target.value)}
+              className="w-full rounded-lg border p-2 text-slate-900"
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-slate-700">Hora Inicio</label>
+              <label className="block font-semibold text-slate-700 mb-1">Hora Inicio</label>
               <input
                 type="time"
                 required
-                className="mt-1 w-full rounded-md border border-slate-300 p-2 text-sm focus:border-amber-500 focus:outline-none"
-                value={formData.horaInicio}
-                onChange={(e) => setFormData({ ...formData, horaInicio: e.target.value })}
+                value={horaInicio}
+                onChange={(e) => setHoraInicio(e.target.value)}
+                className="w-full rounded-lg border p-2 text-slate-900"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700">Hora Fin</label>
+              <label className="block font-semibold text-slate-700 mb-1">Hora Fin</label>
               <input
                 type="time"
                 required
-                className="mt-1 w-full rounded-md border border-slate-300 p-2 text-sm focus:border-amber-500 focus:outline-none"
-                value={formData.horaFin}
-                onChange={(e) => setFormData({ ...formData, horaFin: e.target.value })}
+                value={horaFin}
+                onChange={(e) => setHoraFin(e.target.value)}
+                className="w-full rounded-lg border p-2 text-slate-900"
               />
             </div>
           </div>
 
-          <div className="mt-6 flex justify-end space-x-3 pt-4 border-t border-slate-200">
+          <div className="flex justify-end space-x-2 pt-3 border-t">
             <button
               type="button"
               onClick={onClose}
-              className="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+              className="rounded-lg px-4 py-2 border text-slate-600 hover:bg-slate-100"
             >
               Cancelar
             </button>
             <button
               type="submit"
               disabled={mutation.isPending}
-              className="rounded-md bg-amber-600 px-4 py-2 text-sm font-medium text-white hover:bg-amber-700 disabled:opacity-50"
+              className="rounded-lg bg-amber-600 px-4 py-2 text-white font-semibold hover:bg-amber-700 disabled:bg-slate-400"
             >
-              {mutation.isPending ? 'Guardando...' : 'Confirmar Reserva'}
+              {mutation.isPending ? 'Reservando...' : 'Confirmar Reserva'}
             </button>
           </div>
         </form>

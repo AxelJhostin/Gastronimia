@@ -2,113 +2,97 @@
 
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { solicitudesService } from '@/services/solicitudes.service';
-import { CrearSolicitudDTO } from '@/types/solicitudes';
 
-interface SolicitudModalProps {
+interface Props {
   isOpen: boolean;
   onClose: () => void;
 }
 
-export function SolicitudModal({ isOpen, onClose }: SolicitudModalProps) {
+export function SolicitudModal({ isOpen, onClose }: Props) {
   const queryClient = useQueryClient();
-
-  const [formData, setFormData] = useState<CrearSolicitudDTO>({
-    asignaturaNombre: '',
-    solicitante: '',
-    fechaRequerida: '',
-    observaciones: '',
-    items: [{ insumoId: '1', nombreInsumo: 'Harina de Trigo Todo Uso', cantidad: 1, unidadMedida: 'Kg' }],
-  });
+  const [asignatura, setAsignatura] = useState('');
+  const [fechaRequerida, setFechaRequerida] = useState('');
+  const [detalles, setDetalles] = useState('');
 
   const mutation = useMutation({
-    mutationFn: (data: CrearSolicitudDTO) => solicitudesService.crearSolicitud(data),
+    mutationFn: async () => {
+      await new Promise((res) => setTimeout(res, 300));
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['solicitudes'] });
       onClose();
-      setFormData({
-        asignaturaNombre: '',
-        solicitante: '',
-        fechaRequerida: '',
-        observaciones: '',
-        items: [{ insumoId: '1', nombreInsumo: 'Harina de Trigo Todo Uso', cantidad: 1, unidadMedida: 'Kg' }],
-      });
+      setAsignatura('');
+      setFechaRequerida('');
+      setDetalles('');
     },
   });
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    mutation.mutate(formData);
-  };
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-lg">
-        <h2 className="mb-4 text-xl font-bold text-slate-900">Nueva Solicitud de Insumos</h2>
+      <div className="w-full max-w-lg rounded-xl bg-white p-6 shadow-xl space-y-4">
+        <div className="flex justify-between items-center border-b pb-3">
+          <h3 className="text-lg font-bold text-slate-900">Nueva Solicitud de Insumos</h3>
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600">✕</button>
+        </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            mutation.mutate();
+          }}
+          className="space-y-4 text-xs sm:text-sm"
+        >
           <div>
-            <label className="block text-sm font-medium text-slate-700">Asignatura</label>
+            <label className="block font-semibold text-slate-700 mb-1">Asignatura / Taller</label>
             <input
               type="text"
               required
-              placeholder="Ej: Técnicas Culinarias I"
-              className="mt-1 w-full rounded-md border border-slate-300 p-2 text-sm focus:border-amber-500 focus:outline-none"
-              value={formData.asignaturaNombre}
-              onChange={(e) => setFormData({ ...formData, asignaturaNombre: e.target.value })}
+              value={asignatura}
+              onChange={(e) => setAsignatura(e.target.value)}
+              className="w-full rounded-lg border p-2 text-slate-900"
+              placeholder="Ej: Cocina Internacional I"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-700">Solicitante (Profesor/Docente)</label>
-            <input
-              type="text"
-              required
-              placeholder="Ej: Chef Antonio Silva"
-              className="mt-1 w-full rounded-md border border-slate-300 p-2 text-sm focus:border-amber-500 focus:outline-none"
-              value={formData.solicitante}
-              onChange={(e) => setFormData({ ...formData, solicitante: e.target.value })}
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-slate-700">Fecha Requerida</label>
+            <label className="block font-semibold text-slate-700 mb-1">Fecha Requerida</label>
             <input
               type="date"
               required
-              className="mt-1 w-full rounded-md border border-slate-300 p-2 text-sm focus:border-amber-500 focus:outline-none"
-              value={formData.fechaRequerida}
-              onChange={(e) => setFormData({ ...formData, fechaRequerida: e.target.value })}
+              value={fechaRequerida}
+              onChange={(e) => setFechaRequerida(e.target.value)}
+              className="w-full rounded-lg border p-2 text-slate-900"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-700">Observaciones</label>
+            <label className="block font-semibold text-slate-700 mb-1">Detalle de Insumos Requeridos</label>
             <textarea
-              rows={2}
-              placeholder="Detalles sobre el uso de los insumos"
-              className="mt-1 w-full rounded-md border border-slate-300 p-2 text-sm focus:border-amber-500 focus:outline-none"
-              value={formData.observaciones}
-              onChange={(e) => setFormData({ ...formData, observaciones: e.target.value })}
+              rows={3}
+              required
+              value={detalles}
+              onChange={(e) => setDetalles(e.target.value)}
+              className="w-full rounded-lg border p-2 text-slate-900"
+              placeholder="Ej: 2 Kg Harina de Trigo, 1 Litro Leche Entera, 500g Mantequilla"
             />
           </div>
 
-          <div className="mt-6 flex justify-end space-x-3">
+          <div className="flex justify-end space-x-2 pt-3 border-t">
             <button
               type="button"
               onClick={onClose}
-              className="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+              className="rounded-lg px-4 py-2 border text-slate-600 hover:bg-slate-100"
             >
               Cancelar
             </button>
             <button
               type="submit"
               disabled={mutation.isPending}
-              className="rounded-md bg-amber-600 px-4 py-2 text-sm font-medium text-white hover:bg-amber-700 disabled:opacity-50"
+              className="rounded-lg bg-amber-600 px-4 py-2 text-white font-semibold hover:bg-amber-700 disabled:bg-slate-400"
             >
-              {mutation.isPending ? 'Guardando...' : 'Crear Solicitud'}
+              {mutation.isPending ? 'Enviando...' : 'Enviar Solicitud'}
             </button>
           </div>
         </form>

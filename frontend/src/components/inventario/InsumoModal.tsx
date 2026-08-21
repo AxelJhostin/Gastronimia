@@ -5,37 +5,34 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { inventarioService } from '@/services/inventario.service';
 import { CrearInsumoDTO } from '@/types/inventario';
 
-interface InsumoModalProps {
+interface Props {
   isOpen: boolean;
   onClose: () => void;
 }
 
-export function InsumoModal({ isOpen, onClose }: InsumoModalProps) {
+export function InsumoModal({ isOpen, onClose }: Props) {
   const queryClient = useQueryClient();
-
   const [formData, setFormData] = useState<CrearInsumoDTO>({
-    codigo: '',
     nombre: '',
-    categoria: 'Otros',
-    unidadMedida: 'Kg',
+    categoria: 'Lácteos',
     stockActual: 0,
     stockMinimo: 0,
-    precioUnitario: 0,
+    unidadMedida: 'Kg',
+    ubicacion: '',
   });
 
   const mutation = useMutation({
-    mutationFn: (data: CrearInsumoDTO) => inventarioService.crearInsumo(data),
+    mutationFn: inventarioService.crearInsumo,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['insumos'] });
       onClose();
       setFormData({
-        codigo: '',
         nombre: '',
-        categoria: 'Otros',
-        unidadMedida: 'Kg',
+        categoria: 'Lácteos',
         stockActual: 0,
         stockMinimo: 0,
-        precioUnitario: 0,
+        unidadMedida: 'Kg',
+        ubicacion: '',
       });
     },
   });
@@ -49,113 +46,107 @@ export function InsumoModal({ isOpen, onClose }: InsumoModalProps) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-lg">
-        <h2 className="mb-4 text-xl font-bold text-slate-900">Nuevo Insumo</h2>
+      <div className="w-full max-w-lg rounded-xl bg-white p-6 shadow-xl space-y-4">
+        <div className="flex justify-between items-center border-b pb-3">
+          <h3 className="text-lg font-bold text-slate-900">Agregar Nuevo Insumo</h3>
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600">✕</button>
+        </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-sm font-medium text-slate-700">Código</label>
-              <input
-                type="text"
-                required
-                placeholder="INS-003"
-                className="mt-1 w-full rounded-md border border-slate-300 p-2 text-sm focus:border-amber-500 focus:outline-none"
-                value={formData.codigo}
-                onChange={(e) => setFormData({ ...formData, codigo: e.target.value })}
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700">Categoría</label>
-              <select
-                className="mt-1 w-full rounded-md border border-slate-300 p-2 text-sm focus:border-amber-500 focus:outline-none bg-white"
-                value={formData.categoria}
-                onChange={(e) => setFormData({ ...formData, categoria: e.target.value as any })}
-              >
-                <option value="Lácteos">Lácteos</option>
-                <option value="Carnes">Carnes</option>
-                <option value="Verduras">Verduras</option>
-                <option value="Granos">Granos</option>
-                <option value="Especias">Especias</option>
-                <option value="Otros">Otros</option>
-              </select>
-            </div>
-          </div>
-
+        <form onSubmit={handleSubmit} className="space-y-4 text-xs sm:text-sm">
           <div>
-            <label className="block text-sm font-medium text-slate-700">Nombre del Insumo</label>
+            <label className="block font-semibold text-slate-700 mb-1">Nombre del Insumo</label>
             <input
               type="text"
               required
-              placeholder="Ej: Aceite de Oliva"
-              className="mt-1 w-full rounded-md border border-slate-300 p-2 text-sm focus:border-amber-500 focus:outline-none"
               value={formData.nombre}
               onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
+              className="w-full rounded-lg border p-2 text-slate-900"
+              placeholder="Ej: Harina de Trigo"
             />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-slate-700">Unidad de Medida</label>
+              <label className="block font-semibold text-slate-700 mb-1">Categoría</label>
               <select
-                className="mt-1 w-full rounded-md border border-slate-300 p-2 text-sm focus:border-amber-500 focus:outline-none bg-white"
+                value={formData.categoria}
+                onChange={(e) => setFormData({ ...formData, categoria: e.target.value })}
+                className="w-full rounded-lg border p-2 text-slate-900"
+              >
+                <option value="Lácteos">Lácteos</option>
+                <option value="Carnes">Carnes</option>
+                <option value="Granos y Harinas">Granos y Harinas</option>
+                <option value="Verduras">Verduras</option>
+                <option value="Licores">Licores</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block font-semibold text-slate-700 mb-1">Unidad de Medida</label>
+              <select
                 value={formData.unidadMedida}
-                onChange={(e) => setFormData({ ...formData, unidadMedida: e.target.value as any })}
+                onChange={(e) => setFormData({ ...formData, unidadMedida: e.target.value })}
+                className="w-full rounded-lg border p-2 text-slate-900"
               >
                 <option value="Kg">Kg</option>
-                <option value="L">L</option>
+                <option value="L">Litros</option>
                 <option value="Unidad">Unidad</option>
                 <option value="Gramos">Gramos</option>
               </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700">Precio Unitario ($)</label>
-              <input
-                type="number"
-                step="0.01"
-                required
-                className="mt-1 w-full rounded-md border border-slate-300 p-2 text-sm focus:border-amber-500 focus:outline-none"
-                value={formData.precioUnitario}
-                onChange={(e) => setFormData({ ...formData, precioUnitario: Number(e.target.value) })}
-              />
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-slate-700">Stock Inicial</label>
+              <label className="block font-semibold text-slate-700 mb-1">Stock Inicial</label>
               <input
                 type="number"
+                min="0"
+                step="0.1"
                 required
-                className="mt-1 w-full rounded-md border border-slate-300 p-2 text-sm focus:border-amber-500 focus:outline-none"
                 value={formData.stockActual}
                 onChange={(e) => setFormData({ ...formData, stockActual: Number(e.target.value) })}
+                className="w-full rounded-lg border p-2 text-slate-900"
               />
             </div>
+
             <div>
-              <label className="block text-sm font-medium text-slate-700">Stock Mínimo</label>
+              <label className="block font-semibold text-slate-700 mb-1">Stock Mínimo</label>
               <input
                 type="number"
+                min="0"
+                step="0.1"
                 required
-                className="mt-1 w-full rounded-md border border-slate-300 p-2 text-sm focus:border-amber-500 focus:outline-none"
                 value={formData.stockMinimo}
                 onChange={(e) => setFormData({ ...formData, stockMinimo: Number(e.target.value) })}
+                className="w-full rounded-lg border p-2 text-slate-900"
               />
             </div>
           </div>
 
-          <div className="mt-6 flex justify-end space-x-3">
+          <div>
+            <label className="block font-semibold text-slate-700 mb-1">Ubicación en Almacén</label>
+            <input
+              type="text"
+              value={formData.ubicacion}
+              onChange={(e) => setFormData({ ...formData, ubicacion: e.target.value })}
+              className="w-full rounded-lg border p-2 text-slate-900"
+              placeholder="Ej: Estante B2"
+            />
+          </div>
+
+          <div className="flex justify-end space-x-2 pt-3 border-t">
             <button
               type="button"
               onClick={onClose}
-              className="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+              className="rounded-lg px-4 py-2 border text-slate-600 hover:bg-slate-100"
             >
               Cancelar
             </button>
             <button
               type="submit"
               disabled={mutation.isPending}
-              className="rounded-md bg-amber-600 px-4 py-2 text-sm font-medium text-white hover:bg-amber-700 disabled:opacity-50"
+              className="rounded-lg bg-amber-600 px-4 py-2 text-white font-semibold hover:bg-amber-700 disabled:bg-slate-400"
             >
               {mutation.isPending ? 'Guardando...' : 'Guardar Insumo'}
             </button>

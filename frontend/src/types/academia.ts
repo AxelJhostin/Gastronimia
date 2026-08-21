@@ -2,19 +2,9 @@ export interface Asignatura {
   id: string;
   codigo: string;
   nombre: string;
-  descripcion?: string;
-  creditos: number;
-  is_active: boolean;
-  created_at?: string;
+  profesor: string;
+  estudiantesInscritos: number;
+  aulaAsignada: string;
 }
 
-export interface CrearAsignaturaDTO {
-  codigo: string;
-  nombre: string;
-  descripcion?: string;
-  creditos: number;
-}
-
-export interface ActualizarAsignaturaDTO extends Partial<CrearAsignaturaDTO> {
-  is_active?: boolean;
-}
+export type CrearAsignaturaDTO = Omit<Asignatura, 'id'>;
