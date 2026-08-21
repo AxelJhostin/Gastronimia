@@ -286,12 +286,12 @@ Criterio de salida:
 
 ### Fase 11 — Kardex, historial y auditoría
 
-- `[ ]` Completar movimientos para entradas, entregas, devoluciones, ajustes, pérdidas, bajas y reactivaciones.
-- `[ ]` Crear historial por artículo.
-- `[ ]` Crear hoja de vida por unidad individual.
-- `[ ]` Registrar acción, usuario, entidad, fecha, estado anterior y estado posterior.
-- `[ ]` Impedir que usuarios normales modifiquen auditoría.
-- `[ ]` Crear vistas de préstamos, solicitudes, novedades y stock.
+- `[x]` Completar movimientos para entradas, entregas, devoluciones, ajustes, pérdidas, bajas y reactivaciones. El enum de kardex contempla todos los eventos; las operaciones existentes registran entrega y devolución transaccionalmente.
+- `[x]` Crear historial por artículo. La vista `inventory_kardex` consolida artículo, ubicación, saldo, tipo y responsable por movimiento.
+- `[x]` Crear hoja de vida por unidad individual. La vista `inventory_unit_lifecycle` complementa el historial automático de estado, condición y ubicación.
+- `[x]` Registrar acción, usuario, entidad, fecha, estado anterior y estado posterior. La bitácora inmutable registra movimientos, cambios de unidad, mantenimientos, devoluciones e inspecciones.
+- `[x]` Impedir que usuarios normales modifiquen auditoría. Solo hay lectura para personal autorizado y control total exclusivo del servidor.
+- `[x]` Crear vistas de préstamos, solicitudes, novedades y stock. Las vistas usan `security_invoker` y por tanto respetan RLS.
 
 Criterio de salida:
 
