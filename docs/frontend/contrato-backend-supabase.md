@@ -223,4 +223,4 @@ Las entidades de base de datos ya disponibles son: academia (`academic_periods`,
 - [ ] Mantener los UUID devueltos por cada paso; no intentar reconstruirlos en frontend.
 - [ ] Cargar fotos al bucket privado antes de registrar su `storage_path`.
 - [ ] Consultar Swagger para cualquier campo opcional o respuesta que se quiera tipar exactamente.
-- [ ] Ejecutar la colección Postman completa con el environment seleccionado antes de integrar cada módulo.
+- [ ] Ejecutar manualmente las solicitudes Postman relevantes, con el environment seleccionado, antes de integrar cada módulo. La colección no debe correrse completa porque crea datos y tiene rutas alternativas.
