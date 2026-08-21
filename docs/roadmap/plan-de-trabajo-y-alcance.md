@@ -161,9 +161,9 @@ Criterio de salida:
 - `[~]` Considerar existencia física, reservas, préstamos, mantenimiento y bajas. La base actual considera stock, unidades activas, mantenimiento y bajas; reservas y préstamos se descuentan al implementar sus flujos operativos.
 - `[~]` Separar el cálculo para artículos por cantidad y unidades individuales. La consulta suma stock para `QUANTITY` y cuenta unidades activas `AVAILABLE` para `INDIVIDUAL`.
 - `[~]` Validar intervalos inválidos. API y RPC rechazan intervalos sin duración positiva.
-- `[ ]` Evitar disponibilidad negativa.
-- `[ ]` Crear pruebas de intervalos superpuestos, consecutivos y sin conflicto.
-- `[~]` Preparar la revalidación transaccional del servidor. La consulta queda centralizada en la RPC de base de datos; la revalidación contra reservas se completa junto con aprobación de solicitudes.
+- `[~]` Evitar disponibilidad negativa. Las reservas activas se descuentan de la consulta y la transacción rechaza compromisos que excedan el saldo; falta prueba real de concurrencia.
+- `[~]` Crear pruebas de intervalos superpuestos, consecutivos y sin conflicto. Cubierto por lógica transaccional; falta ejecutar casos reales con datos.
+- `[~]` Preparar la revalidación transaccional del servidor. La aprobación crea reservas en la misma transacción y usa bloqueos por artículo; falta prueba real de concurrencia.
 
 Criterio de salida:
 
@@ -193,9 +193,9 @@ Criterio de salida:
 
 ### Fase 6 — Reservas y preparación
 
-- `[ ]` Crear reservas al aprobar.
+- `[~]` Crear reservas al aprobar. Trigger transaccional crea reserva y detalles para cantidades aprobadas; falta prueba real.
 - `[ ]` Liberar reservas al cancelar cuando la política lo permita.
-- `[ ]` Implementar estados de solicitud y transiciones válidas.
+- `[~]` Implementar estados de solicitud y transiciones válidas. `DRAFT → PENDING → APPROVED/PARTIALLY_APPROVED/REJECTED` está controlado por RPC; faltan cancelación, preparación y entrega.
 - `[ ]` Iniciar preparación solo desde una solicitud aprobada.
 - `[ ]` Seleccionar unidades individuales cuando corresponda.
 - `[ ]` Registrar cantidades preparadas.
