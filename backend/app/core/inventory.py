@@ -121,6 +121,57 @@ class InventoryMovementType(str, Enum):
     ADJUSTMENT_OUT = "ADJUSTMENT_OUT"
 
 
+class EquipmentMaintenanceType(str, Enum):
+    PREVENTIVE = "PREVENTIVE"
+    CORRECTIVE = "CORRECTIVE"
+    INSPECTION = "INSPECTION"
+
+
+class EquipmentMaintenanceStatus(str, Enum):
+    OPEN = "OPEN"
+    COMPLETED = "COMPLETED"
+    CANCELLED = "CANCELLED"
+
+
+class EquipmentMaintenanceStartCreate(BaseModel):
+    inventory_unit_id: UUID
+    maintenance_type: EquipmentMaintenanceType
+    reason: str = Field(min_length=1, max_length=1000)
+    description: Optional[str] = Field(default=None, max_length=4000)
+
+
+class EquipmentMaintenanceCloseCreate(BaseModel):
+    resolution: Optional[str] = Field(default=None, max_length=4000)
+    final_status: InventoryUnitStatus
+    final_condition: InventoryUnitCondition = InventoryUnitCondition.GOOD
+
+
+class EquipmentMaintenance(BaseModel):
+    id: UUID
+    inventory_unit_id: UUID
+    maintenance_type: EquipmentMaintenanceType
+    status: EquipmentMaintenanceStatus
+    reason: str
+    description: Optional[str] = None
+    created_by_user_id: UUID
+    started_at: datetime
+    completed_by_user_id: Optional[UUID] = None
+    completed_at: Optional[datetime] = None
+    resolution: Optional[str] = None
+
+
+class EquipmentMaintenanceEvidenceCreate(BaseModel):
+    storage_path: str = Field(min_length=5, max_length=1024)
+
+
+class EquipmentMaintenanceEvidence(BaseModel):
+    id: UUID
+    equipment_maintenance_id: UUID
+    storage_path: str
+    uploaded_by_user_id: UUID
+    created_at: datetime
+
+
 class QuantityStockMovementCreate(BaseModel):
     inventory_item_id: UUID
     location_id: UUID
@@ -165,6 +216,87 @@ def _inventory_error(detail: str, error: httpx.HTTPError) -> HTTPException:
         status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
         detail=detail,
     )
+
+
+def _maintenance_rpc(
+    function_name: str,
+    payload: dict[str, object],
+    error_detail: str,
+    model: type[BaseModel],
+) -> BaseModel:
+    try:
+        response = httpx.post(
+            f"{_supabase_url()}/rest/v1/rpc/{function_name}",
+            json=payload,
+            headers=_service_headers(),
+            timeout=5.0,
+        )
+        response.raise_for_status()
+    except httpx.HTTPError as error:
+        raise _inventory_error(error_detail, error) from error
+    data = response.json()
+    if isinstance(data, list):
+        data = data[0]
+    return model.model_validate(data)
+
+
+def start_equipment_maintenance(
+    payload: EquipmentMaintenanceStartCreate, user_id: str
+) -> EquipmentMaintenance:
+    return _maintenance_rpc(
+        "start_equipment_maintenance",
+        {
+            "p_inventory_unit_id": str(payload.inventory_unit_id),
+            "p_maintenance_type": payload.maintenance_type.value,
+            "p_reason": payload.reason,
+            "p_description": payload.description,
+            "p_created_by_user_id": user_id,
+        },
+        "No fue posible iniciar el mantenimiento.",
+        EquipmentMaintenance,
+    )  # type: ignore[return-value]
+
+
+def close_equipment_maintenance(
+    maintenance_id: UUID,
+    payload: EquipmentMaintenanceCloseCreate,
+    user_id: str,
+    cancelled: bool,
+) -> EquipmentMaintenance:
+    function_name = (
+        "cancel_equipment_maintenance"
+        if cancelled
+        else "finish_equipment_maintenance"
+    )
+    rpc_payload: dict[str, object] = {
+        "p_equipment_maintenance_id": str(maintenance_id),
+        "p_resolution": payload.resolution,
+        "p_final_status": payload.final_status.value,
+        "p_completed_by_user_id": user_id,
+    }
+    if not cancelled:
+        rpc_payload["p_final_condition"] = payload.final_condition.value
+    return _maintenance_rpc(
+        function_name,
+        rpc_payload,
+        "No fue posible cerrar el mantenimiento.",
+        EquipmentMaintenance,
+    )  # type: ignore[return-value]
+
+
+def register_equipment_maintenance_evidence(
+    maintenance_id: UUID, payload: EquipmentMaintenanceEvidenceCreate, user_id: str
+) -> EquipmentMaintenanceEvidence:
+    return _maintenance_rpc(
+        "register_equipment_maintenance_evidence",
+        {
+            "p_equipment_maintenance_id": str(maintenance_id),
+            "p_storage_path": payload.storage_path,
+            "p_uploaded_by_user_id": user_id,
+        },
+        "No fue posible registrar la evidencia de mantenimiento.",
+        EquipmentMaintenanceEvidence,
+    )  # type: ignore[return-value]
 
 
 def create_inventory_resource(

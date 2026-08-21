@@ -7,6 +7,7 @@ from app.api.v1.endpoints.deliveries import router as deliveries_router
 from app.api.v1.endpoints.health import router as health_router
 from app.api.v1.endpoints.inspections import router as inspections_router
 from app.api.v1.endpoints.inventory import router as inventory_router
+from app.api.v1.endpoints.maintenance import router as maintenance_router
 from app.api.v1.endpoints.preparations import router as preparations_router
 from app.api.v1.endpoints.request_reviews import router as request_reviews_router
 from app.api.v1.endpoints.requests import router as requests_router
@@ -19,6 +20,7 @@ api_router.include_router(admin_router, tags=["admin"])
 api_router.include_router(academic_router, tags=["academic"])
 api_router.include_router(inventory_router, tags=["inventory"])
 api_router.include_router(inspections_router, tags=["inspections"])
+api_router.include_router(maintenance_router, tags=["maintenance"])
 api_router.include_router(requests_router, tags=["requests"])
 api_router.include_router(request_reviews_router, tags=["request-reviews"])
 api_router.include_router(preparations_router, tags=["preparations"])

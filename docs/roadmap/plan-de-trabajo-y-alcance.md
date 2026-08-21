@@ -270,13 +270,13 @@ Criterio de salida:
 
 ### Fase 10 — Mantenimiento
 
-- `[ ]` Crear mantenimiento preventivo, correctivo o de inspección.
-- `[ ]` Cambiar unidad a `MAINTENANCE` al iniciar.
-- `[ ]` Impedir prestar unidades en mantenimiento.
-- `[ ]` Registrar motivo, responsable, fechas y descripción.
-- `[ ]` Completar o cancelar mantenimiento.
-- `[ ]` Recalcular el estado permitido al finalizar.
-- `[ ]` Registrar evidencias y auditoría.
+- `[x]` Crear mantenimiento preventivo, correctivo o de inspección.
+- `[x]` Cambiar unidad a `MAINTENANCE` al iniciar.
+- `[x]` Impedir prestar unidades en mantenimiento. La operación rechaza unidades prestadas y el flujo de preparación solo selecciona `AVAILABLE`.
+- `[x]` Registrar motivo, responsable, fechas y descripción.
+- `[x]` Completar o cancelar mantenimiento.
+- `[x]` Recalcular el estado permitido al finalizar. Solo permite `AVAILABLE`, `MAINTENANCE` o `DISABLED`; una unidad `DAMAGED` no puede volver a disponible.
+- `[x]` Registrar evidencias y auditoría. Las evidencias usan el bucket privado `evidence` y el historial automático de unidad conserva los cambios de estado y condición.
 
 Criterio de salida:
 
