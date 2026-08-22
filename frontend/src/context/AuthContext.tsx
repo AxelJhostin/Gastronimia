@@ -1,48 +1,61 @@
 'use client';
 
-import { createContext, useContext, useState, ReactNode } from 'react';
-import { Usuario, LoginCredentials, RegisterDTO, Rol } from '@/types/auth';
-import { authService } from '@/services/auth.service';
+import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { createClient } from '@/lib/supabase/client';
+import { authApi, UserMe } from '@/lib/api/auth';
 
 interface AuthContextType {
-  usuario: Usuario | null;
-  login: (credentials: LoginCredentials) => Promise<void>;
-  register: (data: RegisterDTO) => Promise<void>;
-  logout: () => void;
-  tieneRol: (roles: Rol[]) => boolean;
+  user: UserMe | null;
+  loading: boolean;
+  logout: () => Promise<void>;
+  hasRole: (roles: ('ADMIN' | 'MANAGER' | 'TEACHER')[]) => boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [usuario, setUsuario] = useState<Usuario | null>({
-    id: '1',
-    nombre: 'Usuario Demo',
-    email: 'admin@gastro.com',
-    rol: 'ADMIN',
-  });
+  const [user, setUser] = useState<UserMe | null>(null);
+  const [loading, setLoading] = useState(true);
+  const supabase = createClient();
 
-  const login = async (credentials: LoginCredentials) => {
-    const user = await authService.login(credentials);
-    setUsuario(user);
+  const loadUser = async () => {
+    try {
+      const me = await authApi.getMe();
+      setUser(me);
+    } catch {
+      setUser(null);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const register = async (data: RegisterDTO) => {
-    const user = await authService.register(data);
-    setUsuario(user);
+  useEffect(() => {
+    loadUser();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'SIGNED_IN') {
+        loadUser();
+      } else if (event === 'SIGNED_OUT') {
+        setUser(null);
+        setLoading(false);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const logout = async () => {
+    await supabase.auth.signOut();
+    setUser(null);
   };
 
-  const logout = () => {
-    setUsuario(null);
-  };
-
-  const tieneRol = (roles: Rol[]) => {
-    if (!usuario) return false;
-    return roles.includes(usuario.rol);
+  const hasRole = (roles: ('ADMIN' | 'MANAGER' | 'TEACHER')[]) => {
+    if (!user) return false;
+    return user.roles.some((r) => roles.includes(r));
   };
 
   return (
-    <AuthContext.Provider value={{ usuario, login, register, logout, tieneRol }}>
+    <AuthContext.Provider value={{ user, loading, logout, hasRole }}>
       {children}
     </AuthContext.Provider>
   );

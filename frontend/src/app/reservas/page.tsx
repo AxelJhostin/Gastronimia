@@ -1,115 +1,222 @@
 'use client';
 
-import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { reservasService } from '@/services/reservas.service';
-import { ReservaModal } from '@/components/reservas/ReservaModal';
-import { RutaProtegida } from '@/components/auth/RutaProtegida';
-import Link from 'next/link';
+import { useEffect, useState } from 'react';
+import { reservationsApi, Space, SpaceReservation } from '@/lib/api/reservations';
+import { adminApi, CourseSection } from '@/lib/api/admin';
 
 export default function ReservasPage() {
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [spaces, setSpaces] = useState<Space[]>([]);
+  const [sections, setSections] = useState<CourseSection[]>([]);
+  const [reservations, setReservations] = useState<SpaceReservation[]>([]);
 
-  const { data: reservas, isLoading } = useQuery({
-    queryKey: ['reservas'],
-    queryFn: () => reservasService.getReservas(),
-  });
+  // Filtro y formulario
+  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [spaceId, setSpaceId] = useState('');
+  const [sectionId, setSectionId] = useState('');
+  const [startTime, setStartTime] = useState('08:00');
+  const [endTime, setEndTime] = useState('10:00');
+  const [notes, setNotes] = useState('');
+
+  const [loading, setLoading] = useState(false);
+
+  const loadData = async () => {
+    try {
+      const [spData, secData, resData] = await Promise.all([
+        reservationsApi.getSpaces(),
+        adminApi.getSections(),
+        reservationsApi.getReservations({ date: selectedDate }),
+      ]);
+      setSpaces(spData);
+      setSections(secData);
+      setReservations(resData);
+    } catch (err: any) {
+      console.error('Error al cargar reservas:', err.message);
+    }
+  };
+
+  useEffect(() => {
+    loadData();
+  }, [selectedDate]);
+
+  const handleCreateReservation = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!spaceId) {
+      alert('Por favor selecciona un espacio.');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await reservationsApi.createReservation({
+        space_id: spaceId,
+        section_id: sectionId || undefined,
+        reservation_date: selectedDate,
+        start_time: startTime,
+        end_time: endTime,
+        notes: notes.trim() || undefined,
+      });
+
+      setNotes('');
+      await loadData();
+    } catch (err: any) {
+      alert(err.message || 'Error al crear la reserva');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCancel = async (id: string) => {
+    if (!confirm('¿Seguro que deseas cancelar esta reserva?')) return;
+    try {
+      await reservationsApi.cancelReservation(id);
+      await loadData();
+    } catch (err: any) {
+      alert(err.message);
+    }
+  };
 
   return (
-    <RutaProtegida rolesPermitidos={['ADMIN', 'PROFESOR']}>
-      <div className="max-w-7xl mx-auto p-4 sm:p-6 space-y-6">
-        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center border-b border-slate-200 pb-4 gap-2">
-          <div>
-            <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Reservas de Espacios</h1>
-            <p className="text-slate-500 text-xs sm:text-sm">Programación de uso de cocinas y talleres.</p>
-          </div>
-          <Link href="/" className="text-slate-600 hover:text-slate-900 text-xs sm:text-sm font-medium">
-            ← Volver al Dashboard
-          </Link>
-        </div>
-
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-          <h2 className="text-base sm:text-lg font-semibold text-slate-800">Calendario de Agendamiento</h2>
-          <button
-            onClick={() => setIsModalOpen(true)}
-            className="w-full sm:w-auto rounded-lg bg-amber-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-amber-700 transition-colors"
-          >
-            + Nueva Reserva
-          </button>
-        </div>
-
-        {isLoading ? (
-          <div className="p-6 text-center text-slate-500">Cargando reservas...</div>
-        ) : (
-          <>
-            {/* Vista Móvil (Tarjetas) */}
-            <div className="block md:hidden space-y-3">
-              {reservas?.map((reserva) => (
-                <div key={reserva.id} className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm space-y-2">
-                  <div className="flex justify-between items-center">
-                    <span className="font-bold text-slate-900 text-sm">{reserva.espacio}</span>
-                    <span
-                      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-                        reserva.estado === 'Confirmada'
-                          ? 'bg-green-100 text-green-800'
-                          : 'bg-yellow-100 text-yellow-800'
-                      }`}
-                    >
-                      {reserva.estado}
-                    </span>
-                  </div>
-                  <div className="text-xs text-slate-600 space-y-1">
-                    <p><strong>Profesor:</strong> {reserva.profesorNombre}</p>
-                    <p><strong>Asignatura:</strong> {reserva.asignatura}</p>
-                    <p><strong>Fecha:</strong> {reserva.fecha}</p>
-                    <p><strong>Horario:</strong> {reserva.horaInicio} - {reserva.horaFin}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Vista Escritorio (Tabla) */}
-            <div className="hidden md:block overflow-x-auto rounded-lg border border-slate-200 shadow-sm">
-              <table className="w-full text-left text-sm text-slate-600">
-                <thead className="bg-slate-100 text-xs uppercase text-slate-700">
-                  <tr>
-                    <th className="px-6 py-3">Espacio / Taller</th>
-                    <th className="px-6 py-3">Profesor</th>
-                    <th className="px-6 py-3">Asignatura</th>
-                    <th className="px-6 py-3">Fecha</th>
-                    <th className="px-6 py-3">Horario</th>
-                    <th className="px-6 py-3">Estado</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-200 bg-white">
-                  {reservas?.map((reserva) => (
-                    <tr key={reserva.id} className="hover:bg-slate-50">
-                      <td className="px-6 py-4 font-semibold text-slate-900">{reserva.espacio}</td>
-                      <td className="px-6 py-4">{reserva.profesorNombre}</td>
-                      <td className="px-6 py-4">{reserva.asignatura}</td>
-                      <td className="px-6 py-4">{reserva.fecha}</td>
-                      <td className="px-6 py-4 font-medium">{reserva.horaInicio} - {reserva.horaFin}</td>
-                      <td className="px-6 py-4">
-                        <span
-                          className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                            reserva.estado === 'Confirmada'
-                              ? 'bg-green-100 text-green-800'
-                              : 'bg-yellow-100 text-yellow-800'
-                          }`}
-                        >
-                          {reserva.estado}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </>
-        )}
-
-        <ReservaModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
+    <div className="p-6 max-w-6xl mx-auto space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold text-stone-900">Reserva de Cocinas y Talleres</h1>
+        <p className="text-sm text-stone-500">Consulta la disponibilidad de los laboratorios y programa tus clases.</p>
       </div>
-    </RutaProtegida>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Formulario de Reserva */}
+        <form onSubmit={handleCreateReservation} className="bg-white p-5 rounded-xl border border-stone-200 space-y-4 text-sm shadow-sm">
+          <h3 className="font-bold text-stone-800">Agendar Espacio</h3>
+
+          <div>
+            <label className="block text-xs font-semibold mb-1 text-stone-700">Fecha</label>
+            <input
+              type="date"
+              required
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              className="w-full border rounded-lg p-2 text-stone-800"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold mb-1 text-stone-700">Cocina / Taller</label>
+            <select
+              required
+              value={spaceId}
+              onChange={(e) => setSpaceId(e.target.value)}
+              className="w-full border rounded-lg p-2 text-stone-800"
+            >
+              <option value="">-- Seleccionar Espacio --</option>
+              {spaces.map((sp) => (
+                <option key={sp.id} value={sp.id}>
+                  {sp.name} ({sp.code}) - Cap: {sp.capacity}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold mb-1 text-stone-700">Sección / Curso (Opcional)</label>
+            <select
+              value={sectionId}
+              onChange={(e) => setSectionId(e.target.value)}
+              className="w-full border rounded-lg p-2 text-stone-800"
+            >
+              <option value="">-- Ninguno --</option>
+              {sections.map((sec) => (
+                <option key={sec.id} value={sec.id}>
+                  {sec.code}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="block text-xs font-semibold mb-1 text-stone-700">Hora Inicio</label>
+              <input
+                type="time"
+                required
+                value={startTime}
+                onChange={(e) => setStartTime(e.target.value)}
+                className="w-full border rounded-lg p-2 text-stone-800"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold mb-1 text-stone-700">Hora Fin</label>
+              <input
+                type="time"
+                required
+                value={endTime}
+                onChange={(e) => setEndTime(e.target.value)}
+                className="w-full border rounded-lg p-2 text-stone-800"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold mb-1 text-stone-700">Notas</label>
+            <input
+              type="text"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              className="w-full border rounded-lg p-2 text-stone-800"
+              placeholder="Ej: Preparación de repostería avanzada"
+            />
+          </div>
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-amber-700 text-white py-2.5 rounded-lg font-semibold hover:bg-amber-800"
+          >
+            Confirmar Reserva
+          </button>
+        </form>
+
+        {/* Cronograma / Reservas del día */}
+        <div className="lg:col-span-2 bg-white rounded-xl border border-stone-200 shadow-sm overflow-hidden">
+          <div className="p-4 bg-stone-50 border-b border-stone-200 flex justify-between items-center">
+            <h3 className="font-bold text-stone-800 text-sm">Reservas para el {selectedDate}</h3>
+            <span className="text-xs text-stone-500 font-medium">{reservations.length} registro(s)</span>
+          </div>
+
+          <div className="divide-y divide-stone-200 text-sm">
+            {reservations.length === 0 ? (
+              <p className="p-8 text-center text-stone-500 text-xs">
+                No hay reservas agendadas para esta fecha.
+              </p>
+            ) : (
+              reservations.map((res) => {
+                const spaceInfo = spaces.find((sp) => sp.id === res.space_id);
+                return (
+                  <div key={res.id} className="p-4 flex items-center justify-between hover:bg-stone-50">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-stone-900">{spaceInfo?.name || res.space_id}</span>
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 font-semibold">
+                          {res.start_time} - {res.end_time}
+                        </span>
+                      </div>
+                      <p className="text-xs text-stone-500 font-mono">Docente ID: {res.teacher_id}</p>
+                      {res.notes && <p className="text-xs text-stone-600 italic">"{res.notes}"</p>}
+                    </div>
+
+                    {res.status !== 'CANCELLED' && (
+                      <button
+                        onClick={() => handleCancel(res.id)}
+                        className="text-xs text-red-600 hover:underline font-semibold"
+                      >
+                        Cancelar
+                      </button>
+                    )}
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
