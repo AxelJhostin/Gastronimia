@@ -1,7 +1,35 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f9f9f8;
+  /*
+   * Fuente única de color. Cambiar estos valores actualiza tanto los tokens
+   * gastro-* como las clases heredadas stone/amber/emerald/red/orange.
+   */
+  --gastro-surface: #ffffff;
+  --gastro-surface-low: #f3f4f3;
+  --gastro-surface-high: #e8e8e7;
+  --gastro-background: #f9f9f8;
+  --gastro-primary: #171010;
+  --gastro-muted: #4e4544;
+  --gastro-outline: #807474;
+  --gastro-outline-variant: #d1c3c3;
+  --gastro-action: #ea580c;
+  --gastro-action-hover: #c2410c;
+  --gastro-action-container: #fff0e8;
+  --gastro-success: #18794e;
+  --gastro-success-container: #e0f2e9;
+  --gastro-warning: #a15c00;
+  --gastro-warning-container: #fff0c2;
+  --gastro-info: #a73a00;
+  --gastro-info-container: #ffdbce;
+  --gastro-error: #ba1a1a;
+  --gastro-error-strong: #93000a;
+  --gastro-error-container: #ffdad6;
+  --gastro-on-dark: #ffffff;
+  --gastro-chart-primary: var(--gastro-action);
+  --gastro-chart-secondary: var(--gastro-outline-variant);
+  --gastro-chart-danger: var(--gastro-error);
+  --background: var(--gastro-background);
   --foreground: #1a1c1c;
 }
 
@@ -10,17 +38,55 @@
   --color-foreground: var(--foreground);
   --font-sans: Arial, Helvetica, sans-serif;
   --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
-  --color-gastro-primary: #171010;
-  --color-gastro-action: #ea580c;
-  --color-gastro-action-hover: #c2410c;
-  --color-gastro-surface-low: #f3f4f3;
-  --color-gastro-surface-high: #e8e8e7;
-  --color-gastro-outline: #807474;
-  --color-gastro-outline-variant: #d1c3c3;
-  --color-gastro-muted: #4e4544;
-  --color-gastro-error: #ba1a1a;
-  --color-gastro-error-strong: #93000a;
-  --color-gastro-error-container: #ffdad6;
+  --color-gastro-surface: var(--gastro-surface);
+  --color-gastro-primary: var(--gastro-primary);
+  --color-gastro-action: var(--gastro-action);
+  --color-gastro-action-hover: var(--gastro-action-hover);
+  --color-gastro-action-container: var(--gastro-action-container);
+  --color-gastro-surface-low: var(--gastro-surface-low);
+  --color-gastro-surface-high: var(--gastro-surface-high);
+  --color-gastro-outline: var(--gastro-outline);
+  --color-gastro-outline-variant: var(--gastro-outline-variant);
+  --color-gastro-muted: var(--gastro-muted);
+  --color-gastro-success: var(--gastro-success);
+  --color-gastro-success-container: var(--gastro-success-container);
+  --color-gastro-warning: var(--gastro-warning);
+  --color-gastro-warning-container: var(--gastro-warning-container);
+  --color-gastro-info: var(--gastro-info);
+  --color-gastro-info-container: var(--gastro-info-container);
+  --color-gastro-error: var(--gastro-error);
+  --color-gastro-error-strong: var(--gastro-error-strong);
+  --color-gastro-error-container: var(--gastro-error-container);
+  --color-gastro-on-dark: var(--gastro-on-dark);
+  /* Aliases de compatibilidad para las pantallas aún compuestas con Tailwind. */
+  --color-white: var(--gastro-surface);
+  --color-stone-50: var(--gastro-background);
+  --color-stone-100: var(--gastro-surface-low);
+  --color-stone-200: var(--gastro-outline-variant);
+  --color-stone-300: var(--gastro-outline);
+  --color-stone-500: var(--gastro-muted);
+  --color-stone-600: var(--gastro-muted);
+  --color-stone-700: var(--gastro-primary);
+  --color-stone-900: var(--gastro-primary);
+  --color-amber-100: var(--gastro-warning-container);
+  --color-amber-500: var(--gastro-warning);
+  --color-amber-600: var(--gastro-action);
+  --color-amber-700: var(--gastro-action);
+  --color-amber-800: var(--gastro-action-hover);
+  --color-amber-900: var(--gastro-warning);
+  --color-orange-50: var(--gastro-action-container);
+  --color-orange-100: var(--gastro-info-container);
+  --color-orange-200: var(--gastro-outline-variant);
+  --color-orange-950: var(--gastro-info);
+  --color-emerald-50: var(--gastro-success-container);
+  --color-emerald-100: var(--gastro-success-container);
+  --color-emerald-200: var(--gastro-success);
+  --color-emerald-600: var(--gastro-success);
+  --color-emerald-700: var(--gastro-success);
+  --color-emerald-800: var(--gastro-success);
+  --color-emerald-900: var(--gastro-success);
+  --color-emerald-950: var(--gastro-primary);
+  --color-red-700: var(--gastro-error-strong);
   --shadow-gastro-sm: 0 4px 12px rgb(0 0 0 / 0.04);
 }
 

@@ -30,6 +30,12 @@ La ruta /ui responde como 404 en producción.
 - Datos: Badge, Card, PageHeader, Table*, SearchField, FilterSelect, Pagination, MetricCard, HorizontalBarChart, DonutChart, ActivityFeed y AlertList.
 - Dominio: RolePicker, RoleBadge, RequestStatusBadge, RequestTimeline, AvailabilityIndicator, CredentialCard, InventoryToolbar, InventoryItemCard y UnitStatusSummary.
 
+## Paleta centralizada
+
+La fuente única de colores está en frontend/src/app/globals.css. Los valores con prefijo --gastro- definen superficie, primario, acción, éxito, advertencia, información, error y gráficos. Las clases gastro-* y las clases heredadas stone, amber, emerald, orange, red y white apuntan a esa misma paleta por aliases de compatibilidad.
+
+Para un cambio de marca, editar únicamente los valores de :root en ese archivo. No añadir valores hexadecimales a componentes; si falta un caso semántico, crear un token nuevo.
+
 ## Seguridad y permisos
 
 - PasswordInput solo alterna visibilidad local. No persiste ni registra contraseñas.

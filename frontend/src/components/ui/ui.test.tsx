@@ -27,7 +27,7 @@ describe("componentes de interfaz", () => {
   });
 
   it("expone valores de gráficos con etiquetas accesibles", () => {
-    render(<><HorizontalBarChart data={[{ label: "Cuchillería", value: 8 }]} label="Disponibilidad" /><DonutChart label="Estados" segments={[{ color: "#ea580c", label: "Disponible", value: 8 }]} /></>);
+    render(<><HorizontalBarChart data={[{ label: "Cuchillería", value: 8 }]} label="Disponibilidad" /><DonutChart label="Estados" segments={[{ color: "var(--gastro-chart-primary)", label: "Disponible", value: 8 }]} /></>);
     expect(screen.getByRole("progressbar", { name: "Cuchillería: 8" })).toBeInTheDocument();
     expect(screen.getByLabelText("Estados: 8 en total")).toBeInTheDocument();
   });

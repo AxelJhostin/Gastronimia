@@ -178,7 +178,7 @@ export function ComponentCatalog() {
           </div>
           <div className="mt-8 grid gap-8 xl:grid-cols-2">
             <div><h3 className="text-base font-semibold text-gastro-primary">Disponibilidad por categoría</h3><div className="mt-4"><HorizontalBarChart data={[{ label: "Cuchillería", value: 85, detail: "85% disponible" }, { label: "Electrodomésticos", value: 60, detail: "60% disponible" }, { label: "Cristalería", value: 92, detail: "92% disponible" }]} label="Disponibilidad por categoría" valueFormatter={(value) => `${value}%`} /></div></div>
-            <div><h3 className="text-base font-semibold text-gastro-primary">Distribución de equipos</h3><div className="mt-4"><DonutChart label="Distribución de equipos por estado" segments={[{ label: "Disponible", value: 890, color: "#ea580c" }, { label: "Prestado o reservado", value: 292, color: "#d1c3c3" }, { label: "Mantenimiento", value: 58, color: "#ba1a1a" }]} /></div></div>
+            <div><h3 className="text-base font-semibold text-gastro-primary">Distribución de equipos</h3><div className="mt-4"><DonutChart label="Distribución de equipos por estado" segments={[{ label: "Disponible", value: 890, color: "var(--gastro-chart-primary)" }, { label: "Prestado o reservado", value: 292, color: "var(--gastro-chart-secondary)" }, { label: "Mantenimiento", value: 58, color: "var(--gastro-chart-danger)" }]} /></div></div>
           </div>
         </DemoSection>
 
