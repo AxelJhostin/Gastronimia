@@ -117,8 +117,8 @@ Criterio de salida:
 
 ### Fase 2 — Autenticación y configuración académica
 
-- `[~]` Implementar inicio y cierre de sesión con Supabase Auth. Cliente SSR, formulario de inicio y cierre de sesión listos; falta prueba manual con una cuenta real.
-- `[~]` Implementar protección de rutas en Next.js. El panel usa `getClaims()` validado y el proxy renueva cookies; falta prueba manual de redirección con sesión expirada.
+- `[~]` Implementar inicio y cierre de sesión con Supabase Auth. **Frontend integrado:** cliente SSR, formulario de inicio y cierre de sesión en `edc27b5` (`codex/auth-supabase-ssr`); falta prueba manual con una cuenta real.
+- `[~]` Implementar protección de rutas en Next.js. **Frontend integrado:** el panel usa `getClaims()` validado y el proxy renueva cookies; falta prueba manual de redirección con sesión expirada.
 - `[x]` Resolver el rol del usuario de forma segura desde la base de datos.
 - `[~]` Crear gestión de usuarios y asignación de roles para administrador. Migración, API y RPC aplicadas; falta crear/probar el primer ADMIN real.
 - `[~]` Crear periodos académicos. Migración, RLS y endpoints administrativos aplicados; falta probar el flujo real.
@@ -418,6 +418,7 @@ La asignación debe registrarse en el pull request o en el tablero de trabajo. N
 | 2026-08-20 | Evidencias | Fotografías opcionales y Storage privado | Equipo | Cerrado |
 | 2026-08-20 | Trabajo paralelo | Axel y Shoma (La del buen front) pueden trabajar en frontend o backend; la asignación será por tarea | Equipo | Cerrado |
 | 2026-08-20 | Supabase | Axel la toma inicialmente como responsabilidad principal, con revisión cruzada | Axel / Shoma | Abierto a ajuste |
+| 2026-08-25 | Acceso frontend | Integrado el bloque de Shoma: login, logout, sesión SSR, proxy y protección base de rutas (`edc27b5`) | Shoma | Código integrado; falta prueba manual con cuentas reales |
 
 Agregar aquí cualquier decisión que cambie una regla, estado, tabla, permiso o alcance.
 

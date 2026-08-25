@@ -2,7 +2,7 @@
 
 Esta guía permite continuar el frontend sin reconstruir el contexto del backend ni leer las migraciones SQL. Es el documento de trabajo principal para la persona responsable de interfaz.
 
-> Estado al 21 de agosto de 2026: backend, Supabase, migraciones, contratos, pruebas y CI están implementados y verificados. El trabajo pendiente principal es convertir el contrato disponible en una experiencia completa, responsive y accesible.
+> Estado al 25 de agosto de 2026: backend, Supabase, migraciones, contratos, pruebas y CI están implementados y verificados. El acceso base del frontend ya está integrado en `main`; el trabajo pendiente principal es convertir el contrato disponible en una experiencia completa, responsive y accesible.
 
 ## 1. Mapa rápido del proyecto
 
@@ -42,6 +42,20 @@ El navegador usa Supabase **solo** para iniciar/cerrar sesión y cargar/descarga
 - `dashboard` valida que exista una sesión; aún debe transformarse en la navegación real por rol.
 - Variables públicas documentadas en `frontend/.env.example`.
 - GitHub Actions ejecuta lint, typecheck, tests y build del frontend en cada push a `main`.
+
+### Bloque ya integrado — acceso y sesión
+
+El trabajo inicial de interfaz está integrado desde la rama `codex/auth-supabase-ssr` (commit `edc27b5`, `feat(auth): agregar acceso y rutas protegidas`). No hay cambios adicionales pendientes en esa rama.
+
+- [x] Cliente SSR de Supabase para componentes de servidor y cliente.
+- [x] Renovación de cookies de sesión mediante `proxy`.
+- [x] Formulario de inicio de sesión con correo y contraseña.
+- [x] Cierre de sesión.
+- [x] Rutas `/`, `/login` y `/dashboard`.
+- [x] Redirección a `/login` cuando no hay una sesión válida en `/dashboard`.
+- [~] Prueba manual con cuenta real y expiración de sesión. El código está listo; falta verificarlo contra el proyecto compartido de Supabase.
+
+Esto **no** incluye todavía `GET /auth/me`, el estado global de roles, navegación por rol, cliente de FastAPI ni pantallas funcionales.
 
 ### Backend y Supabase disponibles
 
@@ -280,6 +294,7 @@ Trabajar en este orden. Cada bloque termina con UI, estados de carga/vacío/erro
 
 ### Bloque F1 — Fundaciones de interfaz
 
+- [x] Login, logout, sesión SSR y protección base de `/dashboard`.
 - [ ] Crear cliente API central con token, errores tipados y JSON.
 - [ ] Crear provider/store de sesión: Supabase session + `GET /auth/me`.
 - [ ] Reemplazar dashboard placeholder por layout con navegación filtrada por roles.
