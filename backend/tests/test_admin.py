@@ -5,10 +5,12 @@ import pytest
 from app.api.v1.endpoints.admin import require_admin
 from app.core.admin import (
     ManagedUser,
+    ProvisionedUser,
     list_managed_users,
+    provision_managed_user,
     replace_managed_user_roles,
 )
-from app.core.auth import RoleCode
+from app.core.auth import AuthenticatedUser, RoleCode, get_current_user
 from app.main import app
 from fastapi import HTTPException
 from fastapi.testclient import TestClient
@@ -74,6 +76,45 @@ def test_admin_can_replace_user_roles() -> None:
     )
 
 
+def test_admin_can_create_user_invitation() -> None:
+    client = TestClient(app)
+    app.dependency_overrides[require_admin] = lambda: {RoleCode.ADMIN}
+    app.dependency_overrides[get_current_user] = lambda: AuthenticatedUser(
+        id="admin-id", access_token="token", email="admin@example.com"
+    )
+    invitation = ProvisionedUser(
+        user_id="invited-user-id",
+        email="teacher@example.com",
+        full_name="Docente Invitada",
+        roles=[RoleCode.TEACHER],
+        temporary_password="temporary-password",
+    )
+    try:
+        with patch(
+            "app.api.v1.endpoints.admin.provision_managed_user",
+            return_value=invitation,
+        ) as invite:
+            response = client.post(
+                "/api/v1/admin/users",
+                json={
+                    "email": "teacher@example.com",
+                    "full_name": "Docente Invitada",
+                    "roles": ["TEACHER"],
+                },
+            )
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 201
+    assert response.json()["user_id"] == "invited-user-id"
+    invite.assert_called_once_with(
+        email="teacher@example.com",
+        full_name="Docente Invitada",
+        roles={RoleCode.TEACHER},
+        invited_by_user_id="admin-id",
+    )
+
+
 def test_list_managed_users_parses_roles() -> None:
     response = Mock()
     response.json.return_value = [
@@ -109,3 +150,55 @@ def test_replace_managed_user_roles_reports_conflict() -> None:
             replace_managed_user_roles("user-id", {RoleCode.ADMIN})
 
     assert captured.value.status_code == 409
+
+
+def test_provision_managed_user_creates_user_and_assigns_roles() -> None:
+    invite_response = Mock()
+    invite_response.json.return_value = {"id": "invited-user-id"}
+    assignment_response = Mock()
+
+    with patch(
+        "app.core.admin.httpx.post",
+        side_effect=[invite_response, assignment_response],
+    ) as post:
+        invitation = provision_managed_user(
+            email=" Teacher@Example.com ",
+            full_name=" Docente Invitada ",
+            roles={RoleCode.TEACHER},
+            invited_by_user_id="admin-id",
+        )
+
+    assert invitation.user_id == "invited-user-id"
+    assert invitation.email == "teacher@example.com"
+    assert invitation.full_name == "Docente Invitada"
+    assert invitation.roles == [RoleCode.TEACHER]
+    assert invitation.temporary_password
+    assert post.call_count == 2
+    assert post.call_args_list[0].args[0].endswith("/auth/v1/admin/users")
+    assert post.call_args_list[0].kwargs["json"]["email"] == "teacher@example.com"
+    assert post.call_args_list[0].kwargs["json"]["email_confirm"] is True
+    assert post.call_args_list[1].args[0].endswith(
+        "/rest/v1/rpc/record_user_provisioning"
+    )
+
+
+def test_provision_managed_user_removes_auth_user_when_role_assignment_fails() -> None:
+    invite_response = Mock()
+    invite_response.json.return_value = {"user": {"id": "invited-user-id"}}
+    assignment_response = Mock()
+    assignment_response.raise_for_status.side_effect = httpx.ConnectError("offline")
+
+    with patch(
+        "app.core.admin.httpx.post",
+        side_effect=[invite_response, assignment_response],
+    ), patch("app.core.admin.httpx.delete") as delete:
+        with pytest.raises(HTTPException) as captured:
+            provision_managed_user(
+                email="teacher@example.com",
+                full_name="Docente Invitada",
+                roles={RoleCode.TEACHER},
+                invited_by_user_id="admin-id",
+            )
+
+    assert captured.value.status_code == 503
+    assert delete.call_args.args[0].endswith("/auth/v1/admin/users/invited-user-id")

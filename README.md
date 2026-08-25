@@ -121,6 +121,7 @@ Luego abre [http://localhost:3000](http://localhost:3000). La documentación int
 | `backend/.env` | `SUPABASE_PUBLISHABLE_KEY` | Verificación/cliente no privilegiado | No hace falta exponerla |
 | `backend/.env` | `SUPABASE_SERVICE_ROLE_KEY` | Operaciones internas privilegiadas | **Nunca** |
 | `backend/.env` | `BACKEND_CORS_ORIGINS` | Orígenes permitidos para la API | No |
+| `backend/.env` | `FRONTEND_URL` | Destino de los enlaces de invitación | No |
 
 No renombres ni subas `.env.local` o `.env`. Las plantillas `*.env.example` sí se mantienen actualizadas en el repositorio para que cualquier integrante pueda empezar.
 

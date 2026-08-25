@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 
+import { AdminUserLink } from "@/components/admin/admin-user-link";
 import { LogoutButton } from "@/components/auth/logout-button";
 import { createClient } from "@/lib/supabase/server";
 
@@ -9,6 +10,15 @@ export default async function DashboardPage() {
 
   if (error || !data?.claims?.sub) {
     redirect("/login");
+  }
+  const appMetadata = data.claims.app_metadata;
+  if (
+    typeof appMetadata === "object" &&
+    appMetadata !== null &&
+    "must_change_password" in appMetadata &&
+    appMetadata.must_change_password === true
+  ) {
+    redirect("/change-password");
   }
 
   return (
@@ -26,6 +36,9 @@ export default async function DashboardPage() {
         <p className="mt-6 leading-7 text-stone-600">
           Tu sesión está validada. Las opciones disponibles se mostrarán según tu rol.
         </p>
+        <div className="mt-6">
+          <AdminUserLink />
+        </div>
       </section>
     </main>
   );

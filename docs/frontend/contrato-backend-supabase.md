@@ -50,6 +50,7 @@ Todos los paths siguientes son relativos a `/api/v1`. Las rutas `ADMIN/MANAGER` 
 | `GET /auth/me` | Cualquiera autenticado | Usuario actual y roles. |
 | `GET /admin/users` | ADMIN | Usuarios gestionables. |
 | `PUT /admin/users/{user_id}/roles` | ADMIN | Body: `{ "roles": ["ADMIN"] }`; responde 204. |
+| `POST /admin/users` | ADMIN | Crea una cuenta con contraseña temporal y asigna roles desde FastAPI. |
 | `GET/POST /admin/academic/periods` | ADMIN | Listar/crear períodos. |
 | `GET/POST /admin/academic/subjects` | ADMIN | Listar/crear asignaturas. |
 | `GET/POST /admin/academic/teachers` | ADMIN | Listar/crear perfiles docentes. |
@@ -115,6 +116,13 @@ Todos los paths siguientes son relativos a `/api/v1`. Las rutas `ADMIN/MANAGER` 
 Los UUID se envían como texto; las fechas como ISO 8601 con zona horaria y los decimales como string para evitar redondeos en el navegador.
 
 ```json
+// POST /admin/users/invitations
+{
+  "email": "docente@institucion.edu",
+  "full_name": "Nombre completo",
+  "roles": ["TEACHER"]
+}
+
 // POST /requests/drafts
 {
   "course_section_id": "uuid",
@@ -159,6 +167,8 @@ Los UUID se envían como texto; las fechas como ISO 8601 con zona horaria y los 
   "loan_unit_ids": ["uuid"]
 }
 ```
+
+La respuesta de invitación contiene `user_id`, `email`, `full_name` y `roles`. Supabase manda al correo un enlace temporal de un solo uso y lo redirige a `/accept-invitation`, donde la persona define una contraseña de al menos ocho caracteres. El frontend no recibe ni usa `SUPABASE_SERVICE_ROLE_KEY`. La migración requerida `20260825152820_user_invitations.sql` fue aplicada al proyecto compartido el 25 de agosto de 2026.
 
 `inventory_unit_ids` solo se manda para artículos `INDIVIDUAL`; para `QUANTITY` se omite. En devolución, `loan_unit_ids` contiene IDs de **detalle de préstamo**, obtenidos en `GET /admin/returns/loans/{id}/pending`, no IDs de inventario.
 

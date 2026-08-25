@@ -53,6 +53,8 @@ El trabajo inicial de interfaz está integrado desde la rama `codex/auth-supabas
 - [x] Cierre de sesión.
 - [x] Rutas `/`, `/login` y `/dashboard`.
 - [x] Redirección a `/login` cuando no hay una sesión válida en `/dashboard`.
+- [x] Entrada de administración visible solo para `ADMIN` y formulario inicial de invitación en `/dashboard/users`.
+- [x] Ruta `/accept-invitation` para que la persona invitada defina su contraseña.
 - [~] Prueba manual con cuenta real y expiración de sesión. El código está listo; falta verificarlo contra el proyecto compartido de Supabase.
 
 Esto **no** incluye todavía `GET /auth/me`, el estado global de roles, navegación por rol, cliente de FastAPI ni pantallas funcionales.
@@ -123,11 +125,13 @@ Nunca colocar en frontend: `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_SECRET_KEY`, c
 | `src/lib/supabase/client.ts` | Cliente para componentes cliente: login, logout, Storage. |
 | `src/lib/supabase/server.ts` | Cliente server-side con cookies. |
 | `src/lib/supabase/proxy.ts` y `src/proxy.ts` | Renovación de sesión/protección base. Revisar antes de modificar autenticación. |
-| `src/lib/api/client.ts` | Solo tiene `getApiHealth()`; es el lugar donde se debe crear el cliente API tipado. |
+| `src/lib/api/client.ts` | Cliente inicial tipado: health, `/auth/me` e invitaciones de usuarios. Ampliar aquí el resto de módulos de FastAPI. |
 | `src/components/auth/login-form.tsx` | Formulario de login ya conectado a Supabase. |
 | `src/components/auth/logout-button.tsx` | Cierre de sesión. |
 | `src/app/login/page.tsx` | Pantalla inicial de acceso. |
 | `src/app/dashboard/page.tsx` | Placeholder autenticado; reemplazar por layout/navegación según rol. |
+| `src/app/dashboard/users/page.tsx` | Pantalla ADMIN inicial para invitar usuarios; falta listado y edición de roles. |
+| `src/components/admin/` | Enlace condicionado a rol ADMIN y formulario de invitación; reutilizar este patrón para administración. |
 
 ## 6. Regla de integración con FastAPI
 
@@ -285,7 +289,7 @@ Estas no son fallas de pantalla. Deben comunicarse a backend antes de intentar i
 
 1. **Detalle operativo de solicitud:** aún falta un endpoint que devuelva ítems de solicitud, detalles de reserva y preparación con sus UUID internos. Se necesitan `equipment_request_item_id` para aprobar y `equipment_reservation_detail_id` para preparar/entregar. En Postman hoy se copian desde Supabase únicamente para prueba manual.
 2. **Detalle de préstamo:** `GET /admin/returns/loans/{id}/pending` cubre cantidades/unidades pendientes, pero el diseño de pantalla debe confirmar que expone todos los datos necesarios antes de la devolución.
-3. **Creación cómoda de perfiles docentes:** la API administrativa requiere `user_id` de Supabase Auth. La pantalla puede listar usuarios y seleccionar uno, pero no debe pedir que alguien copie UUID. Si la respuesta de usuarios no da el dato necesario o falta UX, solicitar el ajuste a backend.
+3. **Alta de usuarios con contraseña temporal:** el formulario ADMIN crea nombre, correo y roles. FastAPI genera una contraseña temporal y la devuelve una sola vez; la interfaz permite copiarla y obliga al usuario a cambiarla en su primer acceso. No pedir UUID, usar claves de servidor ni crear usuarios directamente con Supabase.
 4. **No usar tablas Supabase como atajo:** aunque veas entidades en el dashboard, consumirlas directo rompe las reglas transaccionales, permisos y futura evolución del backend.
 
 ## 11. Plan de implementación por bloques
@@ -295,7 +299,7 @@ Trabajar en este orden. Cada bloque termina con UI, estados de carga/vacío/erro
 ### Bloque F1 — Fundaciones de interfaz
 
 - [x] Login, logout, sesión SSR y protección base de `/dashboard`.
-- [ ] Crear cliente API central con token, errores tipados y JSON.
+- [~] Crear cliente API central con token, errores tipados y JSON. Base disponible para `/auth/me` e invitaciones; falta extenderla al resto de módulos.
 - [ ] Crear provider/store de sesión: Supabase session + `GET /auth/me`.
 - [ ] Reemplazar dashboard placeholder por layout con navegación filtrada por roles.
 - [ ] Crear componentes base: `PageHeader`, `EmptyState`, `ErrorState`, `LoadingState`, `PermissionDenied`, badge de estado, modal de confirmación y formulario reutilizable.
@@ -305,7 +309,7 @@ Trabajar en este orden. Cada bloque termina con UI, estados de carga/vacío/erro
 
 ### Bloque F2 — Configuración ADMIN
 
-- [ ] Pantalla Usuarios y roles.
+- [~] Pantalla Usuarios y roles. El alta por invitación está disponible en `/dashboard/users`; faltan listado y edición visual de roles.
 - [ ] CRUD disponible de períodos, materias, laboratorios, perfiles docentes y secciones.
 - [ ] Formularios con UUID seleccionados mediante listas, no textos manuales.
 - [ ] Filtros, vacío y validación de fechas en período.
@@ -419,6 +423,7 @@ Al cerrar cada bloque, comprobar:
 
 - [ ] Cliente FastAPI y estado global de sesión/roles.
 - [ ] Layout, navegación y protección visual por rol.
+- [~] Pantalla ADMIN para usuarios. Ya envía `POST /admin/users/invitations`; faltan listado y actualización visual de roles. La ruta de aceptación mínima `/accept-invitation` ya existe.
 - [ ] Pantallas y formularios de los bloques F2 a F8.
 - [ ] Integración de evidencias privadas.
 - [ ] Responsive, accesibilidad, estados y pruebas de interfaz.
@@ -429,6 +434,7 @@ Al cerrar cada bloque, comprobar:
 - [ ] Definir/exponer endpoint(s) de detalle operativo para solicitudes/reservas/preparación.
 - [ ] Confirmar los campos necesarios para detalle de préstamo/devolución en UI.
 - [ ] Resolver cualquier campo o listado que impida seleccionar relaciones sin UUID manual.
+- [~] Alta por invitación de usuarios: backend, migración, aceptación mínima y formulario ADMIN implementados. Shoma puede completar listado y actualización visual de roles. El primer `ADMIN` se crea manualmente una sola vez.
 
 ## 15. Primer día recomendado
 

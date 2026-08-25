@@ -23,6 +23,7 @@ class RoleCode(str, Enum):
 class AuthenticatedUser(BaseModel):
     id: str
     email: Optional[str] = None
+    must_change_password: bool = False
     access_token: str = Field(repr=False)
 
 
@@ -69,9 +70,14 @@ def get_current_user(
     if credentials is None or credentials.scheme.lower() != "bearer":
         raise _unauthorized("Se requiere un token Bearer.")
     claims = decode_supabase_token(credentials.credentials)
+    app_metadata = claims.get("app_metadata")
     return AuthenticatedUser(
         id=claims["sub"],
         email=claims.get("email"),
+        must_change_password=(
+            isinstance(app_metadata, dict)
+            and app_metadata.get("must_change_password") is True
+        ),
         access_token=credentials.credentials,
     )
 
@@ -118,8 +124,14 @@ def require_roles(
     *required_roles: RoleCode,
 ) -> Callable[..., set[RoleCode]]:
     def role_dependency(
+        current_user: AuthenticatedUser = Depends(get_current_user),  # noqa: B008
         current_roles: set[RoleCode] = Depends(get_current_user_roles),  # noqa: B008
     ) -> set[RoleCode]:
+        if current_user.must_change_password:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Debes cambiar tu contraseña temporal antes de continuar.",
+            )
         if current_roles.isdisjoint(required_roles):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,

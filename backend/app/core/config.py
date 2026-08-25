@@ -14,6 +14,7 @@ class Settings(BaseSettings):
     backend_cors_origins: list[AnyHttpUrl] = Field(
         default_factory=lambda: [AnyHttpUrl("http://localhost:3000")]
     )
+    frontend_url: AnyHttpUrl = AnyHttpUrl("http://localhost:3000")
     supabase_url: Optional[AnyHttpUrl] = None
     supabase_jwks_url: Optional[AnyHttpUrl] = None
     supabase_publishable_key: Optional[str] = None
