@@ -10,6 +10,12 @@ Los módulos de dominio deben componer estos elementos desde fuera de esta carpe
 
 Los componentes de patrón operativo están en `@/components/domain/operations`: roles, estados oficiales de solicitud, selector de roles, timeline y disponibilidad. El shell responsive está en `@/components/layout/app-shell`.
 
+Los componentes de inventario están en `@/components/domain/inventory`: barra de búsqueda/filtros, acción primaria, tarjetas de ítem y resumen de estado de unidades. Las tarjetas reciben datos reales por propiedades y no cargan imágenes ficticias.
+
 ## Catálogo visual
 
 Durante desarrollo, visitar `/ui` para revisar las variantes y los estados de los componentes. La ruta responde como 404 en producción y no debe usarse como una pantalla funcional.
+
+## Estados de ruta
+
+Las rutas 403 y 404 usan GastronomyStatusPage con la temática del producto. También se reutiliza en el acceso denegado de usuarios no ADMIN. El botón de estrella de la ilustración revela el huevo de Pascua solicitado; no afecta la navegación ni los permisos.

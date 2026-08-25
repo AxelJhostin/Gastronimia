@@ -4,7 +4,7 @@ import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { createClient } from "@/lib/supabase/client";
-import { PasswordInput } from "@/components/ui";
+import { EmailIcon, InputWithIcon, PasswordInput } from "@/components/ui";
 
 export function LoginForm() {
   const router = useRouter();
@@ -37,10 +37,11 @@ export function LoginForm() {
     <form className="mt-8 space-y-5" onSubmit={handleSubmit}>
       <label className="block text-sm font-medium text-stone-700" htmlFor="email">
         Correo institucional
-        <PasswordInput
+        <InputWithIcon
           autoComplete="email"
           className="mt-2 block w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-stone-900 outline-none ring-amber-600 focus:ring-2"
           id="email"
+          icon={<EmailIcon />}
           name="email"
           required
           type="email"
@@ -48,7 +49,7 @@ export function LoginForm() {
       </label>
       <label className="block text-sm font-medium text-stone-700" htmlFor="password">
         Contraseña
-        <input
+        <PasswordInput
           autoComplete="current-password"
           className="mt-2 block w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-stone-900 outline-none ring-amber-600 focus:ring-2"
           id="password"

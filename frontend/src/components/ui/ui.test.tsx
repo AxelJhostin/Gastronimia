@@ -1,7 +1,8 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
-import { Badge, Button, DonutChart, EmptyState, Field, HorizontalBarChart, Input, Pagination, PasswordInput } from "./index";
+import { Badge, Button, DonutChart, EmptyState, Field, HorizontalBarChart, Input, Pagination, PasswordInput, PasswordStrength } from "./index";
+import { UnitStatusSummary } from "@/components/domain/inventory";
 
 describe("componentes de interfaz", () => {
   it("deshabilita el botón mientras muestra una carga", () => {
@@ -37,5 +38,17 @@ describe("componentes de interfaz", () => {
     expect(input).toHaveAttribute("type", "password");
     fireEvent.click(screen.getByRole("button", { name: "Mostrar contraseña" }));
     expect(input).toHaveAttribute("type", "text");
+  });
+
+  it("explica visualmente los requisitos de contraseña", () => {
+    render(<PasswordStrength confirmation="Segura123!" password="Segura123!" />);
+    expect(screen.getByText("Al menos 8 caracteres")).toBeInTheDocument();
+    expect(screen.getByText("Las contraseñas coinciden")).toBeInTheDocument();
+    expect(screen.getByRole("progressbar", { name: /nivel de seguridad: alta/i })).toBeInTheDocument();
+  });
+
+  it("expone el resumen de estados de inventario como barras accesibles", () => {
+    render(<UnitStatusSummary states={{ AVAILABLE: 2, MAINTENANCE: 1, RESERVED: 1 }} />);
+    expect(screen.getByRole("progressbar", { name: "Disponibles: 2 de 4" })).toBeInTheDocument();
   });
 });

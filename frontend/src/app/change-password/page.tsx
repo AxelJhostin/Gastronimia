@@ -5,13 +5,14 @@ import { useRouter } from "next/navigation";
 
 import { completeTemporaryPasswordChange } from "@/lib/api/client";
 import { createClient } from "@/lib/supabase/client";
-import { PasswordInput, PasswordStrength } from "@/components/ui";
+import { Field, PasswordInput, PasswordStrength } from "@/components/ui";
 
 export default function ChangePasswordPage() {
   const router = useRouter();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [password, setPassword] = useState("");
+  const [confirmation, setConfirmation] = useState("");
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -52,11 +53,15 @@ export default function ChangePasswordPage() {
       <form className="w-full max-w-md space-y-5 rounded-2xl border border-stone-200 bg-white p-8 shadow-sm" onSubmit={handleSubmit}>
         <h1 className="text-3xl font-semibold tracking-tight">Cambia tu contraseña temporal</h1>
         <p className="text-sm text-stone-600">Debes definir una contraseña personal antes de continuar.</p>
-        <PasswordInput className="w-full" minLength={8} name="password" onChange={(event) => setPassword(event.target.value)} placeholder="Nueva contraseña" required />
-        <PasswordStrength password={password} />
-        <PasswordInput className="w-full" minLength={8} name="confirmation" placeholder="Confirmar contraseña" required />
+        <Field htmlFor="new-password" label="Nueva contraseña" required>
+          <PasswordInput className="w-full" id="new-password" minLength={8} name="password" onChange={(event) => setPassword(event.target.value)} placeholder="Ingresa una nueva contraseña" required />
+        </Field>
+        <Field htmlFor="confirmation" label="Confirmar contraseña" required>
+          <PasswordInput className="w-full" id="confirmation" minLength={8} name="confirmation" onChange={(event) => setConfirmation(event.target.value)} placeholder="Repite la contraseña" required />
+        </Field>
+        <PasswordStrength confirmation={confirmation} password={password} />
         {errorMessage ? <p className="text-sm text-red-700" role="alert">{errorMessage}</p> : null}
-        <button className="w-full rounded-lg bg-amber-700 px-4 py-2.5 font-semibold text-white disabled:opacity-60" disabled={isSubmitting} type="submit">{isSubmitting ? "Guardando…" : "Guardar contraseña"}</button>
+        <button className="w-full rounded-lg bg-gastro-action px-4 py-3 font-semibold uppercase tracking-[0.08em] text-white hover:bg-gastro-action-hover disabled:opacity-60" disabled={isSubmitting} type="submit">{isSubmitting ? "Actualizando…" : "Actualizar contraseña →"}</button>
       </form>
     </main>
   );

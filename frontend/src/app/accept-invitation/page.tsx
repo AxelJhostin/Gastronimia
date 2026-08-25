@@ -12,6 +12,7 @@ export default function AcceptInvitationPage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [password, setPassword] = useState("");
+  const [passwordConfirmation, setPasswordConfirmation] = useState("");
 
   useEffect(() => {
     async function verifyInvitation() {
@@ -28,14 +29,14 @@ export default function AcceptInvitationPage() {
 
     const formData = new FormData(event.currentTarget);
     const submittedPassword = String(formData.get("password") ?? "");
-    const passwordConfirmation = String(formData.get("passwordConfirmation") ?? "");
+    const submittedPasswordConfirmation = String(formData.get("passwordConfirmation") ?? "");
 
     if (submittedPassword.length < 8) {
       setErrorMessage("La contraseña debe tener al menos 8 caracteres.");
       return;
     }
 
-    if (submittedPassword !== passwordConfirmation) {
+    if (submittedPassword !== submittedPasswordConfirmation) {
       setErrorMessage("Las contraseñas no coinciden.");
       return;
     }
@@ -87,7 +88,6 @@ export default function AcceptInvitationPage() {
                 onChange={(event) => setPassword(event.target.value)}
                 required
               />
-              <div className="mt-3"><PasswordStrength password={password} /></div>
             </label>
             <label
               className="block text-sm font-medium text-stone-700"
@@ -100,9 +100,11 @@ export default function AcceptInvitationPage() {
                 id="passwordConfirmation"
                 minLength={8}
                 name="passwordConfirmation"
+                onChange={(event) => setPasswordConfirmation(event.target.value)}
                 required
               />
             </label>
+            <PasswordStrength confirmation={passwordConfirmation} password={password} />
             {errorMessage ? (
               <p aria-live="polite" className="text-sm text-red-700" role="alert">
                 {errorMessage}

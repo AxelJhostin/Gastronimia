@@ -16,6 +16,12 @@ import {
 } from "@/components/domain/operations";
 import { CredentialCard } from "@/components/domain/credential-card";
 import {
+  InventoryItemCard,
+  InventoryPrimaryAction,
+  InventoryToolbar,
+  UnitStatusSummary,
+} from "@/components/domain/inventory";
+import {
   Badge,
   Button,
   ConfirmDialog,
@@ -144,6 +150,19 @@ export function ComponentCatalog() {
             <RequestStatusBadge status="PREPARED" />
             <RequestStatusBadge status="DELIVERED" />
           </div>
+        </DemoSection>
+
+        <DemoSection description="Estas piezas se conectarán a inventario al integrar FastAPI. Las tarjetas reciben una URL real opcional; mientras no exista, muestran un marcador neutro y no una foto inventada." title="Inventario">
+          <InventoryToolbar actions={<InventoryPrimaryAction />}>
+            <FilterSelect aria-label="Categoría" defaultValue="all"><option value="all">Categoría</option></FilterSelect>
+            <FilterSelect aria-label="Estado" defaultValue="all"><option value="all">Estado</option></FilterSelect>
+          </InventoryToolbar>
+          <div className="mt-6 grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+            <InventoryItemCard assetCode="ID-DEMO-001" category="Equipamiento mayor" condition="Excelente" name="Tarjeta de muestra" quantityLabel="1 unidad" status="AVAILABLE" trackingLabel="Único" />
+            <InventoryItemCard assetCode="LT-DEMO-002" category="Cristalería" condition="Bueno" name="Ejemplo por lote" quantityLabel="45 / 50 u." status="RESERVED" trackingLabel="Lote" />
+            <InventoryItemCard assetCode="ID-DEMO-003" category="Equipamiento mayor" condition="Necesita revisión" name="Equipo en mantenimiento" quantityLabel="1 unidad" status="MAINTENANCE" trackingLabel="Único" />
+          </div>
+          <div className="mt-6 max-w-md"><UnitStatusSummary states={{ AVAILABLE: 2, RESERVED: 1, MAINTENANCE: 1 }} /></div>
         </DemoSection>
 
         <DemoSection description="Ejemplo ficticio del resultado de alta. En producción recibe la contraseña temporal una sola vez desde FastAPI y no la persiste." title="Credenciales temporales">

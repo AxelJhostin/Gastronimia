@@ -135,6 +135,10 @@ Nunca colocar en frontend: `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_SECRET_KEY`, c
 | `src/app/dashboard/users/page.tsx` | Pantalla ADMIN para alta directa; falta listado y edición de roles. |
 | `src/components/auth/dashboard-identity-provider.tsx` | Fuente única de sesión y `/auth/me` para las pantallas del dashboard. |
 | `src/components/admin/` | Enlace y guardia condicionados a `ADMIN`, además del formulario de alta directa. |
+| `src/components/ui/` | Biblioteca visual reutilizable: controles, tablas, feedback, métricas, gráficos y catálogo interno en desarrollo. No contiene llamadas a FastAPI ni Supabase. |
+| `src/components/domain/` | Patrones propios del dominio: roles, estados de solicitud, timeline, disponibilidad y credenciales temporales. |
+| `src/components/layout/app-shell.tsx` | Shell responsive con barra lateral y navegación móvil para futuras pantallas operativas. |
+| `src/app/forbidden.tsx` y `src/app/not-found.tsx` | Experiencias visuales para acceso denegado (403) y ruta inexistente (404). La autorización del backend sigue siendo definitiva. |
 
 ## 6. Regla de integración con FastAPI
 

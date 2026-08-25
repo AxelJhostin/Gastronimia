@@ -10,6 +10,22 @@ export const Input = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputE
   return <input className={cn(controlClassName, className)} ref={ref} {...props} />;
 });
 
+export const InputWithIcon = forwardRef<
+  HTMLInputElement,
+  InputHTMLAttributes<HTMLInputElement> & { icon: ReactNode }
+>(function InputWithIcon({ className, icon, ...props }, ref) {
+  return (
+    <div className="relative">
+      <span aria-hidden="true" className="pointer-events-none absolute inset-y-0 left-0 grid w-11 place-items-center text-gastro-muted">{icon}</span>
+      <input className={cn(controlClassName, "pl-11", className)} ref={ref} {...props} />
+    </div>
+  );
+});
+
+export function EmailIcon() {
+  return <svg aria-hidden="true" fill="none" height="20" viewBox="0 0 24 24" width="20"><rect height="14" rx="2" stroke="currentColor" strokeWidth="1.8" width="18" x="3" y="5" /><path d="m4 7 8 6 8-6" stroke="currentColor" strokeWidth="1.8" /></svg>;
+}
+
 export const PasswordInput = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputElement>>(
   function PasswordInput({ className, ...props }, ref) {
     const [isVisible, setIsVisible] = useState(false);
@@ -17,7 +33,8 @@ export const PasswordInput = forwardRef<HTMLInputElement, InputHTMLAttributes<HT
 
     return (
       <div className="relative">
-        <input {...props} className={cn(controlClassName, "pr-11", className)} ref={ref} type={isVisible ? "text" : "password"} />
+        <span aria-hidden="true" className="pointer-events-none absolute inset-y-0 left-0 grid w-11 place-items-center text-gastro-muted"><LockIcon /></span>
+        <input {...props} className={cn(controlClassName, "pl-11 pr-11", className)} ref={ref} type={isVisible ? "text" : "password"} />
         <button
           aria-label={label}
           aria-pressed={isVisible}
@@ -42,7 +59,17 @@ function EyeIcon({ isVisible }: { isVisible: boolean }) {
   );
 }
 
-export function PasswordStrength({ password }: { password: string }) {
+function LockIcon() {
+  return <svg fill="none" height="20" viewBox="0 0 24 24" width="20"><rect height="11" rx="1.5" stroke="currentColor" strokeWidth="1.8" width="14" x="5" y="10" /><path d="M8 10V7a4 4 0 0 1 8 0v3" stroke="currentColor" strokeWidth="1.8" /><circle cx="12" cy="15.5" fill="currentColor" r="1.1" /></svg>;
+}
+
+export function PasswordStrength({
+  confirmation,
+  password,
+}: {
+  confirmation?: string;
+  password: string;
+}) {
   const score = [
     password.length >= 8,
     /[a-z]/.test(password) && /[A-Z]/.test(password),
@@ -51,18 +78,28 @@ export function PasswordStrength({ password }: { password: string }) {
   ].filter(Boolean).length;
   const labels = ["Sin evaluar", "Baja", "Media", "Buena", "Alta"];
   const colors = ["bg-gastro-surface-high", "bg-gastro-error", "bg-amber-500", "bg-gastro-action", "bg-emerald-600"];
+  const meetsLength = password.length >= 8;
+  const matches = Boolean(confirmation) && password === confirmation;
 
   return (
-    <div aria-live="polite">
+    <section aria-live="polite" className="border border-gastro-outline-variant bg-gastro-surface-low p-4">
       <div className="flex items-center justify-between gap-3 text-xs">
         <span className="font-semibold uppercase tracking-[0.08em] text-gastro-muted">Nivel de seguridad</span>
         <span className="font-medium text-gastro-primary">{labels[score]}</span>
       </div>
-      <div className="mt-2 grid grid-cols-4 gap-1" role="progressbar" aria-label={`Nivel de seguridad: ${labels[score]}`} aria-valuemax={4} aria-valuemin={0} aria-valuenow={score}>
+      <div className="mt-3 grid grid-cols-4 gap-1" role="progressbar" aria-label={`Nivel de seguridad: ${labels[score]}`} aria-valuemax={4} aria-valuemin={0} aria-valuenow={score}>
         {[1, 2, 3, 4].map((level) => <span className={cn("h-1.5 rounded-full", level <= score ? colors[score] : "bg-gastro-surface-high")} key={level} />)}
       </div>
-    </div>
+      <ul className="mt-4 space-y-2 text-sm text-gastro-muted">
+        <PasswordRequirement isMet={meetsLength}>Al menos 8 caracteres</PasswordRequirement>
+        {confirmation !== undefined ? <PasswordRequirement isMet={matches}>Las contraseñas coinciden</PasswordRequirement> : null}
+      </ul>
+    </section>
   );
+}
+
+function PasswordRequirement({ children, isMet }: { children: ReactNode; isMet: boolean }) {
+  return <li className={cn("flex items-center gap-2", isMet && "text-emerald-800")}><span aria-hidden="true" className={cn("grid size-5 place-items-center rounded-full border", isMet ? "border-emerald-700 bg-emerald-700 text-white" : "border-gastro-muted")}>{isMet ? "✓" : null}</span>{children}</li>;
 }
 
 export const Textarea = forwardRef<HTMLTextAreaElement, TextareaHTMLAttributes<HTMLTextAreaElement>>(function Textarea({ className, ...props }, ref) {

@@ -1,6 +1,7 @@
 "use client";
 
 import { useDashboardIdentity } from "@/components/auth/dashboard-identity-provider";
+import { GastronomyStatusPage } from "@/components/feedback/gastronomy-status-page";
 
 export function AdminRouteGuard({ children }: { children: React.ReactNode }) {
   const identity = useDashboardIdentity();
@@ -18,11 +19,7 @@ export function AdminRouteGuard({ children }: { children: React.ReactNode }) {
   }
 
   if (!identity.user.roles.includes("ADMIN")) {
-    return (
-      <p className="mt-6 text-sm text-red-700" role="alert">
-        No tienes permisos para administrar usuarios.
-      </p>
-    );
+    return <GastronomyStatusPage kind="forbidden" />;
   }
 
   return <>{children}</>;
