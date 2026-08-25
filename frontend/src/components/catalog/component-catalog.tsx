@@ -14,6 +14,7 @@ import {
   RolePicker,
   type RoleCode,
 } from "@/components/domain/operations";
+import { CredentialCard } from "@/components/domain/credential-card";
 import {
   Badge,
   Button,
@@ -143,6 +144,10 @@ export function ComponentCatalog() {
             <RequestStatusBadge status="PREPARED" />
             <RequestStatusBadge status="DELIVERED" />
           </div>
+        </DemoSection>
+
+        <DemoSection description="Ejemplo ficticio del resultado de alta. En producción recibe la contraseña temporal una sola vez desde FastAPI y no la persiste." title="Credenciales temporales">
+          <CredentialCard email="ana.perez@institucion.edu" fullName="Ana Pérez" password="Demo-Temporal-2026" roles={["Encargado"]} />
         </DemoSection>
 
         <DemoSection description="Los siguientes valores son ficticios y existen únicamente para comprobar cómo se comportan los componentes con cifras, alertas y escalas visuales." title="Métricas y gráficos de demostración">

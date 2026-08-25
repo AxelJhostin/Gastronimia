@@ -4,6 +4,8 @@ Base visual reutilizable de Gastronomía, alineada con los tokens de Stitch. No 
 
 Importar desde `@/components/ui`. Incluye botones, controles de formulario, badges, tarjetas, encabezados, tablas, búsqueda, filtros, paginación, notificaciones, modal, estados de carga/vacío/error/sin permiso, diálogo de confirmación, métricas, gráficos de barras/distribución, actividad y alertas.
 
+`PasswordInput` incorpora el botón de mostrar/ocultar; `PasswordStrength` recibe el valor actual y muestra una orientación visual local. Ninguno persiste ni registra contraseñas.
+
 Los módulos de dominio deben componer estos elementos desde fuera de esta carpeta; no se deben añadir aquí llamadas a FastAPI ni Supabase.
 
 Los componentes de patrón operativo están en `@/components/domain/operations`: roles, estados oficiales de solicitud, selector de roles, timeline y disponibilidad. El shell responsive está en `@/components/layout/app-shell`.

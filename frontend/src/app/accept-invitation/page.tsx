@@ -4,12 +4,14 @@ import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { createClient } from "@/lib/supabase/client";
+import { PasswordInput, PasswordStrength } from "@/components/ui";
 
 export default function AcceptInvitationPage() {
   const router = useRouter();
   const [isInvitationValid, setIsInvitationValid] = useState<boolean | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [password, setPassword] = useState("");
 
   useEffect(() => {
     async function verifyInvitation() {
@@ -25,21 +27,21 @@ export default function AcceptInvitationPage() {
     setErrorMessage(null);
 
     const formData = new FormData(event.currentTarget);
-    const password = String(formData.get("password") ?? "");
+    const submittedPassword = String(formData.get("password") ?? "");
     const passwordConfirmation = String(formData.get("passwordConfirmation") ?? "");
 
-    if (password.length < 8) {
+    if (submittedPassword.length < 8) {
       setErrorMessage("La contraseña debe tener al menos 8 caracteres.");
       return;
     }
 
-    if (password !== passwordConfirmation) {
+    if (submittedPassword !== passwordConfirmation) {
       setErrorMessage("Las contraseñas no coinciden.");
       return;
     }
 
     setIsSubmitting(true);
-    const { error } = await createClient().auth.updateUser({ password });
+    const { error } = await createClient().auth.updateUser({ password: submittedPassword });
     setIsSubmitting(false);
 
     if (error) {
@@ -76,29 +78,29 @@ export default function AcceptInvitationPage() {
             </p>
             <label className="block text-sm font-medium text-stone-700" htmlFor="password">
               Contraseña
-              <input
+              <PasswordInput
                 autoComplete="new-password"
                 className="mt-2 block w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-stone-900 outline-none ring-amber-600 focus:ring-2"
                 id="password"
                 minLength={8}
                 name="password"
+                onChange={(event) => setPassword(event.target.value)}
                 required
-                type="password"
               />
+              <div className="mt-3"><PasswordStrength password={password} /></div>
             </label>
             <label
               className="block text-sm font-medium text-stone-700"
               htmlFor="passwordConfirmation"
             >
               Confirmar contraseña
-              <input
+              <PasswordInput
                 autoComplete="new-password"
                 className="mt-2 block w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-stone-900 outline-none ring-amber-600 focus:ring-2"
                 id="passwordConfirmation"
                 minLength={8}
                 name="passwordConfirmation"
                 required
-                type="password"
               />
             </label>
             {errorMessage ? (

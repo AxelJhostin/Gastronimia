@@ -1,7 +1,7 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
-import { Badge, Button, DonutChart, EmptyState, Field, HorizontalBarChart, Input, Pagination } from "./index";
+import { Badge, Button, DonutChart, EmptyState, Field, HorizontalBarChart, Input, Pagination, PasswordInput } from "./index";
 
 describe("componentes de interfaz", () => {
   it("deshabilita el botón mientras muestra una carga", () => {
@@ -29,5 +29,13 @@ describe("componentes de interfaz", () => {
     render(<><HorizontalBarChart data={[{ label: "Cuchillería", value: 8 }]} label="Disponibilidad" /><DonutChart label="Estados" segments={[{ color: "#ea580c", label: "Disponible", value: 8 }]} /></>);
     expect(screen.getByRole("progressbar", { name: "Cuchillería: 8" })).toBeInTheDocument();
     expect(screen.getByLabelText("Estados: 8 en total")).toBeInTheDocument();
+  });
+
+  it("permite mostrar y ocultar una contraseña sin perder el control", () => {
+    render(<PasswordInput aria-label="Contraseña" />);
+    const input = screen.getByLabelText("Contraseña");
+    expect(input).toHaveAttribute("type", "password");
+    fireEvent.click(screen.getByRole("button", { name: "Mostrar contraseña" }));
+    expect(input).toHaveAttribute("type", "text");
   });
 });
