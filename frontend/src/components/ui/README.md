@@ -2,7 +2,7 @@
 
 Base visual reutilizable de Gastronomía, alineada con los tokens de Stitch. No contiene datos, endpoints ni reglas de negocio.
 
-Importar desde `@/components/ui`. Incluye botones, controles de formulario, badges, tarjetas, encabezados, tablas, búsqueda, filtros, paginación, notificaciones, modal, estados de carga/vacío/error/sin permiso y diálogo de confirmación.
+Importar desde `@/components/ui`. Incluye botones, controles de formulario, badges, tarjetas, encabezados, tablas, búsqueda, filtros, paginación, notificaciones, modal, estados de carga/vacío/error/sin permiso, diálogo de confirmación, métricas, gráficos de barras/distribución, actividad y alertas.
 
 Los módulos de dominio deben componer estos elementos desde fuera de esta carpeta; no se deben añadir aquí llamadas a FastAPI ni Supabase.
 

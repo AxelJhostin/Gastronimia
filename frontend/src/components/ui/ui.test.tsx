@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
-import { Badge, Button, EmptyState, Field, Input, Pagination } from "./index";
+import { Badge, Button, DonutChart, EmptyState, Field, HorizontalBarChart, Input, Pagination } from "./index";
 
 describe("componentes de interfaz", () => {
   it("deshabilita el botón mientras muestra una carga", () => {
@@ -23,5 +23,11 @@ describe("componentes de interfaz", () => {
     render(<Pagination currentPage={1} onPageChange={() => undefined} totalPages={3} />);
     expect(screen.getByRole("button", { name: "Anterior" })).toBeDisabled();
     expect(screen.getByText("Página 1 de 3")).toBeInTheDocument();
+  });
+
+  it("expone valores de gráficos con etiquetas accesibles", () => {
+    render(<><HorizontalBarChart data={[{ label: "Cuchillería", value: 8 }]} label="Disponibilidad" /><DonutChart label="Estados" segments={[{ color: "#ea580c", label: "Disponible", value: 8 }]} /></>);
+    expect(screen.getByRole("progressbar", { name: "Cuchillería: 8" })).toBeInTheDocument();
+    expect(screen.getByLabelText("Estados: 8 en total")).toBeInTheDocument();
   });
 });

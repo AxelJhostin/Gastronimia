@@ -18,12 +18,17 @@ import {
   Badge,
   Button,
   ConfirmDialog,
+  DonutChart,
   EmptyState,
   ErrorState,
   Field,
   FilterSelect,
   Input,
+  ActivityFeed,
+  AlertList,
   LoadingState,
+  HorizontalBarChart,
+  MetricCard,
   Modal,
   PageHeader,
   Pagination,
@@ -37,6 +42,7 @@ import {
   TableRow,
   Textarea,
   ToastRegion,
+  Trend,
   type ToastMessage,
 } from "@/components/ui";
 
@@ -139,12 +145,34 @@ export function ComponentCatalog() {
           </div>
         </DemoSection>
 
+        <DemoSection description="Los siguientes valores son ficticios y existen únicamente para comprobar cómo se comportan los componentes con cifras, alertas y escalas visuales." title="Métricas y gráficos de demostración">
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <MetricCard label="Equipos registrados" trend={<Trend direction="up" label="+8 esta semana" />} value="1.240" />
+            <MetricCard label="Disponibles" trend={<Trend direction="neutral" label="Sin cambios" />} value="890" />
+            <MetricCard label="Solicitudes activas" tone="warning" trend={<Trend direction="up" label="+3 hoy" />} value="15" />
+            <MetricCard label="Incidencias abiertas" tone="danger" trend={<Trend direction="down" label="Requiere atención" />} value="3" />
+          </div>
+          <div className="mt-8 grid gap-8 xl:grid-cols-2">
+            <div><h3 className="text-base font-semibold text-gastro-primary">Disponibilidad por categoría</h3><div className="mt-4"><HorizontalBarChart data={[{ label: "Cuchillería", value: 85, detail: "85% disponible" }, { label: "Electrodomésticos", value: 60, detail: "60% disponible" }, { label: "Cristalería", value: 92, detail: "92% disponible" }]} label="Disponibilidad por categoría" valueFormatter={(value) => `${value}%`} /></div></div>
+            <div><h3 className="text-base font-semibold text-gastro-primary">Distribución de equipos</h3><div className="mt-4"><DonutChart label="Distribución de equipos por estado" segments={[{ label: "Disponible", value: 890, color: "#ea580c" }, { label: "Prestado o reservado", value: 292, color: "#d1c3c3" }, { label: "Mantenimiento", value: 58, color: "#ba1a1a" }]} /></div></div>
+          </div>
+        </DemoSection>
+
         <div className="grid gap-8 xl:grid-cols-2">
           <DemoSection description="La misma pieza sirve para altas de usuario y edición de roles." title="Selector de roles">
             <RolePicker onChange={setSelectedRoles} selectedRoles={selectedRoles} />
           </DemoSection>
           <DemoSection description="Representa el ciclo autorizado de una solicitud; no permite cambiarlo desde la interfaz." title="Timeline de solicitud">
             <RequestTimeline currentStatus="PREPARING" />
+          </DemoSection>
+        </div>
+
+        <div className="grid gap-8 xl:grid-cols-2">
+          <DemoSection title="Actividad reciente">
+            <ActivityFeed items={[{ title: "Cuchillo de chef devuelto", detail: "Por Juan Pérez · hace 10 min", tone: "warning" }, { title: "Nueva reserva registrada", detail: "Laboratorio 3 · hace 1 h" }, { title: "Mantenimiento completado", detail: "Horno industrial · hace 3 h" }]} />
+          </DemoSection>
+          <DemoSection title="Alertas operativas">
+            <AlertList alerts={[{ title: "5 solicitudes por revisar", description: "Requieren una decisión del personal de laboratorio.", action: <Button size="sm" variant="secondary">Revisar</Button> }, { title: "2 devoluciones atrasadas", description: "Revisar el estado de los préstamos activos.", tone: "danger", action: <Button size="sm" variant="danger">Ver alertas</Button> }]} />
           </DemoSection>
         </div>
 
