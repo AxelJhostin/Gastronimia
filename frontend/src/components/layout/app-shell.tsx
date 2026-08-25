@@ -29,7 +29,7 @@ export function AppShell({
   productSubtitle?: string;
 }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const pathname = usePathname();
+  const pathname = usePathname() ?? "";
   const nav = <Navigation pathname={pathname} items={navigation} onNavigate={() => setIsMenuOpen(false)} />;
 
   return (
