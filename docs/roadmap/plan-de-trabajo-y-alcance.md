@@ -421,6 +421,7 @@ La asignación debe registrarse en el pull request o en el tablero de trabajo. N
 | 2026-08-20 | Supabase | Axel la toma inicialmente como responsabilidad principal, con revisión cruzada | Axel / Shoma | Abierto a ajuste |
 | 2026-08-25 | Acceso frontend | Integrado el bloque de Shoma: login, logout, sesión SSR, proxy y protección base de rutas (`edc27b5`) | Shoma | Código integrado; falta prueba manual con cuentas reales |
 | 2026-08-25 | Altas de usuarios y roles | Se reemplaza la invitación por alta directa con contraseña temporal generada en servidor. ADMIN crea nombre, correo y roles; la contraseña se muestra una sola vez para compartirla por un canal acordado y el usuario debe cambiarla al primer acceso. El primer ADMIN se inicializa manualmente una sola vez. | Axel (backend/datos) / Shoma (listado y edición visual posterior) | En adaptación |
+| 2026-08-25 | Biblioteca visual frontend | Se creó una biblioteca reutilizable alineada con Stitch, con catálogo interno de desarrollo, estados de acceso/ruta, controles accesibles y patrones iniciales de inventario. No integra endpoints ni altera la autorización del backend. | Equipo | Completado |
 
 Agregar aquí cualquier decisión que cambie una regla, estado, tabla, permiso o alcance.
 

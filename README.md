@@ -188,6 +188,7 @@ La regla es simple: primero se entiende la tarea y sus estados, luego se explora
 - [Flujos y diagramas](/Users/hernandezaxel/proyectos/Gastronimia/docs/requirements/03_flujos_diagramas_gastronomia.md)
 - [Tecnologías y arquitectura](/Users/hernandezaxel/proyectos/Gastronimia/docs/architecture/tecnologias-y-arquitectura.md)
 - [Guía de handoff para frontend](/Users/hernandezaxel/proyectos/Gastronimia/docs/frontend/guia-de-handoff-frontend.md)
+- [Biblioteca de componentes frontend](/Users/hernandezaxel/proyectos/Gastronimia/docs/frontend/biblioteca-de-componentes.md)
 - [Entorno y despliegue](/Users/hernandezaxel/proyectos/Gastronimia/docs/guides/entorno-y-despliegue.md)
 - [Pruebas y calidad](/Users/hernandezaxel/proyectos/Gastronimia/docs/guides/pruebas-y-calidad.md)
 - [Uso de skills para frontend](/Users/hernandezaxel/proyectos/Gastronimia/docs/guides/uso-de-skills-para-frontend.md)

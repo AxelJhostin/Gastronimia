@@ -309,7 +309,7 @@ Trabajar en este orden. Cada bloque termina con UI, estados de carga/vacío/erro
 - [~] Crear cliente API central con token, errores tipados y JSON. Base disponible para `/auth/me` y altas directas; falta extenderla al resto de módulos.
 - [x] Crear provider/store de sesión: Supabase session + `GET /auth/me` en el área `/dashboard`.
 - [~] Reemplazar dashboard placeholder por layout con navegación filtrada por roles. Disponible el enlace ADMIN; faltan los módulos operativos por rol.
-- [ ] Crear componentes base: `PageHeader`, `EmptyState`, `ErrorState`, `LoadingState`, `PermissionDenied`, badge de estado, modal de confirmación y formulario reutilizable.
+- [x] Crear componentes base: PageHeader, EmptyState, ErrorState, LoadingState, PermissionDenied, badges, formularios, modal de confirmación, tabla, métricas, gráficos y patrones de inventario. Consultar la biblioteca de componentes frontend.
 - [ ] Proteger rutas y redirigir correctamente por sesión/rol.
 
 **Salida:** login → `/auth/me` → navegación correcta; 401/403/409/422 se ven correctamente.

@@ -34,3 +34,4 @@ python -m pytest
 - Los cambios de estado y las cantidades se validan del lado del servidor.
 - Una migración debe tener reversibilidad razonable y cubrir sus políticas RLS.
 - CI ejecutará análisis estático, pruebas y build antes de integrar cambios.
+- Los componentes reutilizables con interacción (por ejemplo, visibilidad de contraseña, modales, paginación o estados) deben contar con pruebas de interfaz accesibles.
