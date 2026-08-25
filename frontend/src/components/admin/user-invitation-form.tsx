@@ -1,15 +1,14 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useRef, useState } from "react";
 
 import {
   ApiError,
   createManagedUser,
-  getCurrentUser,
   type RoleCode,
   type ProvisionedUser,
 } from "@/lib/api/client";
-import { createClient } from "@/lib/supabase/client";
+import { useDashboardIdentity } from "@/components/auth/dashboard-identity-provider";
 
 const availableRoles: Array<{ code: RoleCode; label: string }> = [
   { code: "TEACHER", label: "Docente" },
@@ -17,87 +16,94 @@ const availableRoles: Array<{ code: RoleCode; label: string }> = [
   { code: "ADMIN", label: "Administrador" },
 ];
 
-export function UserInvitationForm() {
-  const [accessToken, setAccessToken] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [success, setSuccess] = useState<ProvisionedUser | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+type SubmissionState =
+  | { type: "idle" }
+  | { type: "submitting" }
+  | { type: "error"; message: string }
+  | { type: "success"; user: ProvisionedUser };
 
-  useEffect(() => {
-    async function loadPermissions() {
-      const { data } = await createClient().auth.getSession();
-      if (!data.session) {
-        setErrorMessage("Tu sesión expiró. Inicia sesión nuevamente.");
-        setIsLoading(false);
-        return;
-      }
+const roleLabels: Record<RoleCode, string> = {
+  ADMIN: "Administrador",
+  MANAGER: "Encargado",
+  TEACHER: "Docente",
+};
 
-      try {
-        const user = await getCurrentUser(data.session.access_token);
-        setAccessToken(data.session.access_token);
-        setIsAdmin(user.roles.includes("ADMIN"));
-      } catch {
-        setErrorMessage("No fue posible verificar tus permisos.");
-      } finally {
-        setIsLoading(false);
-      }
-    }
-
-    void loadPermissions();
-  }, []);
+export function UserProvisionForm() {
+  const identity = useDashboardIdentity();
+  const [submission, setSubmission] = useState<SubmissionState>({ type: "idle" });
+  const [copyMessage, setCopyMessage] = useState<string | null>(null);
+  const isSubmittingRef = useRef(false);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setErrorMessage(null);
-    setSuccess(null);
-
-    if (!accessToken) {
-      setErrorMessage("Tu sesión expiró. Inicia sesión nuevamente.");
+    if (isSubmittingRef.current) {
       return;
     }
 
+    if (identity.status !== "authenticated") {
+      setSubmission({
+        type: "error",
+        message: "Tu sesión expiró. Inicia sesión nuevamente.",
+      });
+      return;
+    }
+
+    const form = event.currentTarget;
     const formData = new FormData(event.currentTarget);
     const roles = availableRoles
       .filter((role) => formData.get(`role-${role.code}`) === "on")
       .map((role) => role.code);
 
     if (roles.length === 0) {
-      setErrorMessage("Selecciona al menos un rol.");
+      setSubmission({ type: "error", message: "Selecciona al menos un rol." });
       return;
     }
 
-    setIsSubmitting(true);
+    isSubmittingRef.current = true;
+    setCopyMessage(null);
+    setSubmission({ type: "submitting" });
     try {
-      const provisionedUser = await createManagedUser(accessToken, {
+      const provisionedUser = await createManagedUser(identity.accessToken, {
         email: String(formData.get("email") ?? ""),
         full_name: String(formData.get("fullName") ?? ""),
         roles,
       });
-      setSuccess(provisionedUser);
-      event.currentTarget.reset();
+      setSubmission({ type: "success", user: provisionedUser });
+      form.reset();
     } catch (error) {
-      setErrorMessage(
-        error instanceof ApiError
-          ? error.message
-          : "No fue posible crear el usuario.",
-      );
+      setSubmission({
+        type: "error",
+        message:
+          error instanceof ApiError
+            ? error.message
+            : "No fue posible crear el usuario.",
+      });
     } finally {
-      setIsSubmitting(false);
+      isSubmittingRef.current = false;
     }
   }
 
-  if (isLoading) {
-    return <p className="mt-6 text-sm text-stone-600">Verificando permisos…</p>;
-  }
+  async function copyCredentials(user: ProvisionedUser) {
+    const roles = user.roles.map((role) => roleLabels[role]).join(", ");
+    const credentials = [
+      `Hola ${user.full_name},`,
+      "",
+      "Se creó tu cuenta en Gastronomía.",
+      `Correo: ${user.email}`,
+      `Contraseña temporal: ${user.temporary_password}`,
+      `Rol(es): ${roles}`,
+      "",
+      "Ingresa con estas credenciales y cambia la contraseña temporal antes de continuar.",
+    ].join("\n");
 
-  if (!isAdmin) {
-    return (
-      <p className="mt-6 text-sm text-red-700" role="alert">
-        No tienes permisos para administrar usuarios.
-      </p>
-    );
+    try {
+      await navigator.clipboard.writeText(credentials);
+      setCopyMessage("Credenciales copiadas. Ya puedes pegarlas en WhatsApp.");
+    } catch {
+      setCopyMessage(
+        "No fue posible copiar automáticamente. Selecciona las credenciales y cópialas manualmente.",
+      );
+    }
   }
 
   return (
@@ -135,29 +141,53 @@ export function UserInvitationForm() {
           ))}
         </div>
       </fieldset>
-      {errorMessage ? (
+      {submission.type === "error" ? (
         <p aria-live="polite" className="text-sm text-red-700" role="alert">
-          {errorMessage}
+          {submission.message}
         </p>
       ) : null}
-      {success ? (
-        <p aria-live="polite" className="text-sm text-emerald-700" role="status">
-          Usuario creado: {success.email}. Contraseña temporal: {success.temporary_password}
+      {submission.type === "success" ? (
+        <section
+          aria-live="polite"
+          className="space-y-4 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-950"
+          role="status"
+        >
+          <div>
+            <h2 className="font-semibold">Usuario creado correctamente</h2>
+            <p className="mt-1 text-emerald-900">
+              Comparte estas credenciales una sola vez por un canal seguro.
+            </p>
+          </div>
+          <dl className="space-y-2 rounded-lg bg-white p-3 text-stone-900">
+            <div>
+              <dt className="font-medium text-stone-600">Correo</dt>
+              <dd className="break-all font-mono">{submission.user.email}</dd>
+            </div>
+            <div>
+              <dt className="font-medium text-stone-600">Contraseña temporal</dt>
+              <dd className="break-all font-mono">{submission.user.temporary_password}</dd>
+            </div>
+            <div>
+              <dt className="font-medium text-stone-600">Roles</dt>
+              <dd>{submission.user.roles.map((role) => roleLabels[role]).join(", ")}</dd>
+            </div>
+          </dl>
           <button
-            className="ml-2 underline"
-            onClick={() => void navigator.clipboard.writeText(success.temporary_password)}
+            className="rounded-lg border border-emerald-700 px-3 py-2 font-semibold text-emerald-900 hover:bg-emerald-100"
+            onClick={() => void copyCredentials(submission.user)}
             type="button"
           >
-            Copiar
+            Copiar credenciales
           </button>
-        </p>
+          {copyMessage ? <p className="font-medium">{copyMessage}</p> : null}
+        </section>
       ) : null}
       <button
         className="w-full rounded-lg bg-amber-700 px-4 py-2.5 font-semibold text-white hover:bg-amber-800 disabled:cursor-not-allowed disabled:opacity-60"
-        disabled={isSubmitting}
+        disabled={submission.type === "submitting"}
         type="submit"
       >
-        {isSubmitting ? "Creando usuario…" : "Crear usuario"}
+        {submission.type === "submitting" ? "Creando usuario…" : "Crear usuario"}
       </button>
     </form>
   );

@@ -53,11 +53,12 @@ El trabajo inicial de interfaz está integrado desde la rama `codex/auth-supabas
 - [x] Cierre de sesión.
 - [x] Rutas `/`, `/login` y `/dashboard`.
 - [x] Redirección a `/login` cuando no hay una sesión válida en `/dashboard`.
-- [x] Entrada de administración visible solo para `ADMIN` y formulario inicial de invitación en `/dashboard/users`.
-- [x] Ruta `/accept-invitation` para que la persona invitada defina su contraseña.
+- [x] Sesión centralizada en `/dashboard`: consulta una vez `/auth/me`, muestra correo y roles, y reutiliza el resultado en sus pantallas.
+- [x] Entrada y pantalla de administración de usuarios visible solo para `ADMIN` en `/dashboard/users`; FastAPI conserva la autorización definitiva.
+- [x] Alta directa de usuarios con contraseña temporal, cambio obligatorio en el primer acceso y copia de correo + contraseña + roles.
 - [~] Prueba manual con cuenta real y expiración de sesión. El código está listo; falta verificarlo contra el proyecto compartido de Supabase.
 
-Esto **no** incluye todavía `GET /auth/me`, el estado global de roles, navegación por rol, cliente de FastAPI ni pantallas funcionales.
+Esto no incluye todavía las pantallas funcionales de inventario, solicitudes y operación; el estado de sesión/roles y el cliente inicial de FastAPI ya están disponibles.
 
 ### Backend y Supabase disponibles
 
@@ -125,13 +126,15 @@ Nunca colocar en frontend: `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_SECRET_KEY`, c
 | `src/lib/supabase/client.ts` | Cliente para componentes cliente: login, logout, Storage. |
 | `src/lib/supabase/server.ts` | Cliente server-side con cookies. |
 | `src/lib/supabase/proxy.ts` y `src/proxy.ts` | Renovación de sesión/protección base. Revisar antes de modificar autenticación. |
-| `src/lib/api/client.ts` | Cliente inicial tipado: health, `/auth/me` e invitaciones de usuarios. Ampliar aquí el resto de módulos de FastAPI. |
+| `src/lib/api/client.ts` | Cliente inicial tipado: health, `/auth/me`, altas directas y cambio de contraseña temporal. Ampliar aquí el resto de módulos de FastAPI. |
 | `src/components/auth/login-form.tsx` | Formulario de login ya conectado a Supabase. |
 | `src/components/auth/logout-button.tsx` | Cierre de sesión. |
 | `src/app/login/page.tsx` | Pantalla inicial de acceso. |
-| `src/app/dashboard/page.tsx` | Placeholder autenticado; reemplazar por layout/navegación según rol. |
-| `src/app/dashboard/users/page.tsx` | Pantalla ADMIN inicial para invitar usuarios; falta listado y edición de roles. |
-| `src/components/admin/` | Enlace condicionado a rol ADMIN y formulario de invitación; reutilizar este patrón para administración. |
+| `src/app/dashboard/layout.tsx` | Protección server-side de sesión y contraseña temporal; monta el contexto compartido de identidad. |
+| `src/app/dashboard/page.tsx` | Panel autenticado con correo y roles actuales; muestra navegación ADMIN según el contexto. |
+| `src/app/dashboard/users/page.tsx` | Pantalla ADMIN para alta directa; falta listado y edición de roles. |
+| `src/components/auth/dashboard-identity-provider.tsx` | Fuente única de sesión y `/auth/me` para las pantallas del dashboard. |
+| `src/components/admin/` | Enlace y guardia condicionados a `ADMIN`, además del formulario de alta directa. |
 
 ## 6. Regla de integración con FastAPI
 
@@ -299,9 +302,9 @@ Trabajar en este orden. Cada bloque termina con UI, estados de carga/vacío/erro
 ### Bloque F1 — Fundaciones de interfaz
 
 - [x] Login, logout, sesión SSR y protección base de `/dashboard`.
-- [~] Crear cliente API central con token, errores tipados y JSON. Base disponible para `/auth/me` e invitaciones; falta extenderla al resto de módulos.
-- [ ] Crear provider/store de sesión: Supabase session + `GET /auth/me`.
-- [ ] Reemplazar dashboard placeholder por layout con navegación filtrada por roles.
+- [~] Crear cliente API central con token, errores tipados y JSON. Base disponible para `/auth/me` y altas directas; falta extenderla al resto de módulos.
+- [x] Crear provider/store de sesión: Supabase session + `GET /auth/me` en el área `/dashboard`.
+- [~] Reemplazar dashboard placeholder por layout con navegación filtrada por roles. Disponible el enlace ADMIN; faltan los módulos operativos por rol.
 - [ ] Crear componentes base: `PageHeader`, `EmptyState`, `ErrorState`, `LoadingState`, `PermissionDenied`, badge de estado, modal de confirmación y formulario reutilizable.
 - [ ] Proteger rutas y redirigir correctamente por sesión/rol.
 
@@ -309,7 +312,7 @@ Trabajar en este orden. Cada bloque termina con UI, estados de carga/vacío/erro
 
 ### Bloque F2 — Configuración ADMIN
 
-- [~] Pantalla Usuarios y roles. El alta por invitación está disponible en `/dashboard/users`; faltan listado y edición visual de roles.
+- [~] Pantalla Usuarios y roles. El alta directa está disponible en `/dashboard/users`; faltan listado y edición visual de roles.
 - [ ] CRUD disponible de períodos, materias, laboratorios, perfiles docentes y secciones.
 - [ ] Formularios con UUID seleccionados mediante listas, no textos manuales.
 - [ ] Filtros, vacío y validación de fechas en período.
@@ -421,9 +424,9 @@ Al cerrar cada bloque, comprobar:
 
 ### Pendiente de frontend
 
-- [ ] Cliente FastAPI y estado global de sesión/roles.
-- [ ] Layout, navegación y protección visual por rol.
-- [~] Pantalla ADMIN para usuarios. Ya envía `POST /admin/users/invitations`; faltan listado y actualización visual de roles. La ruta de aceptación mínima `/accept-invitation` ya existe.
+- [~] Cliente FastAPI y estado de sesión/roles: disponible para `/dashboard`; falta extenderlo a nuevos módulos.
+- [~] Layout, navegación y protección visual por rol: disponible para administración de usuarios; faltan los módulos operativos.
+- [~] Pantalla ADMIN para usuarios. Ya envía `POST /admin/users`, muestra y copia las credenciales temporales; faltan listado y actualización visual de roles.
 - [ ] Pantallas y formularios de los bloques F2 a F8.
 - [ ] Integración de evidencias privadas.
 - [ ] Responsive, accesibilidad, estados y pruebas de interfaz.
@@ -434,7 +437,7 @@ Al cerrar cada bloque, comprobar:
 - [ ] Definir/exponer endpoint(s) de detalle operativo para solicitudes/reservas/preparación.
 - [ ] Confirmar los campos necesarios para detalle de préstamo/devolución en UI.
 - [ ] Resolver cualquier campo o listado que impida seleccionar relaciones sin UUID manual.
-- [~] Alta por invitación de usuarios: backend, migración, aceptación mínima y formulario ADMIN implementados. Shoma puede completar listado y actualización visual de roles. El primer `ADMIN` se crea manualmente una sola vez.
+- [~] Alta directa de usuarios: backend, migración, cambio de contraseña temporal y formulario ADMIN implementados. Shoma puede completar listado y actualización visual de roles. El primer `ADMIN` se crea manualmente una sola vez.
 
 ## 15. Primer día recomendado
 

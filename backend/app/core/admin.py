@@ -1,3 +1,4 @@
+import logging
 import secrets
 from typing import Any
 
@@ -7,6 +8,8 @@ from pydantic import BaseModel, Field
 
 from app.core.auth import RoleCode
 from app.core.config import settings
+
+logger = logging.getLogger(__name__)
 
 
 class ManagedUser(BaseModel):
@@ -191,15 +194,26 @@ def provision_managed_user(
         assignment_response = httpx.post(
             f"{_supabase_url()}/rest/v1/rpc/record_user_provisioning",
             json={
-                "provisioned_user_id": user_id,
-                "provisioned_by_user_id": invited_by_user_id,
-                "provisioned_email": normalized_email,
-                "requested_roles": requested_roles,
+                "p_provisioned_user_id": user_id,
+                "p_provisioned_by_user_id": invited_by_user_id,
+                "p_provisioned_email": normalized_email,
+                "p_requested_roles": requested_roles,
             },
             headers=_service_headers(),
             timeout=5.0,
         )
         assignment_response.raise_for_status()
+    except httpx.HTTPStatusError as error:
+        logger.warning(
+            "Supabase rechazó el registro de alta: status=%s body=%s",
+            error.response.status_code,
+            error.response.text,
+        )
+        _delete_auth_user(user_id)
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="No fue posible registrar el usuario y sus roles.",
+        ) from error
     except httpx.HTTPError as error:
         _delete_auth_user(user_id)
         raise HTTPException(

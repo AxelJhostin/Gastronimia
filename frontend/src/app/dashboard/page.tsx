@@ -1,26 +1,8 @@
-import { redirect } from "next/navigation";
-
-import { AdminUserLink } from "@/components/admin/admin-user-link";
+import { DashboardIdentitySummary } from "@/components/auth/dashboard-identity-summary";
 import { LogoutButton } from "@/components/auth/logout-button";
-import { createClient } from "@/lib/supabase/server";
+import { AdminUserLink } from "@/components/admin/admin-user-link";
 
-export default async function DashboardPage() {
-  const supabase = await createClient();
-  const { data, error } = await supabase.auth.getClaims();
-
-  if (error || !data?.claims?.sub) {
-    redirect("/login");
-  }
-  const appMetadata = data.claims.app_metadata;
-  if (
-    typeof appMetadata === "object" &&
-    appMetadata !== null &&
-    "must_change_password" in appMetadata &&
-    appMetadata.must_change_password === true
-  ) {
-    redirect("/change-password");
-  }
-
+export default function DashboardPage() {
   return (
     <main className="flex flex-1 justify-center bg-stone-50 p-6 text-stone-900">
       <section className="w-full max-w-4xl rounded-2xl border border-stone-200 bg-white p-8 shadow-sm">
@@ -36,6 +18,7 @@ export default async function DashboardPage() {
         <p className="mt-6 leading-7 text-stone-600">
           Tu sesión está validada. Las opciones disponibles se mostrarán según tu rol.
         </p>
+        <DashboardIdentitySummary />
         <div className="mt-6">
           <AdminUserLink />
         </div>

@@ -116,7 +116,7 @@ Todos los paths siguientes son relativos a `/api/v1`. Las rutas `ADMIN/MANAGER` 
 Los UUID se envían como texto; las fechas como ISO 8601 con zona horaria y los decimales como string para evitar redondeos en el navegador.
 
 ```json
-// POST /admin/users/invitations
+// POST /admin/users
 {
   "email": "docente@institucion.edu",
   "full_name": "Nombre completo",
@@ -168,7 +168,7 @@ Los UUID se envían como texto; las fechas como ISO 8601 con zona horaria y los 
 }
 ```
 
-La respuesta de invitación contiene `user_id`, `email`, `full_name` y `roles`. Supabase manda al correo un enlace temporal de un solo uso y lo redirige a `/accept-invitation`, donde la persona define una contraseña de al menos ocho caracteres. El frontend no recibe ni usa `SUPABASE_SERVICE_ROLE_KEY`. La migración requerida `20260825152820_user_invitations.sql` fue aplicada al proyecto compartido el 25 de agosto de 2026.
+La respuesta de alta contiene `user_id`, `email`, `full_name`, `roles` y `temporary_password`. La contraseña se muestra una sola vez en el frontend para que un `ADMIN` comparta correo, contraseña y roles por un canal acordado. La persona inicia sesión con esas credenciales y debe cambiar la contraseña antes de continuar. El frontend no recibe ni usa `SUPABASE_SERVICE_ROLE_KEY`; tampoco persiste la contraseña temporal. Las migraciones `20260825155213_direct_user_provisioning.sql` y `20260825162256_prefix_user_provisioning_parameters.sql` están aplicadas al proyecto compartido.
 
 `inventory_unit_ids` solo se manda para artículos `INDIVIDUAL`; para `QUANTITY` se omite. En devolución, `loan_unit_ids` contiene IDs de **detalle de préstamo**, obtenidos en `GET /admin/returns/loans/{id}/pending`, no IDs de inventario.
 

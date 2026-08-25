@@ -9,7 +9,7 @@ export type CurrentUser = {
   must_change_password: boolean;
 };
 
-export type CreateUserInvitationInput = {
+export type CreateManagedUserInput = {
   email: string;
   full_name: string;
   roles: RoleCode[];
@@ -85,7 +85,7 @@ export function getCurrentUser(accessToken: string) {
 
 export function createManagedUser(
   accessToken: string,
-  input: CreateUserInvitationInput,
+  input: CreateManagedUserInput,
 ) {
   return requestApi<ProvisionedUser>("/admin/users", accessToken, {
     body: JSON.stringify(input),

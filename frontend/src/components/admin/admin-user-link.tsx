@@ -1,33 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
 
-import { getCurrentUser } from "@/lib/api/client";
-import { createClient } from "@/lib/supabase/client";
+import { useDashboardIdentity } from "@/components/auth/dashboard-identity-provider";
 
 export function AdminUserLink() {
-  const [canManageUsers, setCanManageUsers] = useState(false);
+  const identity = useDashboardIdentity();
 
-  useEffect(() => {
-    async function loadPermissions() {
-      const { data } = await createClient().auth.getSession();
-      if (!data.session) {
-        return;
-      }
-
-      try {
-        const user = await getCurrentUser(data.session.access_token);
-        setCanManageUsers(user.roles.includes("ADMIN"));
-      } catch {
-        setCanManageUsers(false);
-      }
-    }
-
-    void loadPermissions();
-  }, []);
-
-  if (!canManageUsers) {
+  if (
+    identity.status !== "authenticated" ||
+    !identity.user.roles.includes("ADMIN")
+  ) {
     return null;
   }
 

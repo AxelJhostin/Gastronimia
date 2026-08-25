@@ -33,6 +33,26 @@ def test_auth_me_rejects_invalid_token() -> None:
     assert response.status_code == 401
 
 
+def test_decode_supabase_token_rejects_claims_without_user_id() -> None:
+    signing_key = Mock()
+    signing_key.key = "public-key"
+
+    with patch(
+        "app.core.auth.get_jwks_client"
+    ) as jwks_client, patch(
+        "app.core.auth.jwt.decode", return_value={"email": "missing@example.com"}
+    ):
+        jwks_client.return_value.get_signing_key_from_jwt.return_value = signing_key
+
+        with pytest.raises(HTTPException) as error:
+            from app.core.auth import decode_supabase_token
+
+            decode_supabase_token("valid-but-incomplete")
+
+    assert error.value.status_code == 401
+    assert error.value.detail == "El token no contiene un usuario válido."
+
+
 def test_auth_me_returns_verified_claims() -> None:
     client = TestClient(app)
 
@@ -60,6 +80,7 @@ def test_auth_me_returns_verified_claims() -> None:
         "id": "user-id",
         "email": "teacher@example.com",
         "roles": ["MANAGER", "TEACHER"],
+        "must_change_password": False,
     }
 
 
@@ -73,6 +94,8 @@ def test_current_user_roles_uses_verified_identity_and_user_token() -> None:
     response.json.return_value = [
         {"roles": {"code": "MANAGER"}},
         {"roles": {"code": "TEACHER"}},
+        {"roles": {"code": "UNSUPPORTED"}},
+        {"roles": None},
     ]
 
     with patch("app.core.auth.httpx.get", return_value=response) as request:
@@ -101,16 +124,36 @@ def test_current_user_roles_returns_503_when_supabase_is_unavailable() -> None:
 
 def test_require_roles_allows_matching_role() -> None:
     dependency = require_roles(RoleCode.MANAGER)
+    current_user = AuthenticatedUser(id="user-id", access_token="verified-token")
 
-    roles = dependency({RoleCode.MANAGER})
+    roles = dependency(current_user, {RoleCode.MANAGER})
 
     assert roles == {RoleCode.MANAGER}
 
 
 def test_require_roles_rejects_non_matching_role() -> None:
     dependency = require_roles(RoleCode.MANAGER)
+    current_user = AuthenticatedUser(id="user-id", access_token="verified-token")
 
     with pytest.raises(HTTPException) as error:
-        dependency({RoleCode.TEACHER})
+        dependency(current_user, {RoleCode.TEACHER})
 
     assert error.value.status_code == 403
+
+
+def test_require_roles_rejects_user_with_temporary_password() -> None:
+    dependency = require_roles(RoleCode.MANAGER)
+    current_user = AuthenticatedUser(
+        id="user-id",
+        access_token="verified-token",
+        must_change_password=True,
+    )
+
+    with pytest.raises(HTTPException) as error:
+        dependency(current_user, {RoleCode.MANAGER})
+
+    assert error.value.status_code == 403
+    assert (
+        error.value.detail
+        == "Debes cambiar tu contraseña temporal antes de continuar."
+    )
