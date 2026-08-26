@@ -1,35 +1,29 @@
+"use client";
+
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
-import { redirect } from "next/navigation";
+import { useEffect, useState } from "react";
 
-export default async function ReturnsPage() {
-  const supabase = await createClient();
+import { useDashboardIdentity } from "@/components/auth/dashboard-identity-provider";
+import { GastronomyStatusPage } from "@/components/feedback/gastronomy-status-page";
+import { getActiveLoans, type EquipmentLoan } from "@/lib/api/client";
 
-  // 1. Validar sesión
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+export default function ReturnsPage() {
+  const identity = useDashboardIdentity();
+  const [loans, setLoans] = useState<EquipmentLoan[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  if (!user) {
-    redirect("/login");
-  }
+  useEffect(() => {
+    if (identity.status !== "authenticated" || !identity.user.roles.some((role) => role === "ADMIN" || role === "MANAGER")) return;
+    void getActiveLoans(identity.accessToken)
+      .then(setLoans)
+      .catch((loadError) => setError(loadError instanceof Error ? loadError.message : "No fue posible cargar los préstamos."))
+      .finally(() => setLoading(false));
+  }, [identity]);
 
-  // 2. Validar rol (MANAGER o ADMIN)
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single();
-
-  if (profile?.role !== "ADMIN" && profile?.role !== "MANAGER") {
-    redirect("/dashboard/unauthorized");
-  }
-
-  // 3. Consultar entregas/retornos de material
-  const { data: returns, error } = await supabase
-    .from("returns")
-    .select("*, requests(title, profiles(full_name))")
-    .order("created_at", { ascending: false });
+  if (identity.status === "loading") return <p className="p-6 text-sm text-stone-600">Cargando préstamos…</p>;
+  if (identity.status === "unavailable") return <p className="p-6 text-sm text-red-700">{identity.message}</p>;
+  if (!identity.user.roles.some((role) => role === "ADMIN" || role === "MANAGER")) return <GastronomyStatusPage kind="forbidden" />;
 
   return (
     <main className="flex flex-1 justify-center bg-stone-50 p-6 text-stone-900">
@@ -44,7 +38,7 @@ export default async function ReturnsPage() {
               Devoluciones y Retorno de Pañol
             </h1>
             <p className="mt-1 text-sm text-stone-600">
-              Control de recepción de valijas y utensilios, verificación de faltantes y daños.
+              Préstamos activos pendientes de devolución, con trazabilidad desde la API.
             </p>
           </div>
           <Link
@@ -59,7 +53,7 @@ export default async function ReturnsPage() {
         <div className="mt-6 overflow-x-auto">
           {error ? (
             <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-              Error al cargar el historial de devoluciones: {error.message}
+              Error al cargar los préstamos activos: {error}
             </div>
           ) : (
             <table className="w-full text-left text-sm text-stone-700">
@@ -73,42 +67,33 @@ export default async function ReturnsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-stone-100">
-                {returns && returns.length > 0 ? (
-                  returns.map((ret) => (
-                    <tr key={ret.id} className="hover:bg-stone-50/60 transition-colors">
+                {loading ? (
+                  <tr><td colSpan={5} className="px-4 py-8 text-center text-stone-500">Cargando préstamos…</td></tr>
+                ) : loans.length > 0 ? (
+                  loans.map((loan) => (
+                    <tr key={loan.id} className="hover:bg-stone-50/60 transition-colors">
                       <td className="px-4 py-3.5 font-medium text-stone-900">
-                        {ret.requests?.title || `Retorno #${ret.id.slice(0, 8)}`}
+                        {`Préstamo #${loan.id.slice(0, 8)}`}
                       </td>
                       <td className="px-4 py-3.5 text-stone-600">
-                        {ret.requests?.profiles?.full_name || "Docente"}
+                        {loan.collected_by_name}
                       </td>
                       <td className="px-4 py-3.5 text-stone-600">
-                        {new Date(ret.created_at).toLocaleDateString("es-ES")}
+                        {new Date(loan.delivered_at).toLocaleDateString("es-EC")}
                       </td>
                       <td className="px-4 py-3.5">
                         <span
                           className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset ${
-                            ret.status === "COMPLETE"
-                              ? "bg-emerald-50 text-emerald-700 ring-emerald-600/20"
-                              : ret.status === "DAMAGED_ITEMS"
-                              ? "bg-amber-50 text-amber-700 ring-amber-600/20"
-                              : "bg-red-50 text-red-700 ring-red-600/20"
+                            loan.is_overdue
+                              ? "bg-red-50 text-red-700 ring-red-600/20"
+                              : "bg-amber-50 text-amber-700 ring-amber-600/20"
                           }`}
                         >
-                          {ret.status === "COMPLETE"
-                            ? "Completo"
-                            : ret.status === "DAMAGED_ITEMS"
-                            ? "Con observaciones"
-                            : "Faltantes"}
+                          {loan.is_overdue ? "Vencido" : "Pendiente de devolución"}
                         </span>
                       </td>
                       <td className="px-4 py-3.5 text-right">
-                        <Link
-                          href={`/dashboard/returns/${ret.id}`}
-                          className="text-xs font-semibold text-amber-800 hover:text-amber-900 underline"
-                        >
-                          Revisar acta →
-                        </Link>
+                        <span className="text-xs text-stone-500">Registro de devolución próximo</span>
                       </td>
                     </tr>
                   ))

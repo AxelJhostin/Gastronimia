@@ -1,40 +1,52 @@
+"use client";
+
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
-import { redirect } from "next/navigation";
+import { useEffect, useState } from "react";
 
-export default async function RequestsPage() {
-  const supabase = await createClient();
+import { useDashboardIdentity } from "@/components/auth/dashboard-identity-provider";
+import {
+  getOwnRequests,
+  getPendingRequests,
+  type EquipmentRequest,
+} from "@/lib/api/client";
 
-  // 1. Validar sesión
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+function formatDate(value: string) {
+  return new Intl.DateTimeFormat("es-EC", { dateStyle: "medium", timeStyle: "short" }).format(
+    new Date(value),
+  );
+}
 
-  if (!user) {
-    redirect("/login");
-  }
+export default function RequestsPage() {
+  const identity = useDashboardIdentity();
+  const [requests, setRequests] = useState<EquipmentRequest[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  // 2. Consultar perfil para validar rol
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single();
+  useEffect(() => {
+    if (identity.status !== "authenticated") return;
 
-  const userRole = profile?.role || "TEACHER";
+    const loadRequests = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const data = identity.user.roles.includes("TEACHER")
+          ? await getOwnRequests(identity.accessToken)
+          : await getPendingRequests(identity.accessToken);
+        setRequests(data);
+      } catch (loadError) {
+        setError(loadError instanceof Error ? loadError.message : "No fue posible cargar las solicitudes.");
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  // 3. Consultar solicitudes de insumos/equipos
-  let query = supabase
-    .from("requests")
-    .select("*, profiles(full_name)")
-    .order("created_at", { ascending: false });
+    void loadRequests();
+  }, [identity]);
 
-  // Si es docente, ver solo sus propias solicitudes; si es ADMIN/MANAGER, ver todas
-  if (userRole === "TEACHER") {
-    query = query.eq("user_id", user.id);
-  }
+  if (identity.status === "loading") return <p className="p-6 text-sm text-stone-600">Cargando solicitudes…</p>;
+  if (identity.status === "unavailable") return <p className="p-6 text-sm text-red-700">{identity.message}</p>;
 
-  const { data: requests, error } = await query;
+  const isTeacherView = identity.user.roles.includes("TEACHER");
 
   return (
     <main className="flex flex-1 justify-center bg-stone-50 p-6 text-stone-900">
@@ -49,7 +61,9 @@ export default async function RequestsPage() {
               Gestión de Solicitudes y Reservas
             </h1>
             <p className="mt-1 text-sm text-stone-600">
-              Revisa, administra y genera las reservas de pañol para actividades docentes.
+              {isTeacherView
+                ? "Consulta el estado de tus solicitudes para las actividades docentes."
+                : "Revisa las solicitudes pendientes de aprobación y reserva."}
             </p>
           </div>
 
@@ -65,7 +79,7 @@ export default async function RequestsPage() {
         <div className="mt-6 overflow-x-auto">
           {error ? (
             <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-              Error al cargar las solicitudes: {error.message}
+              Error al cargar las solicitudes: {error}
             </div>
           ) : (
             <table className="w-full text-left text-sm text-stone-700">
@@ -79,19 +93,19 @@ export default async function RequestsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-stone-100">
-                {requests && requests.length > 0 ? (
+                {loading ? (
+                  <tr><td colSpan={5} className="px-4 py-8 text-center text-stone-500">Cargando solicitudes…</td></tr>
+                ) : requests.length > 0 ? (
                   requests.map((req) => (
                     <tr key={req.id} className="hover:bg-stone-50/60 transition-colors">
                       <td className="px-4 py-3.5 font-medium text-stone-900">
-                        {req.title || `Solicitud #${req.id.slice(0, 8)}`}
+                        {req.purpose || `Solicitud #${req.id.slice(0, 8)}`}
                       </td>
                       <td className="px-4 py-3.5 text-stone-600">
-                        {req.profiles?.full_name || "Docente"}
+                        {isTeacherView ? "Mi solicitud" : `Docente ${req.teacher_id.slice(0, 8)}`}
                       </td>
                       <td className="px-4 py-3.5 text-stone-600">
-                        {req.needed_date
-                          ? new Date(req.needed_date).toLocaleDateString("es-ES")
-                          : "Por definir"}
+                        {formatDate(req.start_at)}
                       </td>
                       <td className="px-4 py-3.5">
                         <span
@@ -109,12 +123,7 @@ export default async function RequestsPage() {
                         </span>
                       </td>
                       <td className="px-4 py-3.5 text-right">
-                        <Link
-                          href={`/dashboard/requests/${req.id}`}
-                          className="text-xs font-semibold text-amber-800 hover:text-amber-900 underline"
-                        >
-                          Ver detalle →
-                        </Link>
+                        <span className="text-xs text-stone-500">Detalle próximamente</span>
                       </td>
                     </tr>
                   ))

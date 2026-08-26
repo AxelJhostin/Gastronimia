@@ -7,8 +7,10 @@ from app.core.auth import AuthenticatedUser, RoleCode, get_current_user
 from app.core.requests import (
     EquipmentRequest,
     EquipmentRequestDraftCreate,
+    EquipmentRequestFormOptions,
     EquipmentRequestStatus,
     create_equipment_request_draft,
+    get_equipment_request_form_options,
     submit_equipment_request,
 )
 from app.main import app
@@ -64,6 +66,31 @@ def test_request_draft_requires_teacher() -> None:
     assert response.status_code == 401
 
 
+def test_teacher_can_load_request_form_options() -> None:
+    client = TestClient(app)
+    app.dependency_overrides[require_teacher] = lambda: {RoleCode.TEACHER}
+    app.dependency_overrides[get_current_user] = _teacher_user
+    options = EquipmentRequestFormOptions(
+        course_sections=[], laboratories=[], inventory_items=[]
+    )
+    try:
+        with patch(
+            "app.api.v1.endpoints.requests.get_equipment_request_form_options",
+            return_value=options,
+        ) as get_options:
+            response = client.get("/api/v1/requests/form-options")
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "course_sections": [],
+        "laboratories": [],
+        "inventory_items": [],
+    }
+    assert get_options.call_args.args == (USER_ID,)
+
+
 def test_teacher_can_create_request_draft() -> None:
     client = TestClient(app)
     app.dependency_overrides[require_teacher] = lambda: {RoleCode.TEACHER}
@@ -107,6 +134,65 @@ def test_create_draft_calls_atomic_rpc() -> None:
     assert request.status is EquipmentRequestStatus.DRAFT
     assert post.call_args.kwargs["json"]["p_teacher_user_id"] == USER_ID
     assert post.call_args.kwargs["json"]["p_items"][0]["requested_quantity"] == "4"
+
+
+def test_request_form_options_only_include_the_teacher_context() -> None:
+    teacher_response = Mock()
+    teacher_response.json.return_value = [{
+        "id": "e152d7d4-3eb0-4e7f-b2ff-1f7acb1f1450"
+    }]
+    course_sections_response = Mock()
+    course_sections_response.json.return_value = [{
+        "id": "9e152d7d-3eb0-4e7f-b2ff-1f7acb1f1450",
+        "subject_id": "7e152d7d-3eb0-4e7f-b2ff-1f7acb1f1450",
+        "teacher_id": "e152d7d4-3eb0-4e7f-b2ff-1f7acb1f1450",
+        "academic_period_id": "6e152d7d-3eb0-4e7f-b2ff-1f7acb1f1450",
+        "section": "A",
+        "semester": "Primero",
+        "is_active": True,
+        "created_at": "2026-08-21T00:00:00Z",
+        "updated_at": "2026-08-21T00:00:00Z",
+    }]
+    laboratories_response = Mock()
+    laboratories_response.json.return_value = [{
+        "id": "8e152d7d-3eb0-4e7f-b2ff-1f7acb1f1450",
+        "code": "LAB-1",
+        "name": "Laboratorio de cocina",
+        "location_description": None,
+        "is_active": True,
+        "created_at": "2026-08-21T00:00:00Z",
+    }]
+    items_response = Mock()
+    items_response.json.return_value = [{
+        "id": "5e152d7d-3eb0-4e7f-b2ff-1f7acb1f1450",
+        "category_id": "4e152d7d-3eb0-4e7f-b2ff-1f7acb1f1450",
+        "code": "BAT-01",
+        "name": "Batidora",
+        "description": None,
+        "tracking_mode": "INDIVIDUAL",
+        "unit_of_measure": "unidad",
+        "is_active": True,
+        "created_at": "2026-08-21T00:00:00Z",
+        "updated_at": "2026-08-21T00:00:00Z",
+    }]
+
+    with patch(
+        "app.core.requests.httpx.get",
+        side_effect=[
+            teacher_response,
+            course_sections_response,
+            laboratories_response,
+            items_response,
+        ],
+    ) as get:
+        options = get_equipment_request_form_options(USER_ID)
+
+    assert options.course_sections[0].section == "A"
+    assert options.laboratories[0].name == "Laboratorio de cocina"
+    assert options.inventory_items[0].name == "Batidora"
+    assert get.call_args_list[1].kwargs["params"]["teacher_id"] == (
+        "eq.e152d7d4-3eb0-4e7f-b2ff-1f7acb1f1450"
+    )
 
 
 def test_teacher_can_submit_request() -> None:

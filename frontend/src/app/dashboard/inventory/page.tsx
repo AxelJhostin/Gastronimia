@@ -1,24 +1,38 @@
+"use client";
+
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
-import { redirect } from "next/navigation";
+import { useEffect, useState } from "react";
 
-export default async function InventoryPage() {
-  const supabase = await createClient();
+import { useDashboardIdentity } from "@/components/auth/dashboard-identity-provider";
+import { GastronomyStatusPage } from "@/components/feedback/gastronomy-status-page";
+import { getInventoryItems, getInventoryStock, type InventoryItem, type InventoryStock } from "@/lib/api/client";
 
-  // 1. Validar sesión
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+export default function InventoryPage() {
+  const identity = useDashboardIdentity();
+  const [items, setItems] = useState<InventoryItem[]>([]);
+  const [stock, setStock] = useState<InventoryStock[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  if (!user) {
-    redirect("/login");
-  }
+  useEffect(() => {
+    if (identity.status !== "authenticated" || !identity.user.roles.some((role) => role === "ADMIN" || role === "MANAGER")) return;
+    void Promise.all([getInventoryItems(identity.accessToken), getInventoryStock(identity.accessToken)])
+      .then(([nextItems, nextStock]) => {
+        setItems(nextItems);
+        setStock(nextStock);
+      })
+      .catch((loadError) => setError(loadError instanceof Error ? loadError.message : "No fue posible cargar el inventario."))
+      .finally(() => setLoading(false));
+  }, [identity]);
 
-  // 2. Consultar catálogo de ítems de inventario
-  const { data: items, error } = await supabase
-    .from("inventory_items")
-    .select("*")
-    .order("name", { ascending: true });
+  if (identity.status === "loading") return <p className="p-6 text-sm text-stone-600">Cargando inventario…</p>;
+  if (identity.status === "unavailable") return <p className="p-6 text-sm text-red-700">{identity.message}</p>;
+  if (!identity.user.roles.some((role) => role === "ADMIN" || role === "MANAGER")) return <GastronomyStatusPage kind="forbidden" />;
+
+  const quantityByItem = stock.reduce<Record<string, number>>((total, row) => {
+    total[row.inventory_item_id] = (total[row.inventory_item_id] ?? 0) + Number(row.quantity);
+    return total;
+  }, {});
 
   return (
     <main className="flex flex-1 justify-center bg-stone-50 p-6 text-stone-900">
@@ -48,7 +62,7 @@ export default async function InventoryPage() {
         <div className="mt-6 overflow-x-auto">
           {error ? (
             <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-              Error al cargar el inventario: {error.message}
+              Error al cargar el inventario: {error}
             </div>
           ) : (
             <table className="w-full text-left text-sm text-stone-700">
@@ -63,41 +77,36 @@ export default async function InventoryPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-stone-100">
-                {items && items.length > 0 ? (
+                {loading ? (
+                  <tr><td colSpan={6} className="px-4 py-8 text-center text-stone-500">Cargando inventario…</td></tr>
+                ) : items.length > 0 ? (
                   items.map((item) => (
                     <tr key={item.id} className="hover:bg-stone-50/60 transition-colors">
                       <td className="px-4 py-3.5 font-medium text-stone-900">
                         {item.name}
                       </td>
                       <td className="px-4 py-3.5 text-stone-600">
-                        {item.category || "General"}
+                        {item.tracking_mode === "QUANTITY" ? "Por cantidad" : "Por unidad"}
                       </td>
                       <td className="px-4 py-3.5 font-semibold text-stone-900">
-                        {item.total_quantity ?? 0}
+                        {quantityByItem[item.id] ?? 0} {item.unit_of_measure}
                       </td>
                       <td className="px-4 py-3.5 font-semibold text-emerald-700">
-                        {item.available_quantity ?? 0}
+                        {item.is_active ? "Activo" : "Inactivo"}
                       </td>
                       <td className="px-4 py-3.5">
                         <span
                           className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset ${
-                            item.status === "AVAILABLE"
+                            item.is_active
                               ? "bg-emerald-50 text-emerald-700 ring-emerald-600/20"
-                              : item.status === "MAINTENANCE"
-                              ? "bg-amber-50 text-amber-700 ring-amber-600/20"
-                              : "bg-red-50 text-red-700 ring-red-600/20"
+                              : "bg-stone-100 text-stone-700 ring-stone-500/20"
                           }`}
                         >
-                          {item.status || "AVAILABLE"}
+                          {item.is_active ? "ACTIVO" : "INACTIVO"}
                         </span>
                       </td>
                       <td className="px-4 py-3.5 text-right">
-                        <Link
-                          href={`/dashboard/inventory/${item.id}`}
-                          className="text-xs font-semibold text-amber-800 hover:text-amber-900 underline"
-                        >
-                          Ver ficha →
-                        </Link>
+                        <span className="text-xs text-stone-500">Ficha próximamente</span>
                       </td>
                     </tr>
                   ))

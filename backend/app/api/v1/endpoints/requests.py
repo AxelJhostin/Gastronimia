@@ -6,13 +6,23 @@ from app.core.auth import AuthenticatedUser, RoleCode, get_current_user, require
 from app.core.requests import (
     EquipmentRequest,
     EquipmentRequestDraftCreate,
+    EquipmentRequestFormOptions,
     create_equipment_request_draft,
+    get_equipment_request_form_options,
     list_own_equipment_requests,
     submit_equipment_request,
 )
 
 router = APIRouter(prefix="/requests")
 require_teacher = require_roles(RoleCode.TEACHER)
+
+
+@router.get("/form-options", response_model=EquipmentRequestFormOptions)
+def get_request_form_options(
+    current_user: AuthenticatedUser = Depends(get_current_user),  # noqa: B008
+    _: set[RoleCode] = Depends(require_teacher),  # noqa: B008
+) -> EquipmentRequestFormOptions:
+    return get_equipment_request_form_options(current_user.id)
 
 
 @router.post(

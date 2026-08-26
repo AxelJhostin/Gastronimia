@@ -8,7 +8,9 @@ import httpx
 from fastapi import HTTPException, status
 from pydantic import BaseModel, Field, model_validator
 
+from app.core.academic import CourseSection, Laboratory
 from app.core.admin import _service_headers, _supabase_url
+from app.core.inventory import InventoryItem
 
 
 class EquipmentRequestStatus(str, Enum):
@@ -64,6 +66,12 @@ class EquipmentRequestItem(EquipmentRequestItemCreate):
     equipment_request_id: UUID
     created_at: datetime
     updated_at: datetime
+
+
+class EquipmentRequestFormOptions(BaseModel):
+    course_sections: list[CourseSection]
+    laboratories: list[Laboratory]
+    inventory_items: list[InventoryItem]
 
 
 class EquipmentRequestApprovalItem(BaseModel):
@@ -310,6 +318,71 @@ def list_own_equipment_requests(teacher_user_id: str) -> list[EquipmentRequest]:
         ) from error
 
     return [EquipmentRequest.model_validate(row) for row in response.json()]
+
+
+def get_equipment_request_form_options(
+    teacher_user_id: str,
+) -> EquipmentRequestFormOptions:
+    try:
+        teacher_response = httpx.get(
+            f"{_supabase_url()}/rest/v1/teachers",
+            params={
+                "select": "id",
+                "user_id": f"eq.{teacher_user_id}",
+                "is_active": "eq.true",
+            },
+            headers=_service_headers(),
+            timeout=5.0,
+        )
+        teacher_response.raise_for_status()
+        teachers = teacher_response.json()
+        if not teachers:
+            return EquipmentRequestFormOptions(
+                course_sections=[], laboratories=[], inventory_items=[]
+            )
+
+        course_sections_response = httpx.get(
+            f"{_supabase_url()}/rest/v1/course_sections",
+            params={
+                "select": "*",
+                "teacher_id": f"eq.{teachers[0]['id']}",
+                "is_active": "eq.true",
+                "order": "created_at.desc",
+            },
+            headers=_service_headers(),
+            timeout=5.0,
+        )
+        course_sections_response.raise_for_status()
+        laboratories_response = httpx.get(
+            f"{_supabase_url()}/rest/v1/laboratories",
+            params={"select": "*", "is_active": "eq.true", "order": "name.asc"},
+            headers=_service_headers(),
+            timeout=5.0,
+        )
+        laboratories_response.raise_for_status()
+        items_response = httpx.get(
+            f"{_supabase_url()}/rest/v1/inventory_items",
+            params={"select": "*", "is_active": "eq.true", "order": "name.asc"},
+            headers=_service_headers(),
+            timeout=5.0,
+        )
+        items_response.raise_for_status()
+    except httpx.HTTPError as error:
+        raise _request_error(
+            "No fue posible cargar los datos para la solicitud.", error
+        ) from error
+
+    return EquipmentRequestFormOptions(
+        course_sections=[
+            CourseSection.model_validate(row) for row in course_sections_response.json()
+        ],
+        laboratories=[
+            Laboratory.model_validate(row) for row in laboratories_response.json()
+        ],
+        inventory_items=[
+            InventoryItem.model_validate(row) for row in items_response.json()
+        ],
+    )
 
 
 def list_pending_equipment_requests() -> list[EquipmentRequest]:
