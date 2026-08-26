@@ -4,82 +4,86 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
-export function LoginForm() {
-  const [email, setEmail] = useState("");
+export function ChangePasswordForm() {
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
   const router = useRouter();
   const supabase = createClient();
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage(null);
+    setSuccessMessage(null);
+
+    if (password !== confirmPassword) {
+      setErrorMessage("Las contraseñas no coinciden.");
+      return;
+    }
 
     startTransition(async () => {
-      // 1. Iniciar sesión en Supabase Auth
-      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-        email,
-        password,
+      const { error } = await supabase.auth.updateUser({
+        password: password,
       });
 
-      if (authError || !authData.user) {
-        setErrorMessage(authError?.message || "Error al iniciar sesión.");
+      if (error) {
+        setErrorMessage(error.message);
         return;
       }
 
-      // 2. Consultar el rol asignado al perfil
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("role")
-        .eq("id", authData.user.id)
-        .single();
+      setSuccessMessage("Contraseña actualizada con éxito.");
+      setPassword("");
+      setConfirmPassword("");
 
-      const userRole = profile?.role || "TEACHER";
-
-      // 3. Redirigir según el rol
-      if (userRole === "TEACHER") {
-        router.push("/dashboard/requests");
-      } else {
+      setTimeout(() => {
         router.push("/dashboard");
-      }
-
-      router.refresh();
+        router.refresh();
+      }, 1500);
     });
   };
 
   return (
-    <form onSubmit={handleLogin} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-4">
       {errorMessage && (
         <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-xs text-red-700">
           {errorMessage}
         </div>
       )}
 
+      {successMessage && (
+        <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-xs text-emerald-700 font-medium">
+          {successMessage}
+        </div>
+      )}
+
       <div>
         <label className="block text-xs font-semibold uppercase tracking-wider text-stone-700">
-          Correo Electrónico
+          Nueva Contraseña
         </label>
         <input
-          type="email"
+          type="password"
           required
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder="usuario@gastronomia.edu"
+          minLength={6}
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          placeholder="••••••••"
           className="mt-1 w-full rounded-lg border border-stone-300 p-2.5 text-sm focus:border-amber-600 focus:outline-none"
         />
       </div>
 
       <div>
         <label className="block text-xs font-semibold uppercase tracking-wider text-stone-700">
-          Contraseña
+          Confirmar Contraseña
         </label>
         <input
           type="password"
           required
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
+          minLength={6}
+          value={confirmPassword}
+          onChange={(e) => setConfirmPassword(e.target.value)}
           placeholder="••••••••"
           className="mt-1 w-full rounded-lg border border-stone-300 p-2.5 text-sm focus:border-amber-600 focus:outline-none"
         />
@@ -90,7 +94,7 @@ export function LoginForm() {
         disabled={isPending}
         className="mt-2 w-full rounded-xl bg-amber-700 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-amber-800 disabled:opacity-50 transition-colors"
       >
-        {isPending ? "Ingresando..." : "Iniciar Sesión"}
+        {isPending ? "Actualizando..." : "Actualizar Contraseña"}
       </button>
     </form>
   );
