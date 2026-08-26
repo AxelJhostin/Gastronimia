@@ -3,6 +3,7 @@ from unittest.mock import Mock, patch
 from uuid import UUID
 
 from app.api.v1.endpoints.inventory import (
+    get_inventory_item_detail_endpoint,
     require_inventory_availability_user,
     require_inventory_staff,
 )
@@ -16,6 +17,7 @@ from app.core.inventory import (
     QuantityStockMovementCreate,
     calculate_inventory_availability,
     create_inventory_resource,
+    get_inventory_item_detail,
     record_quantity_stock_movement,
     update_inventory_resource,
 )
@@ -51,6 +53,61 @@ def test_inventory_availability_requires_inventory_staff() -> None:
     )
 
     assert response.status_code == 401
+
+
+def test_inventory_item_detail_includes_stock_and_units() -> None:
+    item_response = Mock()
+    item_response.json.return_value = [
+        {
+            "id": "e152d7d4-3eb0-4e7f-b2ff-1f7acb1f1450",
+            "category_id": "1fa85f64-5717-4562-b3fc-2c963f66afa6",
+            "code": "BAT-01",
+            "name": "Batidora",
+            "description": None,
+            "tracking_mode": "INDIVIDUAL",
+            "unit_of_measure": "unidad",
+            "is_active": True,
+            "created_at": "2026-08-21T00:00:00Z",
+            "updated_at": "2026-08-21T00:00:00Z",
+        }
+    ]
+    stock_response = Mock()
+    stock_response.json.return_value = []
+    units_response = Mock()
+    units_response.json.return_value = [
+        {
+            "id": "2fa85f64-5717-4562-b3fc-2c963f66afa6",
+            "inventory_item_id": "e152d7d4-3eb0-4e7f-b2ff-1f7acb1f1450",
+            "location_id": None,
+            "asset_tag": "BAT-01-A",
+            "serial_number": None,
+            "status": "AVAILABLE",
+            "condition": "GOOD",
+            "notes": None,
+            "is_active": True,
+            "created_at": "2026-08-21T00:00:00Z",
+            "updated_at": "2026-08-21T00:00:00Z",
+        }
+    ]
+    with patch(
+        "app.core.inventory.httpx.get",
+        side_effect=[item_response, stock_response, units_response],
+    ):
+        detail = get_inventory_item_detail(UUID("e152d7d4-3eb0-4e7f-b2ff-1f7acb1f1450"))
+
+    assert detail.item.name == "Batidora"
+    assert detail.units[0].asset_tag == "BAT-01-A"
+
+
+def test_manager_can_read_inventory_item_detail() -> None:
+    item_id = UUID("e152d7d4-3eb0-4e7f-b2ff-1f7acb1f1450")
+    with patch(
+        "app.api.v1.endpoints.inventory.get_inventory_item_detail",
+        return_value={"item": {}, "stock": [], "units": []},
+    ):
+        response = get_inventory_item_detail_endpoint(item_id, {RoleCode.MANAGER})
+
+    assert response == {"item": {}, "stock": [], "units": []}
 
 
 def test_manager_can_consult_inventory_availability() -> None:
@@ -250,11 +307,13 @@ def test_record_quantity_stock_movement_calls_atomic_rpc() -> None:
 
 def test_calculate_inventory_availability_calls_rpc() -> None:
     response = Mock()
-    response.json.return_value = [{
-        "tracking_mode": "INDIVIDUAL",
-        "quantity_available": "0",
-        "units_available": 3,
-    }]
+    response.json.return_value = [
+        {
+            "tracking_mode": "INDIVIDUAL",
+            "quantity_available": "0",
+            "units_available": 3,
+        }
+    ]
 
     with patch("app.core.inventory.httpx.post", return_value=response) as post:
         availability = calculate_inventory_availability(

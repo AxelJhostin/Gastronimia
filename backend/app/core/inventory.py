@@ -206,6 +206,12 @@ class InventoryAvailability(BaseModel):
     units_available: int
 
 
+class InventoryItemDetail(BaseModel):
+    item: InventoryItem
+    stock: list[InventoryCurrentStock]
+    units: list[InventoryUnit]
+
+
 def _inventory_error(detail: str, error: httpx.HTTPError) -> HTTPException:
     if isinstance(error, httpx.HTTPStatusError) and error.response.status_code in {
         status.HTTP_400_BAD_REQUEST,
@@ -215,6 +221,54 @@ def _inventory_error(detail: str, error: httpx.HTTPError) -> HTTPException:
     return HTTPException(
         status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
         detail=detail,
+    )
+
+
+def get_inventory_item_detail(inventory_item_id: UUID) -> InventoryItemDetail:
+    try:
+        item_response = httpx.get(
+            f"{_supabase_url()}/rest/v1/inventory_items",
+            params={"select": "*", "id": f"eq.{inventory_item_id}"},
+            headers=_service_headers(),
+            timeout=5.0,
+        )
+        item_response.raise_for_status()
+        item_rows = item_response.json()
+        if not item_rows:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Ítem no encontrado."
+            )
+        stock_response = httpx.get(
+            f"{_supabase_url()}/rest/v1/inventory_current_stock",
+            params={"select": "*", "inventory_item_id": f"eq.{inventory_item_id}"},
+            headers=_service_headers(),
+            timeout=5.0,
+        )
+        stock_response.raise_for_status()
+        units_response = httpx.get(
+            f"{_supabase_url()}/rest/v1/inventory_units",
+            params={
+                "select": "*",
+                "inventory_item_id": f"eq.{inventory_item_id}",
+                "order": "asset_tag.asc",
+            },
+            headers=_service_headers(),
+            timeout=5.0,
+        )
+        units_response.raise_for_status()
+    except HTTPException:
+        raise
+    except httpx.HTTPError as error:
+        raise _inventory_error(
+            "No fue posible consultar el detalle del inventario.", error
+        ) from error
+
+    return InventoryItemDetail(
+        item=InventoryItem.model_validate(item_rows[0]),
+        stock=[
+            InventoryCurrentStock.model_validate(row) for row in stock_response.json()
+        ],
+        units=[InventoryUnit.model_validate(row) for row in units_response.json()],
     )
 
 
@@ -264,9 +318,7 @@ def close_equipment_maintenance(
     cancelled: bool,
 ) -> EquipmentMaintenance:
     function_name = (
-        "cancel_equipment_maintenance"
-        if cancelled
-        else "finish_equipment_maintenance"
+        "cancel_equipment_maintenance" if cancelled else "finish_equipment_maintenance"
     )
     rpc_payload: dict[str, object] = {
         "p_equipment_maintenance_id": str(maintenance_id),

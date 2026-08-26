@@ -123,7 +123,7 @@ export default function RequestsPage() {
                         </span>
                       </td>
                       <td className="px-4 py-3.5 text-right">
-                        <span className="text-xs text-stone-500">Detalle próximamente</span>
+                        <Link href={`/dashboard/requests/${req.id}`} className="text-xs font-semibold text-amber-800 underline hover:text-amber-900">Ver detalle →</Link>
                       </td>
                     </tr>
                   ))

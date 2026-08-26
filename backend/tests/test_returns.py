@@ -116,13 +116,16 @@ def test_manager_can_see_pending_resources() -> None:
     _override_manager()
     pending = EquipmentLoanPending(
         loan=_loan(),
-        quantity_details=[{
-            "equipment_loan_detail_id": "1fa85f64-5717-4562-b3fc-2c963f66afa6",
-            "inventory_item_id": "2fa85f64-5717-4562-b3fc-2c963f66afa6",
-            "loaned_quantity": Decimal("2"),
-            "returned_quantity": Decimal("1"),
-            "pending_quantity": Decimal("1"),
-        }],
+        quantity_details=[
+            {
+                "equipment_loan_detail_id": "1fa85f64-5717-4562-b3fc-2c963f66afa6",
+                "inventory_item_id": "2fa85f64-5717-4562-b3fc-2c963f66afa6",
+                "location_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+                "loaned_quantity": Decimal("2"),
+                "returned_quantity": Decimal("1"),
+                "pending_quantity": Decimal("1"),
+            }
+        ],
         unit_ids_pending=[],
     )
     try:

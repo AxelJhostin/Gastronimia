@@ -41,9 +41,7 @@ class EquipmentRequestDraftCreate(BaseModel):
     @model_validator(mode="after")
     def interval_is_valid(self) -> "EquipmentRequestDraftCreate":
         if self.end_at <= self.start_at:
-            raise ValueError(
-                "La fecha de fin debe ser posterior a la fecha de inicio."
-            )
+            raise ValueError("La fecha de fin debe ser posterior a la fecha de inicio.")
         return self
 
 
@@ -66,6 +64,17 @@ class EquipmentRequestItem(EquipmentRequestItemCreate):
     equipment_request_id: UUID
     created_at: datetime
     updated_at: datetime
+
+
+class EquipmentRequestDetailItem(EquipmentRequestItem):
+    inventory_item_name: str
+    inventory_item_code: Optional[str] = None
+    unit_of_measure: str
+
+
+class EquipmentRequestDetail(BaseModel):
+    request: EquipmentRequest
+    items: list[EquipmentRequestDetailItem]
 
 
 class EquipmentRequestFormOptions(BaseModel):
@@ -167,6 +176,7 @@ class EquipmentReturn(BaseModel):
 class EquipmentLoanPendingQuantity(BaseModel):
     equipment_loan_detail_id: UUID
     inventory_item_id: UUID
+    location_id: UUID
     loaned_quantity: Decimal
     returned_quantity: Decimal
     pending_quantity: Decimal
@@ -405,6 +415,100 @@ def list_pending_equipment_requests() -> list[EquipmentRequest]:
         ) from error
 
     return [EquipmentRequest.model_validate(row) for row in response.json()]
+
+
+def get_equipment_request_detail(
+    equipment_request_id: UUID,
+    current_user_id: str,
+    current_roles: set[str],
+) -> EquipmentRequestDetail:
+    try:
+        request_response = httpx.get(
+            f"{_supabase_url()}/rest/v1/equipment_requests",
+            params={"select": "*", "id": f"eq.{equipment_request_id}"},
+            headers=_service_headers(),
+            timeout=5.0,
+        )
+        request_response.raise_for_status()
+        rows = request_response.json()
+        if not rows:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Solicitud no encontrada."
+            )
+        request = EquipmentRequest.model_validate(rows[0])
+
+        if not ({"ADMIN", "MANAGER"} & current_roles):
+            teacher_response = httpx.get(
+                f"{_supabase_url()}/rest/v1/teachers",
+                params={"select": "id", "user_id": f"eq.{current_user_id}"},
+                headers=_service_headers(),
+                timeout=5.0,
+            )
+            teacher_rows = teacher_response.json()
+            teacher_response.raise_for_status()
+            if not teacher_rows or str(request.teacher_id) != teacher_rows[0]["id"]:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="No tienes acceso a esta solicitud.",
+                )
+
+        items_response = httpx.get(
+            f"{_supabase_url()}/rest/v1/equipment_request_items",
+            params={
+                "select": "*",
+                "equipment_request_id": f"eq.{equipment_request_id}",
+            },
+            headers=_service_headers(),
+            timeout=5.0,
+        )
+        items_response.raise_for_status()
+        items = [
+            EquipmentRequestItem.model_validate(row) for row in items_response.json()
+        ]
+        item_ids = ",".join(str(item.inventory_item_id) for item in items)
+        catalog_response = (
+            httpx.get(
+                f"{_supabase_url()}/rest/v1/inventory_items",
+                params={
+                    "select": "id,name,code,unit_of_measure",
+                    "id": f"in.({item_ids})",
+                },
+                headers=_service_headers(),
+                timeout=5.0,
+            )
+            if item_ids
+            else None
+        )
+        if catalog_response is not None:
+            catalog_response.raise_for_status()
+            catalog = {row["id"]: row for row in catalog_response.json()}
+        else:
+            catalog = {}
+    except HTTPException:
+        raise
+    except httpx.HTTPError as error:
+        raise _request_error(
+            "No fue posible consultar el detalle de la solicitud.", error
+        ) from error
+
+    return EquipmentRequestDetail(
+        request=request,
+        items=[
+            EquipmentRequestDetailItem(
+                **item.model_dump(),
+                inventory_item_name=catalog.get(str(item.inventory_item_id), {}).get(
+                    "name", "Ítem de inventario"
+                ),
+                inventory_item_code=catalog.get(str(item.inventory_item_id), {}).get(
+                    "code"
+                ),
+                unit_of_measure=catalog.get(str(item.inventory_item_id), {}).get(
+                    "unit_of_measure", "unidad"
+                ),
+            )
+            for item in items
+        ],
+    )
 
 
 def approve_equipment_request(
@@ -647,6 +751,16 @@ def get_equipment_loan_pending(equipment_loan_id: UUID) -> EquipmentLoanPending:
             timeout=5.0,
         )
         response.raise_for_status()
+        details_response = httpx.get(
+            f"{_supabase_url()}/rest/v1/equipment_loan_details",
+            params={
+                "select": "id,location_id",
+                "equipment_loan_id": f"eq.{equipment_loan_id}",
+            },
+            headers=_service_headers(),
+            timeout=5.0,
+        )
+        details_response.raise_for_status()
     except httpx.HTTPError as error:
         raise _request_error(
             "No fue posible consultar los pendientes del préstamo.", error
@@ -657,6 +771,9 @@ def get_equipment_loan_pending(equipment_loan_id: UUID) -> EquipmentLoanPending:
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Préstamo no encontrado.",
         )
+    locations = {row["id"]: row["location_id"] for row in details_response.json()}
+    for detail in data.get("quantity_details", []):
+        detail["location_id"] = locations.get(detail["equipment_loan_detail_id"])
     return EquipmentLoanPending.model_validate(data)
 
 

@@ -11,6 +11,7 @@ from app.core.inventory import (
     InventoryCurrentStock,
     InventoryItem,
     InventoryItemCreate,
+    InventoryItemDetail,
     InventoryLocation,
     InventoryLocationCreate,
     InventoryMovement,
@@ -20,6 +21,7 @@ from app.core.inventory import (
     QuantityStockMovementCreate,
     calculate_inventory_availability,
     create_inventory_resource,
+    get_inventory_item_detail,
     list_inventory_resources,
     list_inventory_unit_history,
     record_quantity_stock_movement,
@@ -114,6 +116,14 @@ def get_inventory_items(
     _: set[RoleCode] = Depends(require_inventory_staff),  # noqa: B008
 ) -> list[InventoryItem]:
     return list_inventory_resources("inventory_items", InventoryItem, "name.asc")
+
+
+@router.get("/items/{item_id}/detail", response_model=InventoryItemDetail)
+def get_inventory_item_detail_endpoint(
+    item_id: UUID,
+    _: set[RoleCode] = Depends(require_inventory_staff),  # noqa: B008
+) -> InventoryItemDetail:
+    return get_inventory_item_detail(item_id)
 
 
 @router.post(

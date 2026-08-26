@@ -106,7 +106,7 @@ export default function InventoryPage() {
                         </span>
                       </td>
                       <td className="px-4 py-3.5 text-right">
-                        <span className="text-xs text-stone-500">Ficha próximamente</span>
+                        <Link href={`/dashboard/inventory/${item.id}`} className="text-xs font-semibold text-amber-800 underline hover:text-amber-900">Ver ficha →</Link>
                       </td>
                     </tr>
                   ))

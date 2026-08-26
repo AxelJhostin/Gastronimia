@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 from unittest.mock import Mock, patch
 from uuid import UUID
 
-from app.api.v1.endpoints.requests import require_teacher
+from app.api.v1.endpoints.requests import require_request_reader, require_teacher
 from app.core.auth import AuthenticatedUser, RoleCode, get_current_user
 from app.core.requests import (
     EquipmentRequest,
@@ -10,6 +10,7 @@ from app.core.requests import (
     EquipmentRequestFormOptions,
     EquipmentRequestStatus,
     create_equipment_request_draft,
+    get_equipment_request_detail,
     get_equipment_request_form_options,
     submit_equipment_request,
 )
@@ -45,10 +46,12 @@ def _draft_payload() -> dict[str, object]:
         "start_at": "2026-08-22T08:00:00Z",
         "end_at": "2026-08-22T10:00:00Z",
         "purpose": "Práctica de laboratorio",
-        "items": [{
-            "inventory_item_id": "e152d7d4-3eb0-4e7f-b2ff-1f7acb1f1450",
-            "requested_quantity": "4",
-        }],
+        "items": [
+            {
+                "inventory_item_id": "e152d7d4-3eb0-4e7f-b2ff-1f7acb1f1450",
+                "requested_quantity": "4",
+            }
+        ],
     }
 
 
@@ -138,43 +141,49 @@ def test_create_draft_calls_atomic_rpc() -> None:
 
 def test_request_form_options_only_include_the_teacher_context() -> None:
     teacher_response = Mock()
-    teacher_response.json.return_value = [{
-        "id": "e152d7d4-3eb0-4e7f-b2ff-1f7acb1f1450"
-    }]
+    teacher_response.json.return_value = [
+        {"id": "e152d7d4-3eb0-4e7f-b2ff-1f7acb1f1450"}
+    ]
     course_sections_response = Mock()
-    course_sections_response.json.return_value = [{
-        "id": "9e152d7d-3eb0-4e7f-b2ff-1f7acb1f1450",
-        "subject_id": "7e152d7d-3eb0-4e7f-b2ff-1f7acb1f1450",
-        "teacher_id": "e152d7d4-3eb0-4e7f-b2ff-1f7acb1f1450",
-        "academic_period_id": "6e152d7d-3eb0-4e7f-b2ff-1f7acb1f1450",
-        "section": "A",
-        "semester": "Primero",
-        "is_active": True,
-        "created_at": "2026-08-21T00:00:00Z",
-        "updated_at": "2026-08-21T00:00:00Z",
-    }]
+    course_sections_response.json.return_value = [
+        {
+            "id": "9e152d7d-3eb0-4e7f-b2ff-1f7acb1f1450",
+            "subject_id": "7e152d7d-3eb0-4e7f-b2ff-1f7acb1f1450",
+            "teacher_id": "e152d7d4-3eb0-4e7f-b2ff-1f7acb1f1450",
+            "academic_period_id": "6e152d7d-3eb0-4e7f-b2ff-1f7acb1f1450",
+            "section": "A",
+            "semester": "Primero",
+            "is_active": True,
+            "created_at": "2026-08-21T00:00:00Z",
+            "updated_at": "2026-08-21T00:00:00Z",
+        }
+    ]
     laboratories_response = Mock()
-    laboratories_response.json.return_value = [{
-        "id": "8e152d7d-3eb0-4e7f-b2ff-1f7acb1f1450",
-        "code": "LAB-1",
-        "name": "Laboratorio de cocina",
-        "location_description": None,
-        "is_active": True,
-        "created_at": "2026-08-21T00:00:00Z",
-    }]
+    laboratories_response.json.return_value = [
+        {
+            "id": "8e152d7d-3eb0-4e7f-b2ff-1f7acb1f1450",
+            "code": "LAB-1",
+            "name": "Laboratorio de cocina",
+            "location_description": None,
+            "is_active": True,
+            "created_at": "2026-08-21T00:00:00Z",
+        }
+    ]
     items_response = Mock()
-    items_response.json.return_value = [{
-        "id": "5e152d7d-3eb0-4e7f-b2ff-1f7acb1f1450",
-        "category_id": "4e152d7d-3eb0-4e7f-b2ff-1f7acb1f1450",
-        "code": "BAT-01",
-        "name": "Batidora",
-        "description": None,
-        "tracking_mode": "INDIVIDUAL",
-        "unit_of_measure": "unidad",
-        "is_active": True,
-        "created_at": "2026-08-21T00:00:00Z",
-        "updated_at": "2026-08-21T00:00:00Z",
-    }]
+    items_response.json.return_value = [
+        {
+            "id": "5e152d7d-3eb0-4e7f-b2ff-1f7acb1f1450",
+            "category_id": "4e152d7d-3eb0-4e7f-b2ff-1f7acb1f1450",
+            "code": "BAT-01",
+            "name": "Batidora",
+            "description": None,
+            "tracking_mode": "INDIVIDUAL",
+            "unit_of_measure": "unidad",
+            "is_active": True,
+            "created_at": "2026-08-21T00:00:00Z",
+            "updated_at": "2026-08-21T00:00:00Z",
+        }
+    ]
 
     with patch(
         "app.core.requests.httpx.get",
@@ -193,6 +202,56 @@ def test_request_form_options_only_include_the_teacher_context() -> None:
     assert get.call_args_list[1].kwargs["params"]["teacher_id"] == (
         "eq.e152d7d4-3eb0-4e7f-b2ff-1f7acb1f1450"
     )
+
+
+def test_request_detail_returns_items_for_staff() -> None:
+    request_response = Mock()
+    request_response.json.return_value = [_request().model_dump(mode="json")]
+    items_response = Mock()
+    items_response.json.return_value = [
+        {
+            "id": "1fa85f64-5717-4562-b3fc-2c963f66afa6",
+            "equipment_request_id": str(REQUEST_ID),
+            "inventory_item_id": "e152d7d4-3eb0-4e7f-b2ff-1f7acb1f1450",
+            "requested_quantity": "2",
+            "created_at": "2026-08-21T00:00:00Z",
+            "updated_at": "2026-08-21T00:00:00Z",
+        }
+    ]
+    catalog_response = Mock()
+    catalog_response.json.return_value = [
+        {
+            "id": "e152d7d4-3eb0-4e7f-b2ff-1f7acb1f1450",
+            "name": "Batidora",
+            "code": "BAT-01",
+            "unit_of_measure": "unidad",
+        }
+    ]
+    with patch(
+        "app.core.requests.httpx.get",
+        side_effect=[request_response, items_response, catalog_response],
+    ):
+        detail = get_equipment_request_detail(REQUEST_ID, USER_ID, {"ADMIN"})
+
+    assert detail.request.id == REQUEST_ID
+    assert detail.items[0].inventory_item_name == "Batidora"
+
+
+def test_staff_can_read_request_detail_endpoint() -> None:
+    client = TestClient(app)
+    app.dependency_overrides[require_request_reader] = lambda: {RoleCode.MANAGER}
+    app.dependency_overrides[get_current_user] = _teacher_user
+    detail = {"request": _request().model_dump(mode="json"), "items": []}
+    try:
+        with patch(
+            "app.api.v1.endpoints.requests.get_equipment_request_detail",
+            return_value=detail,
+        ):
+            response = client.get(f"/api/v1/requests/{REQUEST_ID}")
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 200
 
 
 def test_teacher_can_submit_request() -> None:

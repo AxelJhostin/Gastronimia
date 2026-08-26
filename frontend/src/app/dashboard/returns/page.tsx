@@ -5,13 +5,14 @@ import { useEffect, useState } from "react";
 
 import { useDashboardIdentity } from "@/components/auth/dashboard-identity-provider";
 import { GastronomyStatusPage } from "@/components/feedback/gastronomy-status-page";
-import { getActiveLoans, type EquipmentLoan } from "@/lib/api/client";
+import { getActiveLoans, getLoanPending, recordEquipmentReturn, type EquipmentLoan } from "@/lib/api/client";
 
 export default function ReturnsPage() {
   const identity = useDashboardIdentity();
   const [loans, setLoans] = useState<EquipmentLoan[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [processingLoanId, setProcessingLoanId] = useState<string | null>(null);
 
   useEffect(() => {
     if (identity.status !== "authenticated" || !identity.user.roles.some((role) => role === "ADMIN" || role === "MANAGER")) return;
@@ -24,6 +25,31 @@ export default function ReturnsPage() {
   if (identity.status === "loading") return <p className="p-6 text-sm text-stone-600">Cargando préstamos…</p>;
   if (identity.status === "unavailable") return <p className="p-6 text-sm text-red-700">{identity.message}</p>;
   if (!identity.user.roles.some((role) => role === "ADMIN" || role === "MANAGER")) return <GastronomyStatusPage kind="forbidden" />;
+
+  async function registerFullReturn(loan: EquipmentLoan) {
+    if (identity.status !== "authenticated") return;
+    const returnedByName = window.prompt("Nombre de quien entrega los equipos:");
+    if (!returnedByName?.trim()) return;
+    setProcessingLoanId(loan.id);
+    setError(null);
+    try {
+      const pending = await getLoanPending(identity.accessToken, loan.id);
+      await recordEquipmentReturn(identity.accessToken, loan.id, {
+        returned_by_name: returnedByName.trim(),
+        quantity_details: pending.quantity_details.map((detail) => ({
+          equipment_loan_detail_id: detail.equipment_loan_detail_id,
+          returned_quantity: detail.pending_quantity,
+          location_id: detail.location_id,
+        })),
+        loan_unit_ids: pending.unit_ids_pending,
+      });
+      setLoans((current) => current.filter((currentLoan) => currentLoan.id !== loan.id));
+    } catch (returnError) {
+      setError(returnError instanceof Error ? returnError.message : "No fue posible registrar la devolución.");
+    } finally {
+      setProcessingLoanId(null);
+    }
+  }
 
   return (
     <main className="flex flex-1 justify-center bg-stone-50 p-6 text-stone-900">
@@ -93,7 +119,7 @@ export default function ReturnsPage() {
                         </span>
                       </td>
                       <td className="px-4 py-3.5 text-right">
-                        <span className="text-xs text-stone-500">Registro de devolución próximo</span>
+                        <button disabled={processingLoanId === loan.id} onClick={() => void registerFullReturn(loan)} className="text-xs font-semibold text-amber-800 underline disabled:opacity-50">{processingLoanId === loan.id ? "Registrando…" : "Registrar devolución"}</button>
                       </td>
                     </tr>
                   ))

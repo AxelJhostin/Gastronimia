@@ -48,6 +48,18 @@ export type EquipmentRequest = {
   updated_at: string;
 };
 
+export type EquipmentRequestDetail = {
+  request: EquipmentRequest;
+  items: Array<{
+    id: string;
+    inventory_item_id: string;
+    requested_quantity: number;
+    inventory_item_name: string;
+    inventory_item_code: string | null;
+    unit_of_measure: string;
+  }>;
+};
+
 export type CourseSection = {
   id: string;
   subject_id: string;
@@ -109,6 +121,12 @@ export type InventoryStock = {
   updated_at: string;
 };
 
+export type InventoryItemDetail = {
+  item: InventoryItem;
+  stock: InventoryStock[];
+  units: Array<{ id: string; asset_tag: string; status: string; condition: string; is_active: boolean }>;
+};
+
 export type EquipmentLoan = {
   id: string;
   equipment_request_id: string;
@@ -122,7 +140,29 @@ export type EquipmentLoan = {
   is_overdue: boolean;
 };
 
+export type EquipmentLoanPending = {
+  loan: EquipmentLoan;
+  quantity_details: Array<{
+    equipment_loan_detail_id: string;
+    inventory_item_id: string;
+    location_id: string;
+    loaned_quantity: number;
+    returned_quantity: number;
+    pending_quantity: number;
+  }>;
+  unit_ids_pending: string[];
+};
+
 export type OperationalReportRow = Record<string, unknown>;
+
+export type OperationalAuditLog = {
+  id: string;
+  action: string;
+  entity_table: string;
+  entity_id: string;
+  performed_by_user_id: string | null;
+  recorded_at: string;
+};
 
 export class ApiError extends Error {
   constructor(
@@ -205,6 +245,10 @@ export function getOwnRequests(accessToken: string) {
   return requestApi<EquipmentRequest[]>("/requests/mine", accessToken);
 }
 
+export function getEquipmentRequestDetail(accessToken: string, requestId: string) {
+  return requestApi<EquipmentRequestDetail>(`/requests/${requestId}`, accessToken);
+}
+
 export function getEquipmentRequestFormOptions(accessToken: string) {
   return requestApi<EquipmentRequestFormOptions>("/requests/form-options", accessToken);
 }
@@ -238,8 +282,28 @@ export function getInventoryStock(accessToken: string) {
   return requestApi<InventoryStock[]>("/admin/inventory/stock", accessToken);
 }
 
+export function getInventoryItemDetail(accessToken: string, itemId: string) {
+  return requestApi<InventoryItemDetail>(`/admin/inventory/items/${itemId}/detail`, accessToken);
+}
+
 export function getActiveLoans(accessToken: string) {
   return requestApi<EquipmentLoan[]>("/admin/returns/loans", accessToken);
+}
+
+export function getLoanPending(accessToken: string, loanId: string) {
+  return requestApi<EquipmentLoanPending>(`/admin/returns/loans/${loanId}/pending`, accessToken);
+}
+
+export function recordEquipmentReturn(
+  accessToken: string,
+  loanId: string,
+  input: { returned_by_name: string; quantity_details: Array<{ equipment_loan_detail_id: string; returned_quantity: number; location_id: string }>; loan_unit_ids: string[] },
+) {
+  return requestApi<void>(`/admin/returns/loans/${loanId}`, accessToken, {
+    body: JSON.stringify(input),
+    headers: { "Content-Type": "application/json" },
+    method: "POST",
+  });
 }
 
 export function getOperationalReport(
@@ -247,4 +311,14 @@ export function getOperationalReport(
   report: "requests" | "loans" | "incidents" | "stock",
 ) {
   return requestApi<OperationalReportRow[]>(`/admin/reports/${report}`, accessToken);
+}
+
+export function startEquipmentPreparation(accessToken: string, requestId: string) {
+  return requestApi<void>(`/admin/requests/${requestId}/preparation/start`, accessToken, {
+    method: "POST",
+  });
+}
+
+export function getOperationalAuditLogs(accessToken: string) {
+  return requestApi<OperationalAuditLog[]>("/admin/audit", accessToken);
 }
