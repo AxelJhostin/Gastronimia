@@ -22,28 +22,19 @@ export async function updateSession(request: NextRequest) {
         return request.cookies.getAll();
       },
       setAll(cookiesToSet) {
-        cookiesToSet.forEach(({ name, value }) =>
-          request.cookies.set(name, value)
-        );
+        cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
         supabaseResponse = NextResponse.next({
           request,
         });
         cookiesToSet.forEach(({ name, value, options }) =>
-          responseCookies(supabaseResponse, cookiesToSet)
+          supabaseResponse.cookies.set(name, value, options),
         );
       },
     },
   });
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { data } = await supabase.auth.getClaims();
+  const claims = data?.claims;
 
-  return { supabaseResponse, user };
-}
-
-function responseCookies(response: NextResponse, cookiesToSet: Array<any>) {
-  cookiesToSet.forEach(({ name, value, options }) =>
-    response.cookies.set(name, value, options)
-  );
+  return { supabaseResponse, user: claims?.sub ? { id: claims.sub } : null };
 }

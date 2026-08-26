@@ -1,127 +1,26 @@
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
-import { redirect } from "next/navigation";
 
-export default async function AdminUsersPage() {
-  const supabase = await createClient();
+import { UserProvisionForm } from "@/components/admin/user-invitation-form";
+import { AdminRouteGuard } from "@/components/auth/admin-route-guard";
 
-  // 1. Verificar sesión del usuario
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    redirect("/login");
-  }
-
-  // 2. Verificar permisos de ADMIN
-  const { data: currentProfile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single();
-
-  if (currentProfile?.role !== "ADMIN") {
-    redirect("/dashboard/unauthorized");
-  }
-
-  // 3. Consultar la lista de usuarios registrados
-  const { data: users, error } = await supabase
-    .from("profiles")
-    .select("*")
-    .order("created_at", { ascending: false });
-
+export default function UserManagementPage() {
   return (
     <main className="flex flex-1 justify-center bg-stone-50 p-6 text-stone-900">
-      <section className="w-full max-w-6xl rounded-2xl border border-stone-200 bg-white p-8 shadow-sm">
-        {/* Cabecera */}
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-stone-100 pb-6">
-          <div>
-            <p className="text-xs font-bold uppercase tracking-[0.2em] text-amber-700">
-              Administración
-            </p>
-            <h1 className="mt-1 text-3xl font-bold tracking-tight text-stone-900">
-              Administrar Usuarios
-            </h1>
-            <p className="mt-1 text-sm text-stone-600">
-              Gestiona las cuentas institucionales, asignación de roles y accesos al sistema.
-            </p>
-          </div>
-
-          {/* Enlace al Punto 3: Crear Usuarios */}
-          <Link
-            href="/dashboard/users/new"
-            className="inline-flex items-center justify-center rounded-xl bg-amber-700 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-amber-800 transition-colors"
-          >
-            ＋ Crear Usuario
-          </Link>
-        </div>
-
-        {/* Tabla de Usuarios */}
-        <div className="mt-6 overflow-x-auto">
-          {error ? (
-            <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-              Error al cargar los usuarios: {error.message}
-            </div>
-          ) : (
-            <table className="w-full text-left text-sm text-stone-700">
-              <thead className="bg-stone-50 text-xs uppercase tracking-wider text-stone-500 border-b border-stone-200">
-                <tr>
-                  <th className="px-4 py-3 font-semibold">Usuario</th>
-                  <th className="px-4 py-3 font-semibold">Correo</th>
-                  <th className="px-4 py-3 font-semibold">Rol</th>
-                  <th className="px-4 py-3 font-semibold">Estado</th>
-                  <th className="px-4 py-3 font-semibold text-right">Acciones</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-stone-100">
-                {users && users.length > 0 ? (
-                  users.map((profile) => (
-                    <tr key={profile.id} className="hover:bg-stone-50/60 transition-colors">
-                      <td className="px-4 py-3.5 font-medium text-stone-900">
-                        {profile.full_name || "Sin Nombre"}
-                      </td>
-                      <td className="px-4 py-3.5 text-stone-600">{profile.email}</td>
-                      <td className="px-4 py-3.5">
-                        <span
-                          className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset ${
-                            profile.role === "ADMIN"
-                              ? "bg-purple-50 text-purple-700 ring-purple-700/10"
-                              : profile.role === "MANAGER"
-                              ? "bg-blue-50 text-blue-700 ring-blue-700/10"
-                              : "bg-amber-50 text-amber-700 ring-amber-700/10"
-                          }`}
-                        >
-                          {profile.role}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3.5">
-                        <span className="inline-flex items-center gap-1.5 text-xs text-emerald-700 font-medium">
-                          <span className="h-1.5 w-1.5 rounded-full bg-emerald-600" />
-                          Activo
-                        </span>
-                      </td>
-                      <td className="px-4 py-3.5 text-right space-x-2">
-                        <Link
-                          href={`/dashboard/users/${profile.id}/reset-password`}
-                          className="text-xs font-semibold text-stone-600 hover:text-amber-800 underline"
-                        >
-                          Restablecer Clave
-                        </Link>
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan={5} className="px-4 py-8 text-center text-stone-500">
-                      No se encontraron usuarios registrados.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          )}
-        </div>
+      <section className="w-full max-w-xl rounded-2xl border border-stone-200 bg-white p-8 shadow-sm">
+        <Link className="text-sm text-amber-800 underline" href="/dashboard">
+          Volver al panel
+        </Link>
+        <p className="mt-6 text-sm font-semibold uppercase tracking-[0.2em] text-amber-700">
+          Administración
+        </p>
+        <h1 className="mt-3 text-3xl font-semibold tracking-tight">Crear usuario</h1>
+        <p className="mt-3 text-sm leading-6 text-stone-600">
+          Crea la cuenta, asigna sus roles y comparte las credenciales temporales
+          de forma segura. La persona deberá cambiarlas al ingresar por primera vez.
+        </p>
+        <AdminRouteGuard>
+          <UserProvisionForm />
+        </AdminRouteGuard>
       </section>
     </main>
   );

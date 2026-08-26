@@ -1,96 +1,71 @@
-'use client';
+"use client";
 
-import { useState, useTransition } from "react";
+import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
+
+import { EmailIcon, InputWithIcon, PasswordInput } from "@/components/ui";
 import { createClient } from "@/lib/supabase/client";
 
 export function LoginForm() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [isPending, startTransition] = useTransition();
-
   const router = useRouter();
-  const supabase = createClient();
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
     setErrorMessage(null);
+    setIsSubmitting(true);
 
-    startTransition(async () => {
-      // 1. Iniciar sesión en Supabase Auth
-      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (authError || !authData.user) {
-        setErrorMessage(authError?.message || "Error al iniciar sesión.");
-        return;
-      }
-
-      // 2. Consultar el rol asignado al perfil
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("role")
-        .eq("id", authData.user.id)
-        .single();
-
-      const userRole = profile?.role || "TEACHER";
-
-      // 3. Redirigir según el rol
-      if (userRole === "TEACHER") {
-        router.push("/dashboard/requests");
-      } else {
-        router.push("/dashboard");
-      }
-
-      router.refresh();
+    const formData = new FormData(event.currentTarget);
+    const { error } = await createClient().auth.signInWithPassword({
+      email: String(formData.get("email") ?? ""),
+      password: String(formData.get("password") ?? ""),
     });
-  };
+
+    setIsSubmitting(false);
+
+    if (error) {
+      setErrorMessage("No fue posible iniciar sesión. Revisa tus credenciales.");
+      return;
+    }
+
+    // FastAPI determina los roles dentro del dashboard. El navegador no consulta
+    // tablas internas ni usa metadata editable para autorizar.
+    router.replace("/dashboard");
+    router.refresh();
+  }
 
   return (
-    <form onSubmit={handleLogin} className="space-y-4">
-      {errorMessage && (
-        <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-xs text-red-700">
-          {errorMessage}
-        </div>
-      )}
-
-      <div>
-        <label className="block text-xs font-semibold uppercase tracking-wider text-stone-700">
-          Correo Electrónico
-        </label>
-        <input
+    <form className="mt-8 space-y-5" onSubmit={handleSubmit}>
+      <label className="block text-sm font-medium text-stone-700" htmlFor="email">
+        Correo institucional
+        <InputWithIcon
+          autoComplete="email"
+          className="mt-2 block w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-stone-900 outline-none ring-amber-600 focus:ring-2"
+          id="email"
+          icon={<EmailIcon />}
+          name="email"
+          required
           type="email"
-          required
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder="usuario@gastronomia.edu"
-          className="mt-1 w-full rounded-lg border border-stone-300 p-2.5 text-sm focus:border-amber-600 focus:outline-none"
         />
-      </div>
-
-      <div>
-        <label className="block text-xs font-semibold uppercase tracking-wider text-stone-700">
-          Contraseña
-        </label>
-        <input
-          type="password"
+      </label>
+      <label className="block text-sm font-medium text-stone-700" htmlFor="password">
+        Contraseña
+        <PasswordInput
+          autoComplete="current-password"
+          className="mt-2 block w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-stone-900 outline-none ring-amber-600 focus:ring-2"
+          id="password"
+          name="password"
           required
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          placeholder="••••••••"
-          className="mt-1 w-full rounded-lg border border-stone-300 p-2.5 text-sm focus:border-amber-600 focus:outline-none"
         />
-      </div>
-
+      </label>
+      {errorMessage ? <p aria-live="polite" className="text-sm text-red-700" role="alert">{errorMessage}</p> : null}
       <button
+        className="w-full rounded-lg bg-amber-700 px-4 py-2.5 font-semibold text-white hover:bg-amber-800 disabled:cursor-not-allowed disabled:opacity-60"
+        disabled={isSubmitting}
         type="submit"
-        disabled={isPending}
-        className="mt-2 w-full rounded-xl bg-amber-700 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-amber-800 disabled:opacity-50 transition-colors"
       >
-        {isPending ? "Ingresando..." : "Iniciar Sesión"}
+        {isSubmitting ? "Ingresando…" : "Iniciar sesión"}
       </button>
     </form>
   );
