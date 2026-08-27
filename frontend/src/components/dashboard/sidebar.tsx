@@ -1,40 +1,59 @@
-"use client";
+// frontend/src/components/dashboard/sidebar.tsx
+'use client';
 
-import Link from "next/link";
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { useDashboardIdentity } from '@/components/auth/dashboard-identity-provider';
+import type { RoleCode } from '@/lib/api/client';
 
-import { LogoutButton } from "@/components/auth/logout-button";
-import { useDashboardIdentity } from "@/components/auth/dashboard-identity-provider";
+interface NavItem {
+  label: string;
+  href: string;
+  roles: RoleCode[];
+}
 
-export default function Sidebar() {
+const NAV_ITEMS: NavItem[] = [
+  { label: 'Inicio', href: '/dashboard', roles: ['ADMIN', 'MANAGER', 'TEACHER'] },
+  { label: 'Solicitudes', href: '/dashboard/requests', roles: ['ADMIN', 'MANAGER', 'TEACHER'] },
+  { label: 'Inventario', href: '/dashboard/inventory', roles: ['ADMIN', 'MANAGER', 'TEACHER'] },
+  { label: 'Preparaciones', href: '/dashboard/preparations', roles: ['ADMIN', 'MANAGER'] },
+  { label: 'Devoluciones', href: '/dashboard/returns', roles: ['ADMIN', 'MANAGER'] },
+  { label: 'Novedades', href: '/dashboard/incidents', roles: ['ADMIN', 'MANAGER'] },
+  { label: 'Reportes', href: '/dashboard/reports', roles: ['ADMIN', 'MANAGER'] },
+  { label: 'Usuarios', href: '/dashboard/users', roles: ['ADMIN'] },
+  { label: 'Auditoría', href: '/dashboard/audit-log', roles: ['ADMIN'] },
+];
+
+export function Sidebar() {
+  const pathname = usePathname();
   const identity = useDashboardIdentity();
 
-  if (identity.status === "loading") {
-    return <aside className="w-64 shrink-0 border-r border-stone-200 bg-white p-5" />;
-  }
+  const userRoles = identity.status === 'authenticated' ? identity.user.roles : [];
 
-  if (identity.status === "unavailable") {
-    return null;
-  }
-
-  const isAdmin = identity.user.roles.includes("ADMIN");
+  const filteredNavItems = NAV_ITEMS.filter((item) =>
+    item.roles.some((role) => userRoles.includes(role))
+  );
 
   return (
-    <aside className="flex min-h-screen w-64 shrink-0 flex-col border-r border-stone-200 bg-white p-5 text-stone-900">
-      <p className="text-lg font-semibold">Gastronomía</p>
-      <p className="mt-1 text-xs text-stone-500">Laboratorio e inventario</p>
-      <nav className="mt-8 space-y-2 text-sm" aria-label="Navegación principal">
-        <Link className="block rounded-lg px-3 py-2 hover:bg-stone-100" href="/dashboard">
-          Panel principal
-        </Link>
-        {isAdmin ? (
-          <Link className="block rounded-lg px-3 py-2 hover:bg-stone-100" href="/dashboard/users">
-            Usuarios
-          </Link>
-        ) : null}
+    <aside className="w-64 bg-slate-900 text-white min-h-screen p-4">
+      <nav className="space-y-1">
+        {filteredNavItems.map((item) => {
+          const isActive = pathname === item.href;
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={`block px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                isActive
+                  ? 'bg-slate-800 text-white font-semibold'
+                  : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+              }`}
+            >
+              {item.label}
+            </Link>
+          );
+        })}
       </nav>
-      <div className="mt-auto pt-6">
-        <LogoutButton />
-      </div>
     </aside>
   );
 }

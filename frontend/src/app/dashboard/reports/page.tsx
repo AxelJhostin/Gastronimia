@@ -5,109 +5,150 @@ import { useEffect, useState } from "react";
 
 import { useDashboardIdentity } from "@/components/auth/dashboard-identity-provider";
 import { GastronomyStatusPage } from "@/components/feedback/gastronomy-status-page";
-import { getOperationalReport, type OperationalReportRow } from "@/lib/api/client";
+import {
+  getOperationalReport,
+  type OperationalReportRow,
+} from "@/lib/api/client";
 
-type ReportState = {
-  requests: OperationalReportRow[];
-  loans: OperationalReportRow[];
-  stock: OperationalReportRow[];
-};
+type ReportType = "requests" | "loans" | "incidents" | "stock";
 
 export default function ReportsPage() {
   const identity = useDashboardIdentity();
-  const [report, setReport] = useState<ReportState>({ requests: [], loans: [], stock: [] });
+  const [reportType, setReportType] = useState<ReportType>("requests");
+  const [data, setData] = useState<OperationalReportRow[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (
-      identity.status !== "authenticated" ||
-      !identity.user.roles.some((role) => role === "ADMIN" || role === "MANAGER")
-    ) {
-      return;
-    }
+  const hasAccess =
+    identity.status === "authenticated" &&
+    identity.user.roles.some((role) => role === "ADMIN" || role === "MANAGER");
 
-    void Promise.all([
-      getOperationalReport(identity.accessToken, "requests"),
-      getOperationalReport(identity.accessToken, "loans"),
-      getOperationalReport(identity.accessToken, "stock"),
-    ])
-      .then(([requests, loans, stock]) => setReport({ requests, loans, stock }))
-      .catch((loadError) =>
-        setError(loadError instanceof Error ? loadError.message : "No fue posible cargar los reportes."),
+  useEffect(() => {
+    if (!hasAccess || identity.status !== "authenticated") return;
+
+    setLoading(true);
+    setError(null);
+
+    void getOperationalReport(identity.accessToken, reportType)
+      .then(setData)
+      .catch((err: unknown) =>
+        setError(
+          err instanceof Error ? err.message : "Error al consultar el reporte."
+        )
       )
       .finally(() => setLoading(false));
-  }, [identity]);
+  }, [identity, hasAccess, reportType]);
 
   if (identity.status === "loading") {
-    return <p className="p-6 text-sm text-stone-600">Cargando reportes…</p>;
+    return <p className="p-6 text-sm text-stone-600">Cargando informes…</p>;
   }
 
   if (identity.status === "unavailable") {
     return <p className="p-6 text-sm text-red-700">{identity.message}</p>;
   }
 
-  if (!identity.user.roles.some((role) => role === "ADMIN" || role === "MANAGER")) {
+  if (!hasAccess) {
     return <GastronomyStatusPage kind="forbidden" />;
   }
 
-  const pendingRequests = report.requests.filter((row) => row.status === "PENDING").length;
-  const activeLoans = report.loans.filter((row) => row.status === "ACTIVE").length;
+  const columns = data.length > 0 ? Object.keys(data[0]) : [];
 
   return (
     <main className="flex flex-1 justify-center bg-stone-50 p-6 text-stone-900">
       <section className="w-full max-w-6xl rounded-2xl border border-stone-200 bg-white p-8 shadow-sm">
-        <div className="flex flex-col gap-4 border-b border-stone-100 pb-6 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-stone-100 pb-6">
           <div>
-            <p className="text-xs font-bold uppercase tracking-[0.2em] text-amber-700">Auditoría y Análisis</p>
-            <h1 className="mt-1 text-3xl font-bold tracking-tight text-stone-900">Reportes de Operación</h1>
-            <p className="mt-1 text-sm text-stone-600">Visión consolidada de solicitudes, préstamos y stock.</p>
+            <p className="text-xs font-bold uppercase tracking-[0.2em] text-amber-700">
+              Analítica del Pañol
+            </p>
+            <h1 className="mt-1 text-3xl font-bold tracking-tight text-stone-900">
+              Reportes Operativos
+            </h1>
           </div>
-          <Link href="/dashboard" className="text-xs font-semibold text-stone-600 underline hover:text-amber-800">
+          <Link
+            href="/dashboard"
+            className="text-xs font-semibold text-stone-600 hover:text-amber-800 underline"
+          >
             ← Volver al Panel
           </Link>
         </div>
 
-        {error ? (
-          <div className="mt-6 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-            Error al cargar los reportes: {error}
-          </div>
-        ) : null}
-
-        <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <Metric label="Total Solicitudes" value={loading ? "—" : report.requests.length} hint="Histórico registrado" />
-          <Metric label="Pendientes" value={loading ? "—" : pendingRequests} hint="Requieren aprobación" accent />
-          <Metric label="Registros de Stock" value={loading ? "—" : report.stock.length} hint="Por ítem y ubicación" />
-          <Metric label="Préstamos Activos" value={loading ? "—" : activeLoans} hint="Pendientes de devolución" />
+        {/* Selector de reporte */}
+        <div className="mt-6 flex flex-wrap gap-2">
+          {(
+            [
+              { id: "requests", label: "Solicitudes" },
+              { id: "loans", label: "Préstamos" },
+              { id: "stock", label: "Stock / Inventario" },
+              { id: "incidents", label: "Novedades" },
+            ] as const
+          ).map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setReportType(tab.id)}
+              className={`rounded-lg px-4 py-2 text-xs font-semibold transition-colors ${
+                reportType === tab.id
+                  ? "bg-amber-800 text-white"
+                  : "bg-stone-100 text-stone-700 hover:bg-stone-200"
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
         </div>
 
-        <div className="mt-8 rounded-xl border border-stone-200 bg-stone-50 p-6">
-          <h2 className="text-sm font-semibold uppercase tracking-wider text-stone-900">Fuente de datos</h2>
-          <p className="mt-1 text-xs text-stone-600">
-            Estas métricas usan los resúmenes operativos protegidos de FastAPI. La exportación de archivos se añadirá cuando se defina el formato requerido.
-          </p>
+        {/* Tabla dinámicas de reporte */}
+        <div className="mt-6 overflow-x-auto">
+          {error ? (
+            <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+              {error}
+            </div>
+          ) : (
+            <table className="w-full text-left text-sm text-stone-700 border-collapse">
+              <thead className="bg-stone-50 text-xs uppercase tracking-wider text-stone-500 border-b border-stone-200">
+                <tr>
+                  {columns.map((col) => (
+                    <th key={col} className="px-4 py-3 font-semibold">
+                      {col.replace(/_/g, " ")}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-stone-100">
+                {loading ? (
+                  <tr>
+                    <td
+                      colSpan={Math.max(columns.length, 1)}
+                      className="px-4 py-8 text-center text-stone-500"
+                    >
+                      Generando datos del informe…
+                    </td>
+                  </tr>
+                ) : data.length > 0 ? (
+                  data.map((row, idx) => (
+                    <tr key={idx} className="hover:bg-stone-50/60 transition-colors">
+                      {columns.map((col) => (
+                        <td key={col} className="px-4 py-3.5 text-stone-600 font-mono text-xs">
+                          {String(row[col] ?? "-")}
+                        </td>
+                      ))}
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td
+                      colSpan={Math.max(columns.length, 1)}
+                      className="px-4 py-8 text-center text-stone-500"
+                    >
+                      No hay datos disponibles para este reporte.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          )}
         </div>
       </section>
     </main>
-  );
-}
-
-function Metric({
-  label,
-  value,
-  hint,
-  accent = false,
-}: {
-  label: string;
-  value: string | number;
-  hint: string;
-  accent?: boolean;
-}) {
-  return (
-    <div className={`rounded-xl border p-5 ${accent ? "border-amber-200 bg-amber-50/40" : "border-stone-200 bg-stone-50/50"}`}>
-      <span className={`text-xs font-semibold uppercase tracking-wider ${accent ? "text-amber-800" : "text-stone-500"}`}>{label}</span>
-      <div className={`mt-2 text-3xl font-bold ${accent ? "text-amber-900" : "text-stone-900"}`}>{value}</div>
-      <p className={`mt-1 text-xs ${accent ? "text-amber-700" : "text-stone-600"}`}>{hint}</p>
-    </div>
   );
 }

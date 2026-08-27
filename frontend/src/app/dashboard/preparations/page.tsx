@@ -1,44 +1,141 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import { useDashboardIdentity } from "@/components/auth/dashboard-identity-provider";
 import { GastronomyStatusPage } from "@/components/feedback/gastronomy-status-page";
-import { getOperationalReport, startEquipmentPreparation, type OperationalReportRow } from "@/lib/api/client";
-
-type PreparationRequest = OperationalReportRow & { id: string; status: string; start_at: string };
+import {
+  getPendingRequests,
+  type EquipmentRequest,
+} from "@/lib/api/client";
 
 export default function PreparationsPage() {
   const identity = useDashboardIdentity();
-  const [requests, setRequests] = useState<PreparationRequest[]>([]);
+  const [orders, setOrders] = useState<EquipmentRequest[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [workingId, setWorkingId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  async function load() {
-    if (identity.status !== "authenticated") return;
-    try {
-      const rows = await getOperationalReport(identity.accessToken, "requests");
-      setRequests(rows.filter((row): row is PreparationRequest => typeof row.id === "string" && typeof row.status === "string" && ["APPROVED", "PARTIALLY_APPROVED", "PREPARING", "PREPARED"].includes(row.status)));
-    } catch (loadError) { setError(loadError instanceof Error ? loadError.message : "No fue posible cargar las preparaciones."); }
-  }
+  const hasAccess =
+    identity.status === "authenticated" &&
+    identity.user.roles.some((role) => role === "ADMIN" || role === "MANAGER");
 
   useEffect(() => {
-    if (identity.status !== "authenticated") return;
-    void getOperationalReport(identity.accessToken, "requests")
-      .then((rows) => setRequests(rows.filter((row): row is PreparationRequest => typeof row.id === "string" && typeof row.status === "string" && ["APPROVED", "PARTIALLY_APPROVED", "PREPARING", "PREPARED"].includes(row.status))))
-      .catch((loadError) => setError(loadError instanceof Error ? loadError.message : "No fue posible cargar las preparaciones."));
-  }, [identity]);
-  if (identity.status === "loading") return <p className="p-6 text-sm text-stone-600">Cargando preparación…</p>;
-  if (identity.status === "unavailable") return <p className="p-6 text-sm text-red-700">{identity.message}</p>;
-  if (!identity.user.roles.some((role) => role === "ADMIN" || role === "MANAGER")) return <GastronomyStatusPage kind="forbidden" />;
+    if (!hasAccess || identity.status !== "authenticated") return;
 
-  async function start(requestId: string) {
-    if (identity.status !== "authenticated") return;
-    setWorkingId(requestId); setError(null);
-    try { await startEquipmentPreparation(identity.accessToken, requestId); await load(); }
-    catch (startError) { setError(startError instanceof Error ? startError.message : "No fue posible iniciar la preparación."); }
-    finally { setWorkingId(null); }
+    void getPendingRequests(identity.accessToken)
+      .then((data: EquipmentRequest[]) => {
+        setOrders(data);
+      })
+      .catch((loadError: unknown) =>
+        setError(
+          loadError instanceof Error
+            ? loadError.message
+            : "No fue posible cargar las solicitudes pendientes de preparación."
+        )
+      )
+      .finally(() => setLoading(false));
+  }, [identity, hasAccess]);
+
+  if (identity.status === "loading") {
+    return <p className="p-6 text-sm text-stone-600">Cargando preparaciones…</p>;
   }
 
-  return <main className="p-6 text-stone-900"><section className="mx-auto max-w-5xl rounded-2xl border border-stone-200 bg-white p-8 shadow-sm"><p className="text-xs font-bold uppercase tracking-[0.2em] text-amber-700">Operación de pañol</p><h1 className="mt-2 text-3xl font-bold">Preparación y despacho</h1><p className="mt-2 text-sm text-stone-600">Solicitudes aprobadas y su estado de preparación.</p>{error ? <p className="mt-5 text-sm text-red-700">{error}</p> : null}<div className="mt-6 grid gap-4 md:grid-cols-3">{["APPROVED", "PREPARING", "PREPARED"].map((status) => <section key={status} className="rounded-xl border bg-stone-50 p-4"><h2 className="font-semibold">{status === "APPROVED" ? "Por preparar" : status === "PREPARING" ? "En preparación" : "Preparadas"}</h2><div className="mt-3 space-y-3">{requests.filter((request) => request.status === status || (status === "APPROVED" && request.status === "PARTIALLY_APPROVED")).map((request) => <article key={request.id} className="rounded-lg border bg-white p-3 text-sm"><p className="font-medium">Solicitud #{request.id.slice(0, 8)}</p><p className="mt-1 text-xs text-stone-600">{new Date(request.start_at).toLocaleString("es-EC")}</p>{status === "APPROVED" ? <button disabled={workingId === request.id} onClick={() => void start(request.id)} className="mt-3 text-xs font-semibold text-amber-800 underline disabled:opacity-50">{workingId === request.id ? "Iniciando…" : "Iniciar preparación"}</button> : null}</article>)}</div></section>)}</div><p className="mt-6 text-xs text-stone-500">El registro de cantidades y unidades reservadas permanece validado por el flujo operativo de FastAPI.</p></section></main>;
+  if (identity.status === "unavailable") {
+    return <p className="p-6 text-sm text-red-700">{identity.message}</p>;
+  }
+
+  if (!hasAccess) {
+    return <GastronomyStatusPage kind="forbidden" />;
+  }
+
+  return (
+    <main className="flex flex-1 justify-center bg-stone-50 p-6 text-stone-900">
+      <section className="w-full max-w-6xl rounded-2xl border border-stone-200 bg-white p-8 shadow-sm">
+        {/* Cabecera */}
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-stone-100 pb-6">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-[0.2em] text-amber-700">
+              Operaciones de Pañol
+            </p>
+            <h1 className="mt-1 text-3xl font-bold tracking-tight text-stone-900">
+              Preparación de Solicitudes
+            </h1>
+            <p className="mt-1 text-sm text-stone-600">
+              Gestión y armado de pedidos de insumos y equipos autorizados.
+            </p>
+          </div>
+          <Link
+            href="/dashboard"
+            className="text-xs font-semibold text-stone-600 hover:text-amber-800 underline"
+          >
+            ← Volver al Panel
+          </Link>
+        </div>
+
+        {/* Listado / Tabla */}
+        <div className="mt-6 overflow-x-auto">
+          {error ? (
+            <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+              Error al cargar preparaciones: {error}
+            </div>
+          ) : (
+            <table className="w-full text-left text-sm text-stone-700">
+              <thead className="bg-stone-50 text-xs uppercase tracking-wider text-stone-500 border-b border-stone-200">
+                <tr>
+                  <th className="px-4 py-3 font-semibold">Código / Solicitud</th>
+                  <th className="px-4 py-3 font-semibold">Inicio Reserva</th>
+                  <th className="px-4 py-3 font-semibold">Fin Reserva</th>
+                  <th className="px-4 py-3 font-semibold">Estado</th>
+                  <th className="px-4 py-3 font-semibold text-right">Acción</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-stone-100">
+                {loading ? (
+                  <tr>
+                    <td colSpan={5} className="px-4 py-8 text-center text-stone-500">
+                      Cargando solicitudes de despacho…
+                    </td>
+                  </tr>
+                ) : orders.length > 0 ? (
+                  orders.map((order) => (
+                    <tr key={order.id} className="hover:bg-stone-50/60 transition-colors">
+                      <td className="px-4 py-3.5 font-medium text-stone-900">
+                        {`Solicitud #${order.id.slice(0, 8)}`}
+                      </td>
+                      <td className="px-4 py-3.5 text-stone-600">
+                        {new Date(order.start_at).toLocaleString("es-EC")}
+                      </td>
+                      <td className="px-4 py-3.5 text-stone-600">
+                        {new Date(order.end_at).toLocaleString("es-EC")}
+                      </td>
+                      <td className="px-4 py-3.5">
+                        <span className="inline-flex items-center rounded-md bg-amber-50 px-2 py-1 text-xs font-medium text-amber-700 ring-1 ring-inset ring-amber-600/20">
+                          {order.status}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3.5 text-right">
+                        <Link
+                          href={`/dashboard/preparations/${order.id}`}
+                          className="text-xs font-semibold text-amber-800 underline hover:text-amber-900"
+                        >
+                          Armar paquete →
+                        </Link>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={5} className="px-4 py-8 text-center text-stone-500">
+                      No hay solicitudes pendientes por preparar.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          )}
+        </div>
+      </section>
+    </main>
+  );
 }
