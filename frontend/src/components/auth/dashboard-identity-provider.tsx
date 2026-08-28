@@ -1,9 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
-
 import { getCurrentUser, type CurrentUser } from "@/lib/api/client";
-import { createClient } from "@/lib/supabase/client";
 
 type DashboardIdentityState =
   | { status: "loading" }
@@ -21,24 +19,25 @@ export function DashboardIdentityProvider({ children }: { children: React.ReactN
     let isActive = true;
 
     async function loadIdentity() {
-      const { data } = await createClient().auth.getSession();
+      const accessToken =
+        localStorage.getItem("access_token") || localStorage.getItem("token");
 
-      if (!data.session) {
+      if (!accessToken) {
         if (isActive) {
           setIdentity({
             status: "unavailable",
-            message: "Tu sesión expiró. Inicia sesión nuevamente.",
+            message: "Tu sesión expiró o no iniciaste sesión. Inicia sesión nuevamente.",
           });
         }
         return;
       }
 
       try {
-        const user = await getCurrentUser(data.session.access_token);
+        const user = await getCurrentUser(accessToken);
         if (isActive) {
           setIdentity({
             status: "authenticated",
-            accessToken: data.session.access_token,
+            accessToken,
             user,
           });
         }

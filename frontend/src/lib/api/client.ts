@@ -1,12 +1,22 @@
 import { getClientEnv } from "@/lib/env";
 
-export type RoleCode = "ADMIN" | "MANAGER" | "TEACHER";
+export type RoleCode = "ADMIN" | "MANAGER" | "TEACHER" | "PAÑOLERO";
 
 export type CurrentUser = {
   id: string;
   email: string | null;
   roles: RoleCode[];
   must_change_password: boolean;
+};
+
+export type LoginCredentials = {
+  username: string;
+  password: string;
+};
+
+export type LoginResponse = {
+  access_token: string;
+  token_type: string;
 };
 
 export type CreateManagedUserInput = {
@@ -205,6 +215,33 @@ async function requestApi<T>(
   }
 
   return (await response.json()) as T;
+}
+
+export async function loginUser(credentials: LoginCredentials): Promise<LoginResponse> {
+  const { NEXT_PUBLIC_API_BASE_URL } = getClientEnv();
+
+  const formData = new URLSearchParams();
+  formData.append("username", credentials.username);
+  formData.append("password", credentials.password);
+
+  const response = await fetch(`${NEXT_PUBLIC_API_BASE_URL}/api/v1/auth/login`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+      Accept: "application/json",
+    },
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const body = (await response.json().catch(() => null)) as {
+      detail?: string;
+    } | null;
+    const message = body?.detail || "Credenciales incorrectas o error en inicio de sesión.";
+    throw new ApiError(message, response.status);
+  }
+
+  return response.json();
 }
 
 export async function getApiHealth() {

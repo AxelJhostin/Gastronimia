@@ -17,17 +17,21 @@ export function LoginForm() {
     setIsSubmitting(true);
 
     const formData = new FormData(event.currentTarget);
-    const { error } = await createClient().auth.signInWithPassword({
+    const { data, error } = await createClient().auth.signInWithPassword({
       email: String(formData.get("email") ?? ""),
       password: String(formData.get("password") ?? ""),
     });
 
     setIsSubmitting(false);
 
-    if (error) {
+    if (error || !data.session) {
       setErrorMessage("No fue posible iniciar sesión. Revisa tus credenciales.");
       return;
     }
+
+    // Guardar el access_token obtenido de Supabase para que FastAPI y el DashboardIdentityProvider puedan leerlo
+    localStorage.setItem("access_token", data.session.access_token);
+    localStorage.setItem("token", data.session.access_token);
 
     // FastAPI determina los roles dentro del dashboard. El navegador no consulta
     // tablas internas ni usa metadata editable para autorizar.
@@ -59,7 +63,11 @@ export function LoginForm() {
           required
         />
       </label>
-      {errorMessage ? <p aria-live="polite" className="text-sm text-red-700" role="alert">{errorMessage}</p> : null}
+      {errorMessage ? (
+        <p aria-live="polite" className="text-sm text-red-700" role="alert">
+          {errorMessage}
+        </p>
+      ) : null}
       <button
         className="w-full rounded-lg bg-amber-700 px-4 py-2.5 font-semibold text-white hover:bg-amber-800 disabled:cursor-not-allowed disabled:opacity-60"
         disabled={isSubmitting}
