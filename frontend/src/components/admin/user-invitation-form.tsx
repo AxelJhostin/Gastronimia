@@ -26,6 +26,7 @@ const roleLabels: Record<RoleCode, string> = {
   ADMIN: "Administrador",
   MANAGER: "Encargado",
   TEACHER: "Docente",
+  PAÑOLERO: "Pañolero", // <-- define permisos de acceso específicos dentro del sistema
 };
 
 export function UserProvisionForm() {

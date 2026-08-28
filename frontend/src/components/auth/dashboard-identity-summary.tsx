@@ -6,6 +6,7 @@ const roleLabels = {
   ADMIN: "Administrador",
   MANAGER: "Encargado",
   TEACHER: "Docente",
+  PAÑOLERO: "Pañolero",
 } as const;
 
 export function DashboardIdentitySummary() {
