@@ -1,194 +1,113 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { Search, RotateCcw, ShieldCheck, CheckCircle2, AlertTriangle } from "lucide-react";
 
-import { useDashboardIdentity } from "@/components/auth/dashboard-identity-provider";
-import { GastronomyStatusPage } from "@/components/feedback/gastronomy-status-page";
-import {
-  getLoanPending,
-  recordEquipmentReturn,
-  type EquipmentLoanPending,
-} from "@/lib/api/client";
+interface ReturnSummary {
+  id: string;
+  requestId: string;
+  teacherName: string;
+  activityName: string;
+  returnDate: string;
+  status: "pending_inspection" | "inspected_ok" | "has_incidents";
+  pendingItemsCount: number;
+}
 
-export default function ReturnDetailPage() {
-  const params = useParams();
-  const router = useRouter();
-  const identity = useDashboardIdentity();
+const MOCK_RETURNS: ReturnSummary[] = [
+  {
+    id: "RET-001",
+    requestId: "REQ-2026-003",
+    teacherName: "Prof. Carlos Mendoza",
+    activityName: "Pastelería Básica",
+    returnDate: "2026-08-30",
+    status: "pending_inspection",
+    pendingItemsCount: 3,
+  },
+  {
+    id: "RET-002",
+    requestId: "REQ-2026-002",
+    teacherName: "Prof. Maria Gomez",
+    activityName: "Cocina Internacional II",
+    returnDate: "2026-08-29",
+    status: "has_incidents",
+    pendingItemsCount: 5,
+  },
+];
 
-  const loanId = Array.isArray(params.id) ? params.id[0] : params.id;
+export default function ReturnsPage() {
+  const [searchTerm, setSearchTerm] = useState("");
 
-  const [pending, setPending] = useState<EquipmentLoanPending | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const [returnedBy, setReturnedBy] = useState("");
-  const [quantities, setQuantities] = useState<Record<string, number>>({});
-
-  const isAuthenticated = identity.status === "authenticated";
-  const accessToken = isAuthenticated ? identity.accessToken : null;
-
-  const hasAccess =
-    isAuthenticated &&
-    identity.user.roles.some((role) => role === "ADMIN" || role === "MANAGER");
-
-  useEffect(() => {
-    if (!hasAccess || !accessToken || !loanId) return;
-
-    void getLoanPending(accessToken, loanId)
-      .then((data) => {
-        setPending(data);
-        setReturnedBy(data.loan.collected_by_name);
-        
-        const initialQty: Record<string, number> = {};
-        data.quantity_details.forEach((item) => {
-          initialQty[item.equipment_loan_detail_id] = item.pending_quantity;
-        });
-        setQuantities(initialQty);
-      })
-      .catch((err: unknown) =>
-        setError(
-          err instanceof Error
-            ? err.message
-            : "No fue posible obtener el detalle de devolución del préstamo."
-        )
-      )
-      .finally(() => setLoading(false));
-  }, [hasAccess, accessToken, loanId]);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!accessToken || !loanId || !pending) return;
-
-    setSubmitting(true);
-    setError(null);
-
-    try {
-      const quantityDetails = pending.quantity_details.map((item) => ({
-        equipment_loan_detail_id: item.equipment_loan_detail_id,
-        returned_quantity: quantities[item.equipment_loan_detail_id] ?? 0,
-        location_id: item.location_id,
-      }));
-
-      await recordEquipmentReturn(accessToken, loanId, {
-        returned_by_name: returnedBy,
-        quantity_details: quantityDetails,
-        loan_unit_ids: pending.unit_ids_pending,
-      });
-
-      router.push("/dashboard/returns");
-    } catch (err: unknown) {
-      setError(
-        err instanceof Error ? err.message : "Error al procesar la devolución."
-      );
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  if (identity.status === "loading" || loading) {
-    return <p className="p-6 text-sm text-stone-600">Cargando datos del préstamo…</p>;
-  }
-
-  if (identity.status === "unavailable") {
-    return <p className="p-6 text-sm text-red-700">{identity.message}</p>;
-  }
-
-  if (!hasAccess) {
-    return <GastronomyStatusPage kind="forbidden" />;
-  }
+  const filteredReturns = MOCK_RETURNS.filter(
+    (ret) =>
+      ret.activityName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      ret.teacherName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      ret.requestId.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   return (
-    <main className="flex flex-1 justify-center bg-stone-50 p-6 text-stone-900">
-      <section className="w-full max-w-4xl rounded-2xl border border-stone-200 bg-white p-8 shadow-sm">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-stone-100 pb-6">
-          <div>
-            <p className="text-xs font-bold uppercase tracking-[0.2em] text-amber-700">
-              Control de Devolución
-            </p>
-            <h1 className="mt-1 text-2xl font-bold tracking-tight text-stone-900">
-              Recepcionar Préstamo #{pending?.loan.id.slice(0, 8)}
-            </h1>
-          </div>
-          <Link
-            href="/dashboard/returns"
-            className="text-xs font-semibold text-stone-600 hover:text-amber-800 underline"
-          >
-            ← Cancelar
-          </Link>
-        </div>
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-xl font-bold tracking-tight text-slate-900">
+          Control de Devoluciones
+        </h1>
+        <p className="text-xs text-slate-500">
+          Inspección e ingreso de herramientas y materiales retornados al almacén.
+        </p>
+      </div>
 
-        {error && (
-          <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-            {error}
-          </div>
-        )}
+      <div className="relative max-w-md bg-white rounded-xl border border-slate-200 shadow-sm">
+        <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+        <input
+          type="text"
+          placeholder="Buscar devolución por código o docente..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="w-full pl-9 pr-3 py-2 text-xs border-0 rounded-xl focus:ring-1 focus:ring-emerald-500 focus:outline-none"
+        />
+      </div>
 
-        <form onSubmit={handleSubmit} className="mt-6 space-y-6">
-          <div>
-            <label className="block text-sm font-semibold text-stone-700">
-              Nombre de quien entrega el material:
-            </label>
-            <input
-              type="text"
-              required
-              value={returnedBy}
-              onChange={(e) => setReturnedBy(e.target.value)}
-              className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm focus:border-amber-600 focus:outline-none"
-            />
-          </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {filteredReturns.map((item) => (
+          <div key={item.id} className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-4">
+            <div className="flex items-start justify-between border-b border-slate-100 pb-3">
+              <div>
+                <span className="text-[10px] font-mono font-semibold uppercase text-slate-400 block">
+                  Solicitud: {item.requestId}
+                </span>
+                <h3 className="text-sm font-bold text-slate-800">{item.activityName}</h3>
+                <p className="text-xs text-slate-500 mt-0.5">Docente: {item.teacherName}</p>
+              </div>
 
-          <div className="overflow-x-auto">
-            <h2 className="text-sm font-bold uppercase tracking-wider text-stone-800 mb-3">
-              Cantidades a Recepcionar
-            </h2>
-            <table className="w-full text-left text-sm text-stone-700 border-collapse">
-              <thead className="bg-stone-50 text-xs uppercase text-stone-500 border-b border-stone-200">
-                <tr>
-                  <th className="px-4 py-3 font-semibold">Pendiente</th>
-                  <th className="px-4 py-3 font-semibold text-right">Cantidad Devuelta</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-stone-100">
-                {pending?.quantity_details.map((item) => (
-                  <tr key={item.equipment_loan_detail_id}>
-                    <td className="px-4 py-3 font-medium text-stone-900">
-                      Pendientes: {item.pending_quantity} (Prestados: {item.loaned_quantity})
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <input
-                        type="number"
-                        min={0}
-                        max={item.pending_quantity}
-                        value={quantities[item.equipment_loan_detail_id] ?? 0}
-                        onChange={(e) =>
-                          setQuantities({
-                            ...quantities,
-                            [item.equipment_loan_detail_id]: Number(e.target.value),
-                          })
-                        }
-                        className="w-24 rounded-md border border-stone-300 px-2 py-1 text-right font-semibold text-stone-900 focus:border-amber-600 focus:outline-none"
-                      />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+              {item.status === "pending_inspection" && (
+                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-medium bg-amber-50 text-amber-700 border border-amber-200">
+                  <RotateCcw className="h-3 w-3" /> Pendiente Inspección
+                </span>
+              )}
 
-          <div className="flex justify-end border-t border-stone-100 pt-6">
-            <button
-              type="submit"
-              disabled={submitting}
-              className="rounded-lg bg-amber-800 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-amber-900 disabled:opacity-50 transition-colors"
-            >
-              {submitting ? "Guardando…" : "Confirmar Recepción"}
-            </button>
+              {item.status === "has_incidents" && (
+                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-medium bg-red-50 text-red-700 border border-red-200">
+                  <AlertTriangle className="h-3 w-3" /> Con Novedades
+                </span>
+              )}
+            </div>
+
+            <div className="flex items-center justify-between text-xs text-slate-600">
+              <span>Retorno: <strong>{item.returnDate}</strong></span>
+              <span>Herramientas: <strong>{item.pendingItemsCount} ítems</strong></span>
+            </div>
+
+            <div className="pt-2">
+              <Link
+                href={`/dashboard/returns/${item.requestId}`}
+                className="w-full inline-flex items-center justify-center gap-2 px-4 py-2 text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 rounded-lg transition-colors"
+              >
+                <ShieldCheck className="h-4 w-4" /> Inspeccionar y Registrar Devolución
+              </Link>
+            </div>
           </div>
-        </form>
-      </section>
-    </main>
+        ))}
+      </div>
+    </div>
   );
 }

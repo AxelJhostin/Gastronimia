@@ -1,131 +1,124 @@
 "use client";
 
 import Link from "next/link";
-import { AdminUserLink } from "@/components/admin/admin-user-link";
-import { DashboardIdentitySummary } from "@/components/auth/dashboard-identity-summary";
-import { LogoutButton } from "@/components/auth/logout-button";
 import { useDashboardIdentity } from "@/components/auth/dashboard-identity-provider";
-
-interface ModuleCard {
-  title: string;
-  description: string;
-  href: string;
-  icon: string;
-  roles: string[];
-  badge?: string;
-}
-
-const DASHBOARD_MODULES: ModuleCard[] = [
-  {
-    title: "Preparaciones",
-    description: "Gestión y preparación de solicitudes de insumos.",
-    href: "/dashboard/preparations",
-    icon: "🍳",
-    roles: ["ADMIN", "MANAGER", "PAÑOLERO"],
-  },
-  {
-    title: "Devoluciones",
-    description: "Recepción y control de insumos devueltos.",
-    href: "/dashboard/returns",
-    icon: "🔄",
-    roles: ["ADMIN", "MANAGER", "PAÑOLERO"],
-  },
-  {
-    title: "Novedades / Incidencias",
-    description: "Reporte y seguimiento de averías o imprevistos.",
-    href: "/dashboard/incidents",
-    icon: "⚠️",
-    roles: ["ADMIN", "MANAGER", "PAÑOLERO"],
-  },
-  {
-    title: "Reportes Operativos",
-    description: "Métricas y análisis de consumo de inventario.",
-    href: "/dashboard/reports",
-    icon: "📊",
-    roles: ["ADMIN", "MANAGER"],
-    badge: "Admin",
-  },
-  {
-    title: "Registro de Auditoría",
-    description: "Historial de acciones e interacciones en el sistema.",
-    href: "/dashboard/audit-log",
-    icon: "📜",
-    roles: ["ADMIN"],
-    badge: "Solo Admin",
-  },
-];
+import { Plus, FileText, Package, AlertTriangle, RotateCcw } from "lucide-react";
 
 export default function DashboardPage() {
-  const identity = useDashboardIdentity();
+  const identityState = useDashboardIdentity();
 
-  const userRoles: string[] =
-    identity.status === "authenticated" ? (identity.user.roles as string[]) : [];
+  if (identityState.status === "loading") {
+    return (
+      <div className="p-8 text-center text-slate-500">
+        Cargando panel de control...
+      </div>
+    );
+  }
 
-  const allowedModules = DASHBOARD_MODULES.filter((module) =>
-    module.roles.some((role) => userRoles.includes(role))
-  );
+  if (identityState.status !== "authenticated") {
+    return null;
+  }
+
+  const { roles, email } = identityState.user;
+  const userRoles = roles as string[];
+  const isTeacher = userRoles.includes("teacher");
+  const isInventoryManager = userRoles.includes("inventory_manager");
 
   return (
-    <main className="flex flex-1 justify-center bg-stone-50 p-6 text-stone-900">
-      <section className="w-full max-w-5xl rounded-2xl border border-stone-200 bg-white p-8 shadow-sm space-y-6">
-        <div className="flex items-start justify-between gap-4 border-b border-stone-100 pb-6">
-          <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-amber-700">
-              Gastronomía
-            </p>
-            <h1 className="mt-3 text-3xl font-semibold tracking-tight">Panel principal</h1>
-            <p className="mt-2 text-sm text-stone-600">
-              Tu sesión está validada. Las opciones disponibles se muestran a continuación según tus permisos.
-            </p>
-          </div>
-          <LogoutButton />
-        </div>
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+          Bienvenido, {email}
+        </h1>
+        <p className="text-slate-500 text-sm mt-1">
+          Panel de gestión adaptado a tus roles:{" "}
+          <span className="font-semibold capitalize text-emerald-600">
+            {roles.join(", ")}
+          </span>
+        </p>
+      </div>
 
-        {/* Resumen de la sesión del usuario */}
-        <DashboardIdentitySummary />
-
-        {/* Tarjetas interactivas por rol */}
-        {identity.status === "authenticated" && (
-          <div className="pt-4">
-            <h2 className="text-sm font-semibold uppercase tracking-wider text-stone-500 mb-4">
-              Módulos Disponibles
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {allowedModules.map((module) => (
-                <Link
-                  key={module.href}
-                  href={module.href}
-                  className="group flex flex-col justify-between p-5 bg-stone-50 hover:bg-amber-50/50 rounded-xl border border-stone-200 hover:border-amber-500 transition-all duration-200 shadow-sm"
-                >
-                  <div>
-                    <div className="flex items-center justify-between mb-3">
-                      <span className="text-2xl">{module.icon}</span>
-                      {module.badge && (
-                        <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-amber-100 text-amber-800 border border-amber-200">
-                          {module.badge}
-                        </span>
-                      )}
-                    </div>
-                    <h3 className="text-base font-semibold text-stone-900 group-hover:text-amber-700 transition-colors">
-                      {module.title}
-                    </h3>
-                    <p className="text-xs text-stone-600 mt-1 line-clamp-2">
-                      {module.description}
-                    </p>
-                  </div>
-                  <div className="mt-4 text-xs font-semibold text-amber-700 group-hover:translate-x-1 transition-transform">
-                    Ingresar &rarr;
-                  </div>
-                </Link>
-              ))}
+      {/* Vista para Docente / Teacher */}
+      {isTeacher && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="p-5 bg-white border border-slate-200 rounded-xl shadow-sm space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium text-slate-600">
+                Nueva Solicitud
+              </span>
+              <FileText className="h-5 w-5 text-emerald-600" />
             </div>
+            <p className="text-xs text-slate-500">
+              Crea un requerimiento de insumos o equipos para tus clases.
+            </p>
+            <Link
+              href="/dashboard/requests/new"
+              className="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg transition-colors"
+            >
+              <Plus className="h-4 w-4" /> Crear Solicitud
+            </Link>
           </div>
-        )}
-
-        <div className="pt-4 border-t border-stone-100">
-          <AdminUserLink />
         </div>
-      </section>
-    </main>
+      )}
+
+      {/* Vista para Personal de Almacén / Inventory Manager */}
+      {isInventoryManager && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="p-5 bg-white border border-slate-200 rounded-xl shadow-sm space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium text-slate-600">
+                Inventario General
+              </span>
+              <Package className="h-5 w-5 text-blue-600" />
+            </div>
+            <p className="text-xs text-slate-500">
+              Gestión de stock, insumos y herramientas.
+            </p>
+            <Link
+              href="/dashboard/inventory"
+              className="inline-block mt-2 text-xs font-medium text-blue-600 hover:underline"
+            >
+              Ver Inventario &rarr;
+            </Link>
+          </div>
+
+          <div className="p-5 bg-white border border-slate-200 rounded-xl shadow-sm space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium text-slate-600">
+                Devoluciones Pendientes
+              </span>
+              <RotateCcw className="h-5 w-5 text-amber-600" />
+            </div>
+            <p className="text-xs text-slate-500">
+              Inspección y recepción de materiales.
+            </p>
+            <Link
+              href="/dashboard/returns"
+              className="inline-block mt-2 text-xs font-medium text-amber-600 hover:underline"
+            >
+              Gestionar Devoluciones &rarr;
+            </Link>
+          </div>
+
+          <div className="p-5 bg-white border border-slate-200 rounded-xl shadow-sm space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium text-slate-600">
+                Incidencias
+              </span>
+              <AlertTriangle className="h-5 w-5 text-red-600" />
+            </div>
+            <p className="text-xs text-slate-500">
+              Seguimiento de mermas o daños en insumos/equipos.
+            </p>
+            <Link
+              href="/dashboard/incidents"
+              className="inline-block mt-2 text-xs font-medium text-red-600 hover:underline"
+            >
+              Ver Incidencias &rarr;
+            </Link>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }

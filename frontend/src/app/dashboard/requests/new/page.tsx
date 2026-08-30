@@ -1,22 +1,30 @@
-import Link from "next/link";
+"use client";
 
 import { NewRequestForm } from "@/components/requests/new-request-form";
+import { ArrowLeft } from "lucide-react";
+import Link from "next/link";
 
 export default function NewRequestPage() {
   return (
-    <main className="flex flex-1 justify-center bg-stone-50 p-6 text-stone-900">
-      <section className="w-full max-w-2xl rounded-2xl border border-stone-200 bg-white p-8 shadow-sm">
-        <div className="flex items-center justify-between border-b border-stone-100 pb-4">
-          <div>
-            <p className="text-xs font-bold uppercase tracking-[0.2em] text-amber-700">Prácticas de Cocina</p>
-            <h1 className="mt-1 text-2xl font-bold tracking-tight">Nueva Solicitud de Pañol</h1>
-          </div>
-          <Link className="text-xs font-semibold text-stone-600 underline hover:text-amber-800" href="/dashboard/requests">
-            ← Cancelar
-          </Link>
+    <div className="space-y-6">
+      <div className="flex items-center gap-3">
+        <Link
+          href="/dashboard/requests"
+          className="p-2 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors"
+        >
+          <ArrowLeft className="h-5 w-5" />
+        </Link>
+        <div>
+          <h1 className="text-xl font-bold tracking-tight text-slate-900">
+            Crear Solicitud
+          </h1>
+          <p className="text-xs text-slate-500">
+            Completa el formulario para solicitar insumos o herramientas para tu taller o clase.
+          </p>
         </div>
-        <div className="mt-6"><NewRequestForm /></div>
-      </section>
-    </main>
+      </div>
+
+      <NewRequestForm />
+    </div>
   );
 }
