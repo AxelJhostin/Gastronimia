@@ -6,13 +6,26 @@ from app.api.v1.endpoints.request_reviews import require_request_reviewer
 from app.core.auth import AuthenticatedUser, RoleCode, get_current_user
 from app.core.requests import (
     EquipmentPreparation,
+    EquipmentPreparationContext,
     EquipmentPreparationCreate,
     complete_equipment_preparation,
+    get_equipment_preparation_context,
     record_equipment_preparation,
     start_equipment_preparation,
 )
 
 router = APIRouter(prefix="/admin/requests")
+
+
+@router.get(
+    "/{equipment_request_id}/preparation",
+    response_model=EquipmentPreparationContext,
+)
+def get_preparation_context(
+    equipment_request_id: UUID,
+    _: set[RoleCode] = Depends(require_request_reviewer),  # noqa: B008
+) -> EquipmentPreparationContext:
+    return get_equipment_preparation_context(equipment_request_id)
 
 
 @router.post(

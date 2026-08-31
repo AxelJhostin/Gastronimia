@@ -115,6 +115,21 @@ class EquipmentPreparation(BaseModel):
     completed_at: Optional[datetime] = None
 
 
+class EquipmentPreparationContextItem(BaseModel):
+    equipment_reservation_detail_id: UUID
+    inventory_item_id: UUID
+    inventory_item_name: str
+    inventory_item_code: Optional[str] = None
+    tracking_mode: str
+    unit_of_measure: str
+    reserved_quantity: Decimal
+
+
+class EquipmentPreparationContext(BaseModel):
+    request: EquipmentRequest
+    items: list[EquipmentPreparationContextItem]
+
+
 class EquipmentDeliveryQr(BaseModel):
     token: str
     expires_at: datetime
@@ -596,6 +611,80 @@ def start_equipment_preparation(
             "p_started_by_user_id": user_id,
         },
         "No fue posible iniciar la preparación.",
+    )
+
+
+def get_equipment_preparation_context(
+    equipment_request_id: UUID,
+) -> EquipmentPreparationContext:
+    try:
+        request_response = httpx.get(
+            f"{_supabase_url()}/rest/v1/equipment_requests",
+            params={"select": "*", "id": f"eq.{equipment_request_id}"},
+            headers=_service_headers(),
+            timeout=5.0,
+        )
+        request_response.raise_for_status()
+        request_rows = request_response.json()
+        if not request_rows:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Solicitud no encontrada.",
+            )
+        reservation_response = httpx.get(
+            f"{_supabase_url()}/rest/v1/equipment_reservations",
+            params={
+                "select": "id",
+                "equipment_request_id": f"eq.{equipment_request_id}",
+                "status": "eq.ACTIVE",
+            },
+            headers=_service_headers(),
+            timeout=5.0,
+        )
+        reservation_response.raise_for_status()
+        reservations = reservation_response.json()
+        if not reservations:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="La solicitud no tiene una reserva activa para preparar.",
+            )
+        details_response = httpx.get(
+            f"{_supabase_url()}/rest/v1/equipment_reservation_details",
+            params={
+                "select": (
+                    "id,inventory_item_id,reserved_quantity,"
+                    "inventory_items!inner(name,code,tracking_mode,unit_of_measure)"
+                ),
+                "equipment_reservation_id": f"eq.{reservations[0]['id']}",
+                "order": "created_at.asc",
+            },
+            headers=_service_headers(),
+            timeout=5.0,
+        )
+        details_response.raise_for_status()
+    except HTTPException:
+        raise
+    except httpx.HTTPError as error:
+        raise _request_error(
+            "No fue posible cargar los recursos a preparar.",
+            error,
+        ) from error
+
+    items = [
+        EquipmentPreparationContextItem(
+            equipment_reservation_detail_id=row["id"],
+            inventory_item_id=row["inventory_item_id"],
+            inventory_item_name=row["inventory_items"]["name"],
+            inventory_item_code=row["inventory_items"]["code"],
+            tracking_mode=row["inventory_items"]["tracking_mode"],
+            unit_of_measure=row["inventory_items"]["unit_of_measure"],
+            reserved_quantity=row["reserved_quantity"],
+        )
+        for row in details_response.json()
+    ]
+    return EquipmentPreparationContext(
+        request=EquipmentRequest.model_validate(request_rows[0]),
+        items=items,
     )
 
 

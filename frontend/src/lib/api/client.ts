@@ -163,6 +163,19 @@ export type EquipmentLoanPending = {
   unit_ids_pending: string[];
 };
 
+export type EquipmentPreparationContext = {
+  request: EquipmentRequest;
+  items: Array<{
+    equipment_reservation_detail_id: string;
+    inventory_item_id: string;
+    inventory_item_name: string;
+    inventory_item_code: string | null;
+    tracking_mode: "QUANTITY" | "INDIVIDUAL";
+    unit_of_measure: string;
+    reserved_quantity: number;
+  }>;
+};
+
 export type OperationalReportRow = Record<string, unknown>;
 
 export type OperationalAuditLog = {
@@ -376,6 +389,35 @@ export function getOperationalReport(
 
 export function startEquipmentPreparation(accessToken: string, requestId: string) {
   return requestApi<void>(`/admin/requests/${requestId}/preparation/start`, accessToken, {
+    method: "POST",
+  });
+}
+
+export function getEquipmentPreparationContext(accessToken: string, requestId: string) {
+  return requestApi<EquipmentPreparationContext>(
+    `/admin/requests/${requestId}/preparation`,
+    accessToken,
+  );
+}
+
+export function recordEquipmentPreparation(
+  accessToken: string,
+  requestId: string,
+  items: Array<{
+    equipment_reservation_detail_id: string;
+    prepared_quantity: number;
+    inventory_unit_ids?: string[];
+  }>,
+) {
+  return requestApi<void>(`/admin/requests/${requestId}/preparation/items`, accessToken, {
+    body: JSON.stringify({ items }),
+    headers: { "Content-Type": "application/json" },
+    method: "POST",
+  });
+}
+
+export function completeEquipmentPreparation(accessToken: string, requestId: string) {
+  return requestApi<void>(`/admin/requests/${requestId}/preparation/complete`, accessToken, {
     method: "POST",
   });
 }
