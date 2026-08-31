@@ -609,7 +609,10 @@ def record_equipment_preparation(
         {
             "p_equipment_request_id": str(equipment_request_id),
             "p_prepared_by_user_id": user_id,
-            "p_items": [item.model_dump(mode="json") for item in payload.items],
+            "p_items": [
+                item.model_dump(mode="json", exclude_none=True)
+                for item in payload.items
+            ],
         },
         "No fue posible registrar la preparación.",
     )

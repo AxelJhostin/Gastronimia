@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+from decimal import Decimal
 from unittest.mock import Mock, patch
 from uuid import UUID
 
@@ -12,8 +13,11 @@ from app.core.inventory import (
     InventoryAvailability,
     InventoryCategory,
     InventoryCategoryCreate,
+    InventoryItem,
+    InventoryItemDetail,
     InventoryMovement,
     InventoryMovementType,
+    InventoryTrackingMode,
     QuantityStockMovementCreate,
     calculate_inventory_availability,
     create_inventory_resource,
@@ -101,13 +105,25 @@ def test_inventory_item_detail_includes_stock_and_units() -> None:
 
 def test_manager_can_read_inventory_item_detail() -> None:
     item_id = UUID("e152d7d4-3eb0-4e7f-b2ff-1f7acb1f1450")
+    detail = InventoryItemDetail(
+        item=InventoryItem(
+            id=item_id,
+            category_id=UUID("1fa85f64-5717-4562-b3fc-2c963f66afa6"),
+            name="Batidora",
+            tracking_mode=InventoryTrackingMode.INDIVIDUAL,
+            created_at=datetime(2026, 8, 21, tzinfo=timezone.utc),
+            updated_at=datetime(2026, 8, 21, tzinfo=timezone.utc),
+        ),
+        stock=[],
+        units=[],
+    )
     with patch(
         "app.api.v1.endpoints.inventory.get_inventory_item_detail",
-        return_value={"item": {}, "stock": [], "units": []},
+        return_value=detail,
     ):
         response = get_inventory_item_detail_endpoint(item_id, {RoleCode.MANAGER})
 
-    assert response == {"item": {}, "stock": [], "units": []}
+    assert response is detail
 
 
 def test_manager_can_consult_inventory_availability() -> None:
@@ -119,8 +135,8 @@ def test_manager_can_consult_inventory_availability() -> None:
         with patch(
             "app.api.v1.endpoints.inventory.calculate_inventory_availability",
             return_value=InventoryAvailability(
-                tracking_mode="QUANTITY",
-                quantity_available="12",
+                tracking_mode=InventoryTrackingMode.QUANTITY,
+                quantity_available=Decimal("12"),
                 units_available=0,
             ),
         ):
@@ -249,8 +265,8 @@ def test_manager_can_record_quantity_stock_movement() -> None:
                 inventory_item_id=UUID("e152d7d4-3eb0-4e7f-b2ff-1f7acb1f1450"),
                 location_id=UUID("9e152d7d-3eb0-4e7f-b2ff-1f7acb1f1450"),
                 movement_type=InventoryMovementType.INITIAL_STOCK,
-                quantity="12",
-                balance_after="12",
+                quantity=Decimal("12"),
+                balance_after=Decimal("12"),
                 notes=None,
                 occurred_at=datetime(2026, 8, 21, tzinfo=timezone.utc),
                 performed_by_user_id=UUID("3fa85f64-5717-4562-b3fc-2c963f66afa6"),
@@ -292,7 +308,7 @@ def test_record_quantity_stock_movement_calls_atomic_rpc() -> None:
         inventory_item_id=UUID("e152d7d4-3eb0-4e7f-b2ff-1f7acb1f1450"),
         location_id=UUID("9e152d7d-3eb0-4e7f-b2ff-1f7acb1f1450"),
         movement_type=InventoryMovementType.INITIAL_STOCK,
-        quantity="12",
+        quantity=Decimal("12"),
     )
 
     with patch("app.core.inventory.httpx.post", return_value=response) as post:

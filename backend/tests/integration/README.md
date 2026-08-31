@@ -29,6 +29,15 @@ python -m pytest tests/integration -m integration --no-cov
 
 No se guardan esos valores en el repositorio. Estas pruebas validan salud, login, JWT, `/auth/me`, autorización administrativa y rechazo sin token.
 
+## Recorrido completo local
+
+`test_local_workflow.py` crea usuarios y datos únicos en Supabase local, luego
+recorre solicitud → aprobación → preparación → entrega → devolución → cierre y
+comprueba que el stock regrese a su cantidad inicial. Como modifica datos,
+requiere `RUN_LOCAL_WORKFLOW_TESTS=1`, `TEST_SUPABASE_SERVICE_ROLE_KEY` y
+verifica que FastAPI y Supabase apunten exclusivamente a `localhost` antes de
+empezar. No se puede utilizar con un proyecto remoto.
+
 La cobertura se mide al ejecutar la suite unitaria completa. Estas pruebas consumen
 una API ya levantada, por lo que se ejecutan sin cobertura para no alterar ese
 umbral.

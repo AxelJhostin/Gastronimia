@@ -1,10 +1,14 @@
 from datetime import datetime, timezone
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 from uuid import UUID
 
 from app.api.v1.endpoints.request_reviews import require_request_reviewer
 from app.core.auth import AuthenticatedUser, RoleCode, get_current_user
-from app.core.requests import EquipmentPreparation, EquipmentPreparationCreate
+from app.core.requests import (
+    EquipmentPreparation,
+    EquipmentPreparationCreate,
+    record_equipment_preparation,
+)
 from app.main import app
 from fastapi.testclient import TestClient
 
@@ -105,3 +109,29 @@ def test_manager_can_complete_preparation() -> None:
 
     assert response.status_code == 200
     assert response.json()["completed_at"] is not None
+
+
+def test_quantity_preparation_omits_absent_inventory_units() -> None:
+    response = Mock()
+    response.json.return_value = _preparation().model_dump(mode="json")
+    payload = EquipmentPreparationCreate.model_validate(
+        {
+            "items": [
+                {
+                    "equipment_reservation_detail_id": (
+                        "e152d7d4-3eb0-4e7f-b2ff-1f7acb1f1450"
+                    ),
+                    "prepared_quantity": "2",
+                }
+            ]
+        }
+    )
+
+    with patch("app.core.requests.httpx.post", return_value=response) as post:
+        record_equipment_preparation(REQUEST_ID, payload, USER_ID)
+
+    item = post.call_args.kwargs["json"]["p_items"][0]
+    assert item == {
+        "equipment_reservation_detail_id": "e152d7d4-3eb0-4e7f-b2ff-1f7acb1f1450",
+        "prepared_quantity": "2",
+    }
