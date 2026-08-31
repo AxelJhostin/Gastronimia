@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { 
+import {
   Home, 
   Package, 
   FileText, 
@@ -14,12 +14,13 @@ import {
   BarChart3 
 } from "lucide-react";
 import { useDashboardIdentity } from "@/components/auth/dashboard-identity-provider";
+import type { RoleCode } from "@/lib/api/client";
 
 interface NavItem {
   label: string;
   href: string;
   icon: React.ComponentType<{ className?: string }>;
-  roles: Array<"admin" | "inventory_manager" | "teacher">;
+  roles: RoleCode[];
 }
 
 const NAV_ITEMS: NavItem[] = [
@@ -27,55 +28,55 @@ const NAV_ITEMS: NavItem[] = [
     label: "Inicio",
     href: "/dashboard",
     icon: Home,
-    roles: ["admin", "inventory_manager", "teacher"],
+    roles: ["ADMIN", "MANAGER", "TEACHER"],
   },
   {
     label: "Solicitudes",
     href: "/dashboard/requests",
     icon: FileText,
-    roles: ["admin", "inventory_manager", "teacher"],
+    roles: ["ADMIN", "MANAGER", "TEACHER"],
   },
   {
     label: "Preparaciones",
     href: "/dashboard/preparations",
     icon: Utensils,
-    roles: ["admin", "inventory_manager", "teacher"],
+    roles: ["ADMIN", "MANAGER"],
   },
   {
     label: "Inventario y Stock",
     href: "/dashboard/inventory",
     icon: Package,
-    roles: ["admin", "inventory_manager"],
+    roles: ["ADMIN", "MANAGER", "TEACHER"],
   },
   {
     label: "Devoluciones",
     href: "/dashboard/returns",
     icon: RotateCcw,
-    roles: ["admin", "inventory_manager"],
+    roles: ["ADMIN", "MANAGER"],
   },
   {
     label: "Incidencias",
     href: "/dashboard/incidents",
     icon: AlertTriangle,
-    roles: ["admin", "inventory_manager", "teacher"],
+    roles: ["ADMIN", "MANAGER"],
   },
   {
     label: "Usuarios",
     href: "/dashboard/users",
     icon: Users,
-    roles: ["admin"],
+    roles: ["ADMIN"],
   },
   {
     label: "Auditoría",
     href: "/dashboard/audit-log",
     icon: ClipboardList,
-    roles: ["admin"],
+    roles: ["ADMIN"],
   },
   {
     label: "Reportes",
     href: "/dashboard/reports",
     icon: BarChart3,
-    roles: ["admin", "inventory_manager"],
+    roles: ["ADMIN", "MANAGER"],
   },
 ];
 
@@ -85,7 +86,7 @@ export function Sidebar() {
 
   const userRoles =
     identityState.status === "authenticated"
-      ? (identityState.user.roles as string[])
+      ? identityState.user.roles
       : [];
 
   const visibleNavItems = NAV_ITEMS.filter((item) =>

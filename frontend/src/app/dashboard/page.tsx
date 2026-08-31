@@ -21,8 +21,10 @@ export default function DashboardPage() {
 
   const { roles, email } = identityState.user;
   const userRoles = roles as string[];
-  const isTeacher = userRoles.includes("teacher");
-  const isInventoryManager = userRoles.includes("inventory_manager");
+  const isTeacher = userRoles.includes("TEACHER");
+  const isInventoryManager = userRoles.some(
+    (role) => role === "ADMIN" || role === "MANAGER",
+  );
 
   return (
     <div className="space-y-6">
@@ -38,7 +40,6 @@ export default function DashboardPage() {
         </p>
       </div>
 
-      {/* Vista para Docente / Teacher */}
       {isTeacher && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           <div className="p-5 bg-white border border-slate-200 rounded-xl shadow-sm space-y-3">
@@ -61,7 +62,6 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* Vista para Personal de Almacén / Inventory Manager */}
       {isInventoryManager && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="p-5 bg-white border border-slate-200 rounded-xl shadow-sm space-y-2">
