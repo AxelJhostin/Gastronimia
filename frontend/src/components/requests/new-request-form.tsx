@@ -1,194 +1,333 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Trash2, Calendar, Utensils, Send } from "lucide-react";
+import { Calendar, LoaderCircle, Plus, Send, Trash2, Utensils } from "lucide-react";
 
-interface RequestItemInput {
+import { useDashboardIdentity } from "@/components/auth/dashboard-identity-provider";
+import { GastronomyStatusPage } from "@/components/feedback/gastronomy-status-page";
+import {
+  createEquipmentRequestDraft,
+  getEquipmentRequestFormOptions,
+  submitEquipmentRequest,
+  type EquipmentRequestFormOptions,
+} from "@/lib/api/client";
+
+type RequestItemInput = {
   inventoryItemId: string;
-  name: string;
-  quantity: number;
-  unit: string;
+  quantity: string;
+};
+
+const initialItems: RequestItemInput[] = [{ inventoryItemId: "", quantity: "1" }];
+
+function formatCourseSection(section: EquipmentRequestFormOptions["course_sections"][number]) {
+  return [section.section, section.semester ? `Semestre ${section.semester}` : null]
+    .filter(Boolean)
+    .join(" · ");
 }
 
 export function NewRequestForm() {
   const router = useRouter();
-  const [loading, setLoading] = useState(false);
-  const [activityDate, setActivityDate] = useState("");
-  const [preparationName, setPreparationName] = useState("");
-  const [notes, setNotes] = useState("");
-  const [items, setItems] = useState<RequestItemInput[]>([
-    { inventoryItemId: "", name: "", quantity: 1, unit: "kg" },
-  ]);
+  const identity = useDashboardIdentity();
+  const [options, setOptions] = useState<EquipmentRequestFormOptions | null>(null);
+  const [courseSectionId, setCourseSectionId] = useState("");
+  const [laboratoryId, setLaboratoryId] = useState("");
+  const [startAt, setStartAt] = useState("");
+  const [endAt, setEndAt] = useState("");
+  const [purpose, setPurpose] = useState("");
+  const [items, setItems] = useState<RequestItemInput[]>(initialItems);
+  const [loadingOptions, setLoadingOptions] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleAddItem = () => {
-    setItems((prev) => [
-      ...prev,
-      { inventoryItemId: "", name: "", quantity: 1, unit: "kg" },
-    ]);
+  const isTeacher =
+    identity.status === "authenticated" && identity.user.roles.includes("TEACHER");
+  const accessToken = identity.status === "authenticated" ? identity.accessToken : null;
+
+  useEffect(() => {
+    if (!isTeacher || !accessToken) {
+      return;
+    }
+
+    let active = true;
+
+    void getEquipmentRequestFormOptions(accessToken)
+      .then((nextOptions) => {
+        if (active) setOptions(nextOptions);
+      })
+      .catch((loadError: unknown) => {
+        if (active) {
+          setError(
+            loadError instanceof Error
+              ? loadError.message
+              : "No fue posible cargar los datos para la solicitud.",
+          );
+        }
+      })
+      .finally(() => {
+        if (active) setLoadingOptions(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [accessToken, isTeacher]);
+
+  const updateItem = (index: number, changes: Partial<RequestItemInput>) => {
+    setItems((currentItems) =>
+      currentItems.map((item, itemIndex) =>
+        itemIndex === index ? { ...item, ...changes } : item,
+      ),
+    );
   };
 
-  const handleRemoveItem = (index: number) => {
-    if (items.length === 1) return;
-    setItems((prev) => prev.filter((_, i) => i !== index));
-  };
+  const selectedItemIds = items.map((item) => item.inventoryItemId).filter(Boolean);
+  const isReady =
+    options !== null &&
+    options.course_sections.length > 0 &&
+    options.laboratories.length > 0 &&
+    options.inventory_items.length > 0;
 
-  const handleItemChange = (
-    index: number,
-    field: keyof RequestItemInput,
-    value: string | number
-  ) => {
-    setItems((prev) => {
-      const updated = [...prev];
-      updated[index] = { ...updated[index], [field]: value };
-      return updated;
-    });
-  };
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!accessToken || !isReady) return;
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
+    const startDate = new Date(startAt);
+    const endDate = new Date(endAt);
+    const requestedItems = items.map((item) => ({
+      inventory_item_id: item.inventoryItemId,
+      requested_quantity: Number(item.quantity),
+    }));
+
+    if (
+      !courseSectionId ||
+      !laboratoryId ||
+      Number.isNaN(startDate.getTime()) ||
+      Number.isNaN(endDate.getTime()) ||
+      endDate <= startDate ||
+      requestedItems.some(
+        (item) => !item.inventory_item_id || !Number.isFinite(item.requested_quantity) || item.requested_quantity <= 0,
+      ) ||
+      new Set(selectedItemIds).size !== selectedItemIds.length
+    ) {
+      setError("Revisa la fecha, las cantidades y los artículos seleccionados.");
+      return;
+    }
+
+    setSubmitting(true);
+    setError(null);
 
     try {
-      // Enviar solicitud a la API / Supabase RPC
-      // const response = await createRequest({ activityDate, preparationName, notes, items });
-      
-      router.push("/dashboard/requests");
-    } catch (error) {
-      console.error("Error al crear la solicitud:", error);
+      const draft = await createEquipmentRequestDraft(accessToken, {
+        course_section_id: courseSectionId,
+        laboratory_id: laboratoryId,
+        start_at: startDate.toISOString(),
+        end_at: endDate.toISOString(),
+        purpose: purpose.trim(),
+        items: requestedItems,
+      });
+      await submitEquipmentRequest(accessToken, draft.id);
+      router.push(`/dashboard/requests/${draft.id}`);
+    } catch (submitError: unknown) {
+      setError(
+        submitError instanceof Error
+          ? submitError.message
+          : "No fue posible enviar la solicitud.",
+      );
     } finally {
-      setLoading(false);
+      setSubmitting(false);
     }
   };
 
+  if (identity.status === "loading") {
+    return <p className="p-6 text-sm text-stone-600">Verificando permisos…</p>;
+  }
+
+  if (identity.status === "unavailable") {
+    return <p className="p-6 text-sm text-red-700">{identity.message}</p>;
+  }
+
+  if (!isTeacher) {
+    return <GastronomyStatusPage kind="forbidden" />;
+  }
+
   return (
-    <form onSubmit={handleSubmit} className="space-y-6 max-w-4xl bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+    <form
+      className="max-w-4xl space-y-6 rounded-xl border border-slate-200 bg-white p-6 shadow-sm"
+      onSubmit={handleSubmit}
+    >
       <div className="border-b border-slate-100 pb-4">
-        <h2 className="text-lg font-bold text-slate-900">Nueva Solicitud de Insumos</h2>
+        <h2 className="text-lg font-bold text-slate-900">Nueva solicitud</h2>
         <p className="text-xs text-slate-500">
-          Registra los requerimientos para las actividades gastronómicas programadas.
+          Selecciona tu sección, laboratorio, horario y los recursos requeridos.
         </p>
       </div>
 
-      {/* Datos Generales */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <label className="block text-xs font-medium text-slate-700 mb-1 flex items-center gap-1">
-            <Utensils className="h-3.5 w-3.5 text-slate-500" />
-            Nombre de la Preparación / Taller
-          </label>
-          <input
-            type="text"
-            required
-            placeholder="Ej: Taller de Panadería Artesanal"
-            value={preparationName}
-            onChange={(e) => setPreparationName(e.target.value)}
-            className="w-full text-sm border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
-          />
+      {error ? (
+        <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700" role="alert">
+          {error}
         </div>
+      ) : null}
 
-        <div>
-          <label className="block text-xs font-medium text-slate-700 mb-1 flex items-center gap-1">
-            <Calendar className="h-3.5 w-3.5 text-slate-500" />
-            Fecha de Requerimiento
-          </label>
-          <input
-            type="date"
-            required
-            value={activityDate}
-            onChange={(e) => setActivityDate(e.target.value)}
-            className="w-full text-sm border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
-          />
+      {loadingOptions ? (
+        <div className="flex items-center gap-2 rounded-lg bg-slate-50 p-4 text-sm text-slate-600">
+          <LoaderCircle className="size-4 animate-spin" /> Cargando opciones…
         </div>
-      </div>
+      ) : null}
 
-      {/* Listado Dinámico de Insumos */}
-      <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-slate-800">Insumos y Equipos Requeridos</h3>
-          <button
-            type="button"
-            onClick={handleAddItem}
-            className="inline-flex items-center gap-1 text-xs font-medium text-emerald-600 hover:text-emerald-700"
-          >
-            <Plus className="h-4 w-4" /> Agregar Ítem
-          </button>
+      {!loadingOptions && !isReady ? (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+          Aún no hay suficientes datos configurados para crear una solicitud. Un administrador debe asignarte una sección y registrar al menos un laboratorio y un artículo activo.
         </div>
+      ) : null}
 
-        {items.map((item, index) => (
-          <div key={index} className="flex items-center gap-3 bg-slate-50 p-3 rounded-lg border border-slate-200">
-            <input
-              type="text"
-              placeholder="Nombre del ingrediente o equipo"
-              required
-              value={item.name}
-              onChange={(e) => handleItemChange(index, "name", e.target.value)}
-              className="flex-1 text-sm border border-slate-300 rounded-md p-2 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
-            />
-            <input
-              type="number"
-              min="0.1"
-              step="any"
-              required
-              placeholder="Cant."
-              value={item.quantity}
-              onChange={(e) => handleItemChange(index, "quantity", parseFloat(e.target.value) || 0)}
-              className="w-24 text-sm border border-slate-300 rounded-md p-2 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
-            />
+      <fieldset className="space-y-6" disabled={loadingOptions || !isReady || submitting}>
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <label className="block text-sm font-medium text-slate-700">
+            <span className="mb-1 flex items-center gap-1"><Utensils className="size-4" /> Sección</span>
             <select
-              value={item.unit}
-              onChange={(e) => handleItemChange(index, "unit", e.target.value)}
-              className="w-28 text-sm border border-slate-300 rounded-md p-2 focus:ring-1 focus:ring-emerald-500 focus:outline-none bg-white"
+              className="w-full rounded-lg border border-slate-300 bg-white p-2.5"
+              onChange={(event) => setCourseSectionId(event.target.value)}
+              required
+              value={courseSectionId}
             >
-              <option value="kg">kg</option>
-              <option value="g">g</option>
-              <option value="l">litros</option>
-              <option value="ml">ml</option>
-              <option value="unidades">unidades</option>
+              <option value="">Selecciona una sección</option>
+              {options?.course_sections.map((section) => (
+                <option key={section.id} value={section.id}>{formatCourseSection(section)}</option>
+              ))}
             </select>
-            {items.length > 1 && (
-              <button
-                type="button"
-                onClick={() => handleRemoveItem(index)}
-                className="text-slate-400 hover:text-red-500 p-1"
-              >
-                <Trash2 className="h-4 w-4" />
-              </button>
-            )}
-          </div>
-        ))}
-      </div>
+          </label>
 
-      {/* Notas adicionales */}
-      <div>
-        <label className="block text-xs font-medium text-slate-700 mb-1">
-          Observaciones adicionales
+          <label className="block text-sm font-medium text-slate-700">
+            <span className="mb-1 flex items-center gap-1"><Utensils className="size-4" /> Laboratorio</span>
+            <select
+              className="w-full rounded-lg border border-slate-300 bg-white p-2.5"
+              onChange={(event) => setLaboratoryId(event.target.value)}
+              required
+              value={laboratoryId}
+            >
+              <option value="">Selecciona un laboratorio</option>
+              {options?.laboratories.map((laboratory) => (
+                <option key={laboratory.id} value={laboratory.id}>{laboratory.name}</option>
+              ))}
+            </select>
+          </label>
+
+          <label className="block text-sm font-medium text-slate-700">
+            <span className="mb-1 flex items-center gap-1"><Calendar className="size-4" /> Inicio</span>
+            <input
+              className="w-full rounded-lg border border-slate-300 p-2.5"
+              onChange={(event) => setStartAt(event.target.value)}
+              required
+              type="datetime-local"
+              value={startAt}
+            />
+          </label>
+
+          <label className="block text-sm font-medium text-slate-700">
+            <span className="mb-1 flex items-center gap-1"><Calendar className="size-4" /> Fin</span>
+            <input
+              className="w-full rounded-lg border border-slate-300 p-2.5"
+              min={startAt || undefined}
+              onChange={(event) => setEndAt(event.target.value)}
+              required
+              type="datetime-local"
+              value={endAt}
+            />
+          </label>
+        </div>
+
+        <label className="block text-sm font-medium text-slate-700">
+          Propósito de la práctica
+          <textarea
+            className="mt-1 w-full rounded-lg border border-slate-300 p-2.5"
+            maxLength={1000}
+            onChange={(event) => setPurpose(event.target.value)}
+            placeholder="Ej.: práctica de panadería artesanal"
+            rows={3}
+            value={purpose}
+          />
         </label>
-        <textarea
-          rows={3}
-          placeholder="Indicaciones especiales de almacenamiento o manipulación..."
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-          className="w-full text-sm border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
-        />
-      </div>
 
-      {/* Acciones */}
+        <div className="space-y-3">
+          <div className="flex items-center justify-between gap-3">
+            <h3 className="text-sm font-semibold text-slate-800">Artículos solicitados</h3>
+            <button
+              className="inline-flex items-center gap-1 text-sm font-medium text-emerald-700 hover:text-emerald-800"
+              onClick={() => setItems((currentItems) => [...currentItems, { inventoryItemId: "", quantity: "1" }])}
+              type="button"
+            >
+              <Plus className="size-4" /> Agregar artículo
+            </button>
+          </div>
+
+          {items.map((item, index) => {
+            const selectedItem = options?.inventory_items.find((candidate) => candidate.id === item.inventoryItemId);
+            return (
+              <div className="grid grid-cols-[1fr_7rem_auto] items-end gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3" key={index}>
+                <label className="block text-sm font-medium text-slate-700">
+                  Artículo
+                  <select
+                    className="mt-1 w-full rounded-md border border-slate-300 bg-white p-2"
+                    onChange={(event) => updateItem(index, { inventoryItemId: event.target.value })}
+                    required
+                    value={item.inventoryItemId}
+                  >
+                    <option value="">Selecciona un artículo</option>
+                    {options?.inventory_items.map((candidate) => (
+                      <option
+                        disabled={candidate.id !== item.inventoryItemId && selectedItemIds.includes(candidate.id)}
+                        key={candidate.id}
+                        value={candidate.id}
+                      >
+                        {candidate.name}{candidate.code ? ` (${candidate.code})` : ""}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="block text-sm font-medium text-slate-700">
+                  Cantidad
+                  <input
+                    className="mt-1 w-full rounded-md border border-slate-300 p-2"
+                    min={selectedItem?.tracking_mode === "INDIVIDUAL" ? "1" : "0.001"}
+                    onChange={(event) => updateItem(index, { quantity: event.target.value })}
+                    required
+                    step={selectedItem?.tracking_mode === "INDIVIDUAL" ? "1" : "0.001"}
+                    type="number"
+                    value={item.quantity}
+                  />
+                </label>
+                <button
+                  aria-label={`Eliminar artículo ${index + 1}`}
+                  className="rounded-md p-2 text-slate-500 hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-40"
+                  disabled={items.length === 1}
+                  onClick={() => setItems((currentItems) => currentItems.filter((_, itemIndex) => itemIndex !== index))}
+                  type="button"
+                >
+                  <Trash2 className="size-4" />
+                </button>
+                {selectedItem ? <p className="col-span-2 text-xs text-slate-500">Unidad: {selectedItem.unit_of_measure} · {selectedItem.tracking_mode === "INDIVIDUAL" ? "equipo individual" : "control por cantidad"}</p> : null}
+              </div>
+            );
+          })}
+        </div>
+      </fieldset>
+
       <div className="flex justify-end gap-3 border-t border-slate-100 pt-4">
         <button
-          type="button"
+          className="rounded-lg px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100"
           onClick={() => router.back()}
-          className="px-4 py-2 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-lg"
+          type="button"
         >
           Cancelar
         </button>
         <button
+          className="inline-flex items-center gap-2 rounded-lg bg-emerald-700 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-50"
+          disabled={loadingOptions || !isReady || submitting}
           type="submit"
-          disabled={loading}
-          className="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg transition-colors disabled:opacity-50"
         >
-          <Send className="h-4 w-4" />
-          {loading ? "Guardando..." : "Enviar Solicitud"}
+          {submitting ? <LoaderCircle className="size-4 animate-spin" /> : <Send className="size-4" />}
+          {submitting ? "Enviando…" : "Enviar solicitud"}
         </button>
       </div>
     </form>

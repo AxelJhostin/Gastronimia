@@ -311,6 +311,30 @@ export function getPendingRequests(accessToken: string) {
   return requestApi<EquipmentRequest[]>("/admin/requests/pending", accessToken);
 }
 
+export function approveEquipmentRequest(
+  accessToken: string,
+  requestId: string,
+  items: Array<{ equipment_request_item_id: string; approved_quantity: number }>,
+) {
+  return requestApi<EquipmentRequest>(`/admin/requests/${requestId}/approve`, accessToken, {
+    body: JSON.stringify({ items }),
+    headers: { "Content-Type": "application/json" },
+    method: "POST",
+  });
+}
+
+export function rejectEquipmentRequest(
+  accessToken: string,
+  requestId: string,
+  reason: string,
+) {
+  return requestApi<EquipmentRequest>(`/admin/requests/${requestId}/reject`, accessToken, {
+    body: JSON.stringify({ reason }),
+    headers: { "Content-Type": "application/json" },
+    method: "POST",
+  });
+}
+
 export function getInventoryItems(accessToken: string) {
   return requestApi<InventoryItem[]>("/admin/inventory/items", accessToken);
 }
