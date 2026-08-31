@@ -174,16 +174,16 @@ Criterio de salida:
 
 ### Fase 5 — Solicitudes
 
-- `[~]` Permitir al docente crear un borrador. API y RPC transaccional listas; falta prueba real con un perfil docente.
-- `[~]` Seleccionar asignatura/curso, laboratorio, fecha y horario. La base valida que el curso activo pertenece al docente y que el laboratorio e intervalo son válidos.
-- `[~]` Seleccionar artículos y cantidades. El borrador incorpora los ítems en la misma transacción; se validan artículos activos y cantidades enteras para unidades individuales.
+- `[x]` Permitir al docente crear un borrador. La interfaz crea y envía la solicitud con perfil docente; la transacción y las pruebas unitarias lo cubren.
+- `[x]` Seleccionar asignatura/curso, laboratorio, fecha y horario. La pantalla usa las opciones del docente y la base valida pertenencia, laboratorio e intervalo.
+- `[x]` Seleccionar artículos y cantidades. El borrador incorpora los ítems en la misma transacción; se validan artículos activos y cantidades enteras para unidades individuales.
 - `[~]` Mostrar disponibilidad durante la creación. La consulta de disponibilidad ya admite docentes autenticados; falta integración de interfaz y prueba real.
-- `[~]` Enviar solicitud a estado `PENDING`. RPC controlada por propietario e ítems mínimos lista; falta prueba real.
-- `[~]` Permitir consultar solicitudes propias. Endpoint de listado propio listo; falta detalle e interfaz.
-- `[~]` Permitir al encargado revisar solicitudes pendientes. Endpoint administrativo de listado listo; falta interfaz y prueba real.
-- `[~]` Permitir aprobar completamente. RPC transaccional valida estado, propietario revisor, cantidades solicitadas y disponibilidad actual; falta crear reservas en Fase 6 y prueba real.
-- `[~]` Permitir aprobar parcialmente. Cada ítem debe recibir una cantidad aprobada entre cero y lo solicitado; el estado se deriva de forma automática.
-- `[~]` Permitir rechazar con motivo. RPC y endpoint exigen un motivo no vacío; falta prueba real.
+- `[x]` Enviar solicitud a estado `PENDING`. El formulario ejecuta el envío al crear el borrador.
+- `[x]` Permitir consultar solicitudes propias. Hay listado y detalle con control de acceso por propietario.
+- `[x]` Permitir al encargado revisar solicitudes pendientes. La bandeja y el detalle permiten revisar cantidades.
+- `[x]` Permitir aprobar completamente. RPC transaccional valida estado, revisor, cantidades y disponibilidad; crea reservas en Fase 6.
+- `[x]` Permitir aprobar parcialmente. La revisión permite ingresar la cantidad aprobada por ítem y el estado se deriva automáticamente.
+- `[x]` Permitir rechazar con motivo. La interfaz y endpoint exigen un motivo no vacío.
 - `[~]` Registrar revisión y auditoría. Se guarda revisor, estado previo, decisión, motivo y fecha; falta exponer el detalle en interfaz.
 
 Criterio de salida:
@@ -194,14 +194,14 @@ Criterio de salida:
 
 ### Fase 6 — Reservas y preparación
 
-- `[~]` Crear reservas al aprobar. Trigger transaccional crea reserva y detalles para cantidades aprobadas; falta prueba real.
+- `[~]` Crear reservas al aprobar. Trigger transaccional crea reserva y detalles para cantidades aprobadas; el recorrido de integración local lo cubre de forma opt-in.
 - `[ ]` Liberar reservas al cancelar cuando la política lo permita.
-- `[~]` Implementar estados de solicitud y transiciones válidas. `DRAFT → PENDING → APPROVED/PARTIALLY_APPROVED/REJECTED` está controlado por RPC; faltan cancelación, preparación y entrega.
-- `[~]` Iniciar preparación solo desde una solicitud aprobada. RPC requiere solicitud aprobada y reserva activa; falta prueba real.
-- `[~]` Seleccionar unidades individuales cuando corresponda. Las unidades deben estar activas, disponibles y no seleccionadas en un intervalo superpuesto; falta prueba real.
-- `[~]` Registrar cantidades preparadas. La preparación admite registros parciales por detalle reservado; falta interfaz y prueba real.
+- `[~]` Implementar estados de solicitud y transiciones válidas. `DRAFT → PENDING → APPROVED/PARTIALLY_APPROVED/REJECTED → PREPARING → PREPARED` está controlado por RPC; cancelación y entrega aún requieren cierre funcional completo.
+- `[x]` Iniciar preparación solo desde una solicitud aprobada. RPC y pantalla exigen solicitud aprobada con reserva activa.
+- `[~]` Seleccionar unidades individuales cuando corresponda. La pantalla muestra unidades activas y disponibles por etiqueta/serie; falta ejecutar el recorrido local con un artículo individual.
+- `[~]` Registrar cantidades preparadas. La interfaz registra una preparación completa y la finaliza; el registro parcial incremental continúa disponible solo en backend.
 - `[~]` Impedir preparar más de lo aprobado. La RPC bloquea cualquier cantidad acumulada superior a la reserva.
-- `[~]` Finalizar preparación en estado `PREPARED`. Solo permite cerrar cuando todos los detalles reservados están completos y las unidades individuales fueron seleccionadas.
+- `[x]` Finalizar preparación en estado `PREPARED`. Solo permite cerrar cuando todos los detalles reservados están completos y las unidades individuales fueron seleccionadas.
 
 Criterio de salida:
 

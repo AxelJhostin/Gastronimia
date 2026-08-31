@@ -149,6 +149,31 @@ npm run build
 
 La configuración de CI replica estas validaciones en cada pull request y push a `main`.
 
+### Integración local opt-in
+
+El recorrido de integración crea usuarios y datos temporales y cubre solicitud,
+aprobación, reserva, preparación, entrega, devolución e inspección. Solo admite
+servicios en `localhost`/`127.0.0.1`; nunca apunta al proyecto real.
+
+1. Inicia Supabase local desde la raíz con `supabase start` y arranca FastAPI en
+   otro terminal usando un `backend/.env` configurado con las credenciales
+   locales. Puedes consultar las variables disponibles con `supabase status -o env`.
+2. Copia `backend/.env.integration.example` como `backend/.env.integration` y
+   completa `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY` y
+   `TEST_SUPABASE_SERVICE_ROLE_KEY` exclusivamente con los valores locales.
+3. Ejecuta la prueba cargando ese archivo, sin imprimir ni versionar sus claves:
+
+```bash
+cd backend
+set -a
+source .env.integration
+set +a
+.venv/bin/python -m pytest tests/integration/test_local_workflow.py
+```
+
+La prueba se omite por defecto. Si falta una variable, no realiza operaciones;
+si una URL no es loopback, falla antes de crear datos.
+
 ## Supabase y seguridad
 
 - Las migraciones SQL se guardarán en `supabase/migrations/` y se revisarán como código.

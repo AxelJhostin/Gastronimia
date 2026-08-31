@@ -241,7 +241,7 @@ Todos son relativos a `/api/v1`. Para campos exactos, revisar Swagger y el contr
 | Enviar borrador | `POST /requests/{id}/submit` | TEACHER |
 | Bandeja | `GET /admin/requests/pending` | ADMIN/MANAGER |
 | Aprobar/rechazar | `POST /admin/requests/{id}/approve`, `/reject` | ADMIN/MANAGER |
-| Preparación | `POST /admin/requests/{id}/preparation/start`, `/items`, `/complete` | ADMIN/MANAGER |
+| Preparación | `GET /admin/requests/{id}/preparation`, `POST .../start`, `/items`, `/complete` | ADMIN/MANAGER |
 | Inspección salida | `POST /admin/inspections/requests/{id}/outbound` | ADMIN/MANAGER |
 | QR de entrega | `POST /admin/deliveries/requests/{id}/qr` | ADMIN/MANAGER |
 | Confirmar entrega | `POST /admin/deliveries/deliver` | ADMIN/MANAGER |
@@ -294,7 +294,7 @@ PREPARED → DELIVERED → CLOSED
 
 Estas no son fallas de pantalla. Deben comunicarse a backend antes de intentar inventar una solución directa en Supabase:
 
-1. **Detalle operativo de solicitud:** aún falta un endpoint que devuelva ítems de solicitud, detalles de reserva y preparación con sus UUID internos. Se necesitan `equipment_request_item_id` para aprobar y `equipment_reservation_detail_id` para preparar/entregar. En Postman hoy se copian desde Supabase únicamente para prueba manual.
+1. **Detalle operativo de solicitud: resuelto.** `GET /requests/{id}` entrega los ítems de la solicitud y `GET /admin/requests/{id}/preparation` entrega los detalles de reserva y, para inventario individual, las unidades disponibles. La UI no debe pedir UUID manuales ni copiarlos desde Supabase.
 2. **Detalle de préstamo:** `GET /admin/returns/loans/{id}/pending` cubre cantidades/unidades pendientes, pero el diseño de pantalla debe confirmar que expone todos los datos necesarios antes de la devolución.
 3. **Alta de usuarios con contraseña temporal:** el formulario ADMIN crea nombre, correo y roles. FastAPI genera una contraseña temporal y la devuelve una sola vez; la interfaz permite copiarla y obliga al usuario a cambiarla en su primer acceso. No pedir UUID, usar claves de servidor ni crear usuarios directamente con Supabase.
 4. **No usar tablas Supabase como atajo:** aunque veas entidades en el dashboard, consumirlas directo rompe las reglas transaccionales, permisos y futura evolución del backend.
@@ -335,19 +335,19 @@ Trabajar en este orden. Cada bloque termina con UI, estados de carga/vacío/erro
 
 ### Bloque F4 — Solicitudes TEACHER
 
-- [ ] Dashboard docente y listado de sus solicitudes.
-- [ ] Nueva solicitud: sección, laboratorio, fecha/hora, propósito, artículos y cantidades.
-- [ ] Consulta de disponibilidad antes de enviar.
-- [ ] Borrador, envío y lectura clara de estado/rechazo.
+- [x] Dashboard docente y listado de sus solicitudes.
+- [x] Nueva solicitud: sección, laboratorio, fecha/hora, propósito, artículos y cantidades.
+- [ ] Consulta de disponibilidad previa al envío; hoy la disponibilidad se valida al aprobar/reservar.
+- [x] Borrador, envío y lectura clara de estado/rechazo.
 
 **Salida:** docente crea y entiende una solicitud sin acceder a funciones de personal.
 
 ### Bloque F5 — Revisión y preparación ADMIN/MANAGER
 
-- [ ] Bandeja de solicitudes pendientes y acciones aprobar/rechazar.
-- [ ] Vista de detalle operativo cuando backend entregue los IDs necesarios.
-- [ ] Preparación: iniciar, registrar cantidades/unidades y completar.
-- [ ] Confirmaciones para acciones que cambian estado.
+- [x] Bandeja de solicitudes pendientes y acciones aprobar/rechazar.
+- [x] Vista de detalle operativo con IDs suministrados por el backend.
+- [x] Preparación: iniciar, seleccionar unidades/cantidades y completar una preparación total.
+- [ ] Confirmaciones explícitas para acciones que cambian estado.
 
 **Salida:** personal puede avanzar una solicitud desde pendiente hasta preparada sin perder trazabilidad.
 
@@ -431,16 +431,16 @@ Al cerrar cada bloque, comprobar:
 - [~] Cliente FastAPI y estado de sesión/roles: disponible para `/dashboard`; falta extenderlo a nuevos módulos.
 - [~] Layout, navegación y protección visual por rol: disponible para administración de usuarios; faltan los módulos operativos.
 - [~] Pantalla ADMIN para usuarios. Ya envía `POST /admin/users`, muestra y copia las credenciales temporales; faltan listado y actualización visual de roles.
-- [ ] Pantallas y formularios de los bloques F2 a F8.
+- [~] Pantallas y formularios de los bloques F2 a F8. Solicitudes y preparación están integradas; faltan completar los flujos operativos restantes.
 - [ ] Integración de evidencias privadas.
 - [ ] Responsive, accesibilidad, estados y pruebas de interfaz.
 - [ ] Revisión de flujos reales con cuentas ADMIN, MANAGER y TEACHER.
 
 ### Pendiente de coordinación con backend
 
-- [ ] Definir/exponer endpoint(s) de detalle operativo para solicitudes/reservas/preparación.
+- [x] Exponer detalle operativo de solicitudes, reservas y preparación.
 - [ ] Confirmar los campos necesarios para detalle de préstamo/devolución en UI.
-- [ ] Resolver cualquier campo o listado que impida seleccionar relaciones sin UUID manual.
+- [~] Resolver cualquier campo o listado que impida seleccionar relaciones sin UUID manual. Preparación ya está resuelta; validar los flujos restantes antes de cerrar este punto.
 - [~] Alta directa de usuarios: backend, migración, cambio de contraseña temporal y formulario ADMIN implementados. Shoma puede completar listado y actualización visual de roles. El primer `ADMIN` se crea manualmente una sola vez.
 
 ## 15. Primer día recomendado

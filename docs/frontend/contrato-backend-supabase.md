@@ -81,10 +81,12 @@ Todos los paths siguientes son relativos a `/api/v1`. Las rutas `ADMIN/MANAGER` 
 | --- | --- | --- |
 | `POST /requests/drafts` | TEACHER | Crear solicitud con artículos. |
 | `GET /requests/mine` | TEACHER | Solicitudes propias. |
+| `GET /requests/{id}` | Participante o Personal | Detalle de una solicitud y sus ítems; el docente solo puede leer las propias. |
 | `POST /requests/{id}/submit` | TEACHER | Cambia `DRAFT` a `PENDING`. |
 | `GET /admin/requests/pending` | Personal | Bandeja de revisión. |
 | `POST /admin/requests/{id}/approve` | Personal | Aprueba cantidades y crea reserva atómica. |
 | `POST /admin/requests/{id}/reject` | Personal | Rechaza con motivo. |
+| `GET /admin/requests/{id}/preparation` | Personal | Contexto de reserva para preparar, incluidas unidades disponibles. |
 | `POST /admin/requests/{id}/preparation/start` | Personal | Inicia preparación. |
 | `POST /admin/requests/{id}/preparation/items` | Personal | Registra cantidades/unidades preparadas. |
 | `POST /admin/requests/{id}/preparation/complete` | Personal | Finaliza solo cuando todo cuadra. |
@@ -95,6 +97,20 @@ Todos los paths siguientes son relativos a `/api/v1`. Las rutas `ADMIN/MANAGER` 
 | `GET /admin/returns/loans/{id}/pending` | Personal | Cantidades y unidades aún pendientes. |
 | `POST /admin/returns/loans/{id}` | Personal | Devolución parcial o total. |
 | `POST /admin/inspections/returns/{return_id}` | Personal | Inspección y novedades de devolución. |
+
+#### Contexto de preparación
+
+`GET /admin/requests/{id}/preparation` devuelve la solicitud y sus detalles de
+reserva. Cada ítem contiene `equipment_reservation_detail_id`, cantidad reservada,
+modo de seguimiento y `available_units`. Para `QUANTITY`, `available_units` es una
+lista vacía. Para `INDIVIDUAL`, contiene exclusivamente unidades activas con estado
+`AVAILABLE`, identificadas por `id`, `asset_tag` y `serial_number` opcional.
+
+La pantalla debe enviar esas selecciones a `POST .../preparation/items` mediante
+`inventory_unit_ids`; no debe consultar ni modificar tablas de Supabase directamente.
+La interfaz actual registra y finaliza una preparación completa en una sola acción;
+el registro parcial permanece soportado por el backend, pero aún no se expone como
+acción incremental en la UI.
 
 ### Mantenimiento y evidencias
 
