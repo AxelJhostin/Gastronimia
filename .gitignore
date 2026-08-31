@@ -2,6 +2,7 @@
 .env
 .env.*
 !.env.example
+!.env.integration.example
 .venv/
 venv/
 
@@ -26,3 +27,5 @@ htmlcov/
 .vscode/
 .vercel
 .env*
+!.env.example
+!.env.integration.example

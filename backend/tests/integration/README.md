@@ -5,17 +5,30 @@ Estas pruebas verifican el recorrido real Supabase Auth → JWT → FastAPI → 
 Requisitos:
 
 - FastAPI levantado localmente en el puerto 8000.
-- `backend/.env` configurado para el proyecto Supabase enlazado.
+- Un proyecto Supabase de pruebas, separado de producción, o Supabase local.
+- `backend/.env` configurado para ese entorno aislado.
 - Un usuario real de Supabase Auth con rol `ADMIN` de la aplicación.
+- Para Supabase local, Docker debe estar instalado y en ejecución.
+
+Preparación desde `backend/`:
+
+```bash
+cp .env.integration.example .env.integration
+# Completa TEST_ADMIN_EMAIL y TEST_ADMIN_PASSWORD con la cuenta ADMIN de pruebas.
+```
 
 Ejecutar desde `backend/`:
 
 ```bash
-RUN_LIVE_TESTS=1 \
-TEST_API_BASE_URL=http://127.0.0.1:8000 \
-TEST_ADMIN_EMAIL=admin@example.com \
-TEST_ADMIN_PASSWORD='contraseña-local' \
-python -m pytest tests/integration -m integration
+set -a
+source .env
+source .env.integration
+set +a
+python -m pytest tests/integration -m integration --no-cov
 ```
 
 No se guardan esos valores en el repositorio. Estas pruebas validan salud, login, JWT, `/auth/me`, autorización administrativa y rechazo sin token.
+
+La cobertura se mide al ejecutar la suite unitaria completa. Estas pruebas consumen
+una API ya levantada, por lo que se ejecutan sin cobertura para no alterar ese
+umbral.
