@@ -284,6 +284,24 @@ def test_local_request_to_return_workflow(
         "equipment_reservation_details",
         inventory_item_id=f"eq.{item['id']}",
     )
+    preparation_context = client.get(
+        f"{environment['api_base_url']}/api/v1/admin/requests/{request_id}/preparation",
+        headers=_api_headers(admin_token),
+    )
+    assert preparation_context.status_code == 200, preparation_context.text
+    assert preparation_context.json()["request"]["status"] == "APPROVED"
+    assert preparation_context.json()["items"] == [
+        {
+            "equipment_reservation_detail_id": reservation_detail["id"],
+            "inventory_item_id": item["id"],
+            "inventory_item_name": item["name"],
+            "inventory_item_code": item["code"],
+            "tracking_mode": "QUANTITY",
+            "unit_of_measure": item["unit_of_measure"],
+            "reserved_quantity": 3,
+            "available_units": [],
+        }
+    ]
     started = client.post(
         f"{environment['api_base_url']}/api/v1/admin/requests/{request_id}/preparation/start",
         headers=_api_headers(admin_token),

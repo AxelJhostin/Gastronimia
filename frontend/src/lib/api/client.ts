@@ -173,6 +173,7 @@ export type EquipmentPreparationContext = {
     tracking_mode: "QUANTITY" | "INDIVIDUAL";
     unit_of_measure: string;
     reserved_quantity: number;
+    available_units: Array<{ id: string; asset_tag: string; serial_number: string | null }>;
   }>;
 };
 

@@ -7,6 +7,7 @@ from app.core.auth import AuthenticatedUser, RoleCode, get_current_user
 from app.core.requests import (
     EquipmentPreparation,
     EquipmentPreparationCreate,
+    get_equipment_preparation_context,
     record_equipment_preparation,
 )
 from app.main import app
@@ -62,6 +63,115 @@ def test_manager_can_start_preparation() -> None:
 
     assert response.status_code == 200
     assert start.call_args.args == (REQUEST_ID, USER_ID)
+
+
+def test_manager_can_load_preparation_context() -> None:
+    client = TestClient(app)
+    context = {
+        "request": {
+            "id": str(REQUEST_ID),
+            "teacher_id": "5d2e4d0c-9304-4f78-bcab-092df680b2e1",
+            "course_section_id": "6d2e4d0c-9304-4f78-bcab-092df680b2e1",
+            "laboratory_id": "7d2e4d0c-9304-4f78-bcab-092df680b2e1",
+            "start_at": "2026-08-21T10:00:00Z",
+            "end_at": "2026-08-21T12:00:00Z",
+            "purpose": "Práctica",
+            "status": "APPROVED",
+            "submitted_at": "2026-08-20T10:00:00Z",
+            "created_at": "2026-08-20T09:00:00Z",
+            "updated_at": "2026-08-20T10:00:00Z",
+        },
+        "items": [
+            {
+                "equipment_reservation_detail_id": (
+                    "e152d7d4-3eb0-4e7f-b2ff-1f7acb1f1450"
+                ),
+                "inventory_item_id": "d152d7d4-3eb0-4e7f-b2ff-1f7acb1f1450",
+                "inventory_item_name": "Batidora",
+                "inventory_item_code": "BAT-01",
+                "tracking_mode": "INDIVIDUAL",
+                "unit_of_measure": "unidad",
+                "reserved_quantity": "1",
+                "available_units": [
+                    {
+                        "id": "c152d7d4-3eb0-4e7f-b2ff-1f7acb1f1450",
+                        "asset_tag": "BAT-01-001",
+                        "serial_number": "SN-001",
+                    }
+                ],
+            }
+        ],
+    }
+    _override_manager()
+    try:
+        with patch(
+            "app.api.v1.endpoints.preparations.get_equipment_preparation_context",
+            return_value=context,
+        ) as get_context:
+            response = client.get(
+                f"/api/v1/admin/requests/{REQUEST_ID}/preparation"
+            )
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 200
+    unit = response.json()["items"][0]["available_units"][0]
+    assert unit["asset_tag"] == "BAT-01-001"
+    assert get_context.call_args.args == (REQUEST_ID,)
+
+
+def test_preparation_context_includes_available_individual_units() -> None:
+    request = {
+        "id": str(REQUEST_ID),
+        "teacher_id": "5d2e4d0c-9304-4f78-bcab-092df680b2e1",
+        "course_section_id": "6d2e4d0c-9304-4f78-bcab-092df680b2e1",
+        "laboratory_id": "7d2e4d0c-9304-4f78-bcab-092df680b2e1",
+        "start_at": "2026-08-21T10:00:00Z",
+        "end_at": "2026-08-21T12:00:00Z",
+        "purpose": "Práctica",
+        "status": "PREPARING",
+        "submitted_at": "2026-08-20T10:00:00Z",
+        "created_at": "2026-08-20T09:00:00Z",
+        "updated_at": "2026-08-20T10:00:00Z",
+    }
+    detail = {
+        "id": "e152d7d4-3eb0-4e7f-b2ff-1f7acb1f1450",
+        "inventory_item_id": "d152d7d4-3eb0-4e7f-b2ff-1f7acb1f1450",
+        "reserved_quantity": "1",
+        "inventory_items": {
+            "name": "Batidora",
+            "code": "BAT-01",
+            "tracking_mode": "INDIVIDUAL",
+            "unit_of_measure": "unidad",
+        },
+    }
+    unit = {
+        "id": "c152d7d4-3eb0-4e7f-b2ff-1f7acb1f1450",
+        "inventory_item_id": detail["inventory_item_id"],
+        "asset_tag": "BAT-01-001",
+        "serial_number": "SN-001",
+    }
+
+    def response(payload: object) -> Mock:
+        mocked_response = Mock()
+        mocked_response.json.return_value = payload
+        return mocked_response
+
+    with patch(
+        "app.core.requests.httpx.get",
+        side_effect=[
+            response([request]),
+            response([{"id": "b152d7d4-3eb0-4e7f-b2ff-1f7acb1f1450"}]),
+            response([detail]),
+            response([unit]),
+        ],
+    ) as get:
+        context = get_equipment_preparation_context(REQUEST_ID)
+
+    assert get.call_count == 4
+    assert context.request.status == "PREPARING"
+    assert context.items[0].inventory_item_name == "Batidora"
+    assert context.items[0].available_units[0].asset_tag == "BAT-01-001"
 
 
 def test_manager_can_record_preparation_items() -> None:

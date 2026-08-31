@@ -123,6 +123,13 @@ class EquipmentPreparationContextItem(BaseModel):
     tracking_mode: str
     unit_of_measure: str
     reserved_quantity: Decimal
+    available_units: list["EquipmentPreparationUnit"] = Field(default_factory=list)
+
+
+class EquipmentPreparationUnit(BaseModel):
+    id: UUID
+    asset_tag: str
+    serial_number: Optional[str] = None
 
 
 class EquipmentPreparationContext(BaseModel):
@@ -670,6 +677,37 @@ def get_equipment_preparation_context(
             error,
         ) from error
 
+    individual_item_ids = ",".join(
+        row["inventory_item_id"]
+        for row in details_response.json()
+        if row["inventory_items"]["tracking_mode"] == "INDIVIDUAL"
+    )
+    units_by_item: dict[str, list[EquipmentPreparationUnit]] = {}
+    if individual_item_ids:
+        try:
+            units_response = httpx.get(
+                f"{_supabase_url()}/rest/v1/inventory_units",
+                params={
+                    "select": "id,inventory_item_id,asset_tag,serial_number",
+                    "inventory_item_id": f"in.({individual_item_ids})",
+                    "is_active": "eq.true",
+                    "status": "eq.AVAILABLE",
+                    "order": "asset_tag.asc",
+                },
+                headers=_service_headers(),
+                timeout=5.0,
+            )
+            units_response.raise_for_status()
+        except httpx.HTTPError as error:
+            raise _request_error(
+                "No fue posible cargar las unidades disponibles para preparar.",
+                error,
+            ) from error
+        for unit in units_response.json():
+            units_by_item.setdefault(unit["inventory_item_id"], []).append(
+                EquipmentPreparationUnit.model_validate(unit)
+            )
+
     items = [
         EquipmentPreparationContextItem(
             equipment_reservation_detail_id=row["id"],
@@ -679,6 +717,7 @@ def get_equipment_preparation_context(
             tracking_mode=row["inventory_items"]["tracking_mode"],
             unit_of_measure=row["inventory_items"]["unit_of_measure"],
             reserved_quantity=row["reserved_quantity"],
+            available_units=units_by_item.get(row["inventory_item_id"], []),
         )
         for row in details_response.json()
     ]
