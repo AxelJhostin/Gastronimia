@@ -46,7 +46,7 @@ const NAV_ITEMS: NavItem[] = [
     label: "Inventario y Stock",
     href: "/dashboard/inventory",
     icon: Package,
-    roles: ["ADMIN", "MANAGER", "TEACHER"],
+    roles: ["ADMIN", "MANAGER"],
   },
   {
     label: "Devoluciones",

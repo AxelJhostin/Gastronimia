@@ -7,9 +7,6 @@ import { useDashboardIdentity } from "@/components/auth/dashboard-identity-provi
 import { GastronomyStatusPage } from "@/components/feedback/gastronomy-status-page";
 import { getInventoryItems, getInventoryStock, type InventoryItem, type InventoryStock } from "@/lib/api/client";
 
-// Roles con permiso de lectura para el catálogo e inventario
-const ALLOWED_ROLES = ["ADMIN", "MANAGER", "STOREKEEPER", "TEACHER", "teacher", "storekeeper", "admin"];
-
 export default function InventoryPage() {
   const identity = useDashboardIdentity();
   const [items, setItems] = useState<InventoryItem[]>([]);
@@ -19,7 +16,7 @@ export default function InventoryPage() {
 
   const hasAccess =
     identity.status === "authenticated" &&
-    identity.user.roles.some((role) => ALLOWED_ROLES.includes(role));
+    identity.user.roles.some((role) => role === "ADMIN" || role === "MANAGER");
 
   useEffect(() => {
     if (!hasAccess) return;

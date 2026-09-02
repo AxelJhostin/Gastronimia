@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { CheckCircle2, XCircle, AlertTriangle, ShieldCheck } from "lucide-react";
 
-interface InspectionItem {
+export interface InspectionItem {
   id: string;
   name: string;
   requestedQuantity: number;
@@ -16,11 +16,13 @@ interface InspectionPanelProps {
   requestId: string;
   teacherName: string;
   initialItems: InspectionItem[];
+  onSubmit: (input: { requestId: string; items: InspectionItem[] }) => Promise<void>;
 }
 
-export function InspectionPanel({ requestId, teacherName, initialItems }: InspectionPanelProps) {
+export function InspectionPanel({ requestId, teacherName, initialItems, onSubmit }: InspectionPanelProps) {
   const [items, setItems] = useState<InspectionItem[]>(initialItems);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleConditionChange = (id: string, condition: "good" | "damaged" | "missing") => {
     setItems((prev) =>
@@ -42,12 +44,15 @@ export function InspectionPanel({ requestId, teacherName, initialItems }: Inspec
 
   const handleSaveInspection = async () => {
     setIsSubmitting(true);
+    setError(null);
     try {
-      // Llamada a la API/RPC para guardar la inspección
-      // await submitInspection({ requestId, items });
-      alert("Inspección de devolución registrada correctamente.");
-    } catch (error) {
-      console.error("Error al registrar inspección:", error);
+      await onSubmit({ requestId, items });
+    } catch (submitError) {
+      setError(
+        submitError instanceof Error
+          ? submitError.message
+          : "No fue posible registrar la inspección.",
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -143,6 +148,7 @@ export function InspectionPanel({ requestId, teacherName, initialItems }: Inspec
       </div>
 
       <div className="flex justify-end pt-2">
+        {error ? <p className="mr-auto text-sm text-red-700" role="alert">{error}</p> : null}
         <button
           type="button"
           disabled={isSubmitting}

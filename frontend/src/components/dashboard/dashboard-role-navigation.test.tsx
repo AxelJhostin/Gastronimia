@@ -74,8 +74,8 @@ describe("navegación por roles", () => {
       screen.getByRole("link", { name: "Solicitudes" }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("link", { name: "Inventario y Stock" }),
-    ).toBeInTheDocument();
+      screen.queryByRole("link", { name: "Inventario y Stock" }),
+    ).not.toBeInTheDocument();
     expect(
       screen.queryByRole("link", { name: "Preparaciones" }),
     ).not.toBeInTheDocument();

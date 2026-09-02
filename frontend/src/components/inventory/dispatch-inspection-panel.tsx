@@ -29,6 +29,19 @@ interface DispatchInspectionPanelProps {
   activityDate: string;
   initialItems: InventoryDispatchItem[];
   mode?: "dispatch" | "return"; // Controla si es entrega o devolución
+  onSubmit: (payload: DispatchInspectionPayload) => Promise<void>;
+}
+
+export interface DispatchInspectionPayload {
+  requestId: string;
+  mode: "dispatch" | "return";
+  generalNotes: string;
+  items: Array<{
+    itemId: string;
+    quantity: number;
+    condition: InventoryDispatchItem["condition"];
+    notes: string;
+  }>;
 }
 
 export function DispatchInspectionPanel({
@@ -38,10 +51,12 @@ export function DispatchInspectionPanel({
   activityDate,
   initialItems,
   mode = "dispatch",
+  onSubmit,
 }: DispatchInspectionPanelProps) {
   const [items, setItems] = useState<InventoryDispatchItem[]>(initialItems);
   const [generalNotes, setGeneralNotes] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleQuantityChange = (id: string, quantity: number) => {
     setItems((prev) =>
@@ -64,8 +79,9 @@ export function DispatchInspectionPanel({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
+    setError(null);
 
-    const payload = {
+    const payload: DispatchInspectionPayload = {
       requestId,
       mode,
       generalNotes,
@@ -78,15 +94,13 @@ export function DispatchInspectionPanel({
     };
 
     try {
-      // Llamada al endpoint correspondiente (/api/v1/deliveries o /api/v1/returns)
-      console.log("Registrando inspección/despacho:", payload);
-      alert(
-        mode === "dispatch"
-          ? "Entrega autorizada y registrada con éxito."
-          : "Devolución e inspección registrada con éxito."
+      await onSubmit(payload);
+    } catch (submitError) {
+      setError(
+        submitError instanceof Error
+          ? submitError.message
+          : "No fue posible procesar la operación.",
       );
-    } catch (error) {
-      console.error("Error al procesar la solicitud:", error);
     } finally {
       setIsSubmitting(false);
     }
@@ -242,6 +256,7 @@ export function DispatchInspectionPanel({
 
       {/* Botón de Acción */}
       <div className="flex justify-end gap-3 border-t border-slate-100 pt-4">
+        {error ? <p className="mr-auto text-sm text-red-700" role="alert">{error}</p> : null}
         <button
           type="submit"
           disabled={isSubmitting}

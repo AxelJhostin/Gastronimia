@@ -179,6 +179,30 @@ export type EquipmentPreparationContext = {
 
 export type OperationalReportRow = Record<string, unknown>;
 
+export type IncidentType =
+  | "DAMAGE"
+  | "MISSING"
+  | "BREAKAGE"
+  | "DIRTINESS"
+  | "INCOMPLETE"
+  | "WEAR"
+  | "FAILURE";
+
+export type IncidentSeverity = "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
+
+export type IncidentOperationalReportRow = {
+  id: string;
+  equipment_request_id: string;
+  equipment_loan_id: string | null;
+  inventory_unit_id: string;
+  incident_type: IncidentType;
+  severity: IncidentSeverity;
+  requires_unavailable: boolean;
+  description: string;
+  created_at: string;
+  evidence_count: number;
+};
+
 export type OperationalAuditLog = {
   id: string;
   action: string;
@@ -386,6 +410,13 @@ export function getOperationalReport(
   report: "requests" | "loans" | "incidents" | "stock",
 ) {
   return requestApi<OperationalReportRow[]>(`/admin/reports/${report}`, accessToken);
+}
+
+export function getIncidentReport(accessToken: string) {
+  return requestApi<IncidentOperationalReportRow[]>(
+    "/admin/reports/incidents",
+    accessToken,
+  );
 }
 
 export function startEquipmentPreparation(accessToken: string, requestId: string) {
