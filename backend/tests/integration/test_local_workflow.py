@@ -300,6 +300,7 @@ def test_local_request_to_return_workflow(
             "unit_of_measure": item["unit_of_measure"],
             "reserved_quantity": 3,
             "available_units": [],
+            "prepared_units": [],
         }
     ]
     started = client.post(

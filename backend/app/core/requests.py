@@ -124,17 +124,20 @@ class EquipmentPreparationContextItem(BaseModel):
     unit_of_measure: str
     reserved_quantity: Decimal
     available_units: list["EquipmentPreparationUnit"] = Field(default_factory=list)
+    prepared_units: list["EquipmentPreparationUnit"] = Field(default_factory=list)
 
 
 class EquipmentPreparationUnit(BaseModel):
     id: UUID
     asset_tag: str
     serial_number: Optional[str] = None
+    condition: Optional[str] = None
 
 
 class EquipmentPreparationContext(BaseModel):
     request: EquipmentRequest
     items: list[EquipmentPreparationContextItem]
+    outbound_inspection: Optional["EquipmentInspection"] = None
 
 
 class EquipmentDeliveryQr(BaseModel):
@@ -688,7 +691,7 @@ def get_equipment_preparation_context(
             units_response = httpx.get(
                 f"{_supabase_url()}/rest/v1/inventory_units",
                 params={
-                    "select": "id,inventory_item_id,asset_tag,serial_number",
+                    "select": "id,inventory_item_id,asset_tag,serial_number,condition",
                     "inventory_item_id": f"in.({individual_item_ids})",
                     "is_active": "eq.true",
                     "status": "eq.AVAILABLE",
@@ -708,6 +711,109 @@ def get_equipment_preparation_context(
                 EquipmentPreparationUnit.model_validate(unit)
             )
 
+    prepared_units_by_detail: dict[str, list[EquipmentPreparationUnit]] = {}
+    outbound_inspection: Optional[EquipmentInspection] = None
+    if request_rows[0]["status"] == "PREPARED":
+        try:
+            preparation_response = httpx.get(
+                f"{_supabase_url()}/rest/v1/equipment_preparations",
+                params={
+                    "select": "id",
+                    "equipment_request_id": f"eq.{equipment_request_id}",
+                },
+                headers=_service_headers(),
+                timeout=5.0,
+            )
+            preparation_response.raise_for_status()
+            inspection_response = httpx.get(
+                f"{_supabase_url()}/rest/v1/equipment_inspections",
+                params={
+                    "select": "*",
+                    "equipment_request_id": f"eq.{equipment_request_id}",
+                    "stage": "eq.OUTBOUND",
+                },
+                headers=_service_headers(),
+                timeout=5.0,
+            )
+            inspection_response.raise_for_status()
+            inspection_rows = inspection_response.json()
+            if inspection_rows:
+                outbound_inspection = EquipmentInspection.model_validate(
+                    inspection_rows[0]
+                )
+
+            preparations = preparation_response.json()
+            if preparations:
+                preparation_details_response = httpx.get(
+                    f"{_supabase_url()}/rest/v1/equipment_preparation_details",
+                    params={
+                        "select": "id,equipment_reservation_detail_id",
+                        "equipment_preparation_id": f"eq.{preparations[0]['id']}",
+                    },
+                    headers=_service_headers(),
+                    timeout=5.0,
+                )
+                preparation_details_response.raise_for_status()
+                preparation_details = preparation_details_response.json()
+                preparation_detail_ids = ",".join(
+                    detail["id"] for detail in preparation_details
+                )
+                if preparation_detail_ids:
+                    preparation_units_response = httpx.get(
+                        f"{_supabase_url()}/rest/v1/equipment_preparation_units",
+                        params={
+                            "select": "equipment_preparation_detail_id,inventory_unit_id",
+                            "equipment_preparation_detail_id": (
+                                f"in.({preparation_detail_ids})"
+                            ),
+                            "is_active": "eq.true",
+                        },
+                        headers=_service_headers(),
+                        timeout=5.0,
+                    )
+                    preparation_units_response.raise_for_status()
+                    preparation_units = preparation_units_response.json()
+                    inventory_unit_ids = ",".join(
+                        unit["inventory_unit_id"] for unit in preparation_units
+                    )
+                    inventory_units: dict[str, EquipmentPreparationUnit] = {}
+                    if inventory_unit_ids:
+                        selected_units_response = httpx.get(
+                            f"{_supabase_url()}/rest/v1/inventory_units",
+                            params={
+                                "select": "id,asset_tag,serial_number,condition",
+                                "id": f"in.({inventory_unit_ids})",
+                                "order": "asset_tag.asc",
+                            },
+                            headers=_service_headers(),
+                            timeout=5.0,
+                        )
+                        selected_units_response.raise_for_status()
+                        inventory_units = {
+                            unit["id"]: EquipmentPreparationUnit.model_validate(unit)
+                            for unit in selected_units_response.json()
+                        }
+                    reservation_detail_by_preparation_detail = {
+                        detail["id"]: detail["equipment_reservation_detail_id"]
+                        for detail in preparation_details
+                    }
+                    for selected_unit in preparation_units:
+                        unit = inventory_units.get(selected_unit["inventory_unit_id"])
+                        reservation_detail_id = (
+                            reservation_detail_by_preparation_detail.get(
+                                selected_unit["equipment_preparation_detail_id"]
+                            )
+                        )
+                        if unit is not None and reservation_detail_id is not None:
+                            prepared_units_by_detail.setdefault(
+                                reservation_detail_id, []
+                            ).append(unit)
+        except httpx.HTTPError as error:
+            raise _request_error(
+                "No fue posible cargar el contexto de entrega.",
+                error,
+            ) from error
+
     items = [
         EquipmentPreparationContextItem(
             equipment_reservation_detail_id=row["id"],
@@ -718,12 +824,14 @@ def get_equipment_preparation_context(
             unit_of_measure=row["inventory_items"]["unit_of_measure"],
             reserved_quantity=row["reserved_quantity"],
             available_units=units_by_item.get(row["inventory_item_id"], []),
+            prepared_units=prepared_units_by_detail.get(row["id"], []),
         )
         for row in details_response.json()
     ]
     return EquipmentPreparationContext(
         request=EquipmentRequest.model_validate(request_rows[0]),
         items=items,
+        outbound_inspection=outbound_inspection,
     )
 
 

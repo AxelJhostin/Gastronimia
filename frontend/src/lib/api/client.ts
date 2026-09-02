@@ -119,6 +119,8 @@ export type InventoryItem = {
   updated_at: string;
 };
 
+export type InventoryUnitCondition = "NEW" | "GOOD" | "FAIR" | "DAMAGED";
+
 export type InventoryStock = {
   inventory_item_id: string;
   inventory_item_code: string | null;
@@ -173,11 +175,79 @@ export type EquipmentPreparationContext = {
     tracking_mode: "QUANTITY" | "INDIVIDUAL";
     unit_of_measure: string;
     reserved_quantity: number;
-    available_units: Array<{ id: string; asset_tag: string; serial_number: string | null }>;
+    available_units: Array<{
+      id: string;
+      asset_tag: string;
+      serial_number: string | null;
+      condition: InventoryUnitCondition | null;
+    }>;
+    prepared_units: Array<{
+      id: string;
+      asset_tag: string;
+      serial_number: string | null;
+      condition: InventoryUnitCondition | null;
+    }>;
+  }>;
+  outbound_inspection: EquipmentInspection | null;
+};
+
+export type EquipmentInspectionIncidentInput = {
+  incident_type: IncidentType;
+  severity: IncidentSeverity;
+  description: string;
+};
+
+export type EquipmentInspectionInput = {
+  notes?: string;
+  items: Array<{
+    inventory_unit_id: string;
+    observed_condition: InventoryUnitCondition;
+    is_complete: boolean;
+    incidents?: EquipmentInspectionIncidentInput[];
+  }>;
+};
+
+export type EquipmentInspection = {
+  id: string;
+  equipment_request_id: string;
+  equipment_loan_id: string | null;
+  equipment_return_id: string | null;
+  stage: "OUTBOUND" | "RETURN";
+  inspected_by_user_id: string;
+  inspected_at: string;
+  notes: string | null;
+};
+
+export type EquipmentDeliveryQr = {
+  token: string;
+  expires_at: string;
+};
+
+export type EquipmentDeliveryInput = {
+  qr_token: string;
+  collected_by_name: string;
+  quantity_locations: Array<{
+    equipment_reservation_detail_id: string;
+    location_id: string;
+    loaned_quantity: number;
   }>;
 };
 
 export type OperationalReportRow = Record<string, unknown>;
+
+export type RequestOperationalReportRow = {
+  id: string;
+  teacher_id: string;
+  course_section_id: string;
+  laboratory_id: string;
+  start_at: string;
+  end_at: string;
+  status: EquipmentRequestStatus;
+  submitted_at: string | null;
+  reservation_status: string | null;
+  equipment_loan_id: string | null;
+  loan_status: string | null;
+};
 
 export type IncidentType =
   | "DAMAGE"
@@ -417,6 +487,48 @@ export function getIncidentReport(accessToken: string) {
     "/admin/reports/incidents",
     accessToken,
   );
+}
+
+export function getRequestOperationalReport(accessToken: string) {
+  return requestApi<RequestOperationalReportRow[]>(
+    "/admin/reports/requests",
+    accessToken,
+  );
+}
+
+export function recordOutboundInspection(
+  accessToken: string,
+  requestId: string,
+  input: EquipmentInspectionInput,
+) {
+  return requestApi<EquipmentInspection>(
+    `/admin/inspections/requests/${requestId}/outbound`,
+    accessToken,
+    {
+      body: JSON.stringify(input),
+      headers: { "Content-Type": "application/json" },
+      method: "POST",
+    },
+  );
+}
+
+export function generateEquipmentDeliveryQr(accessToken: string, requestId: string) {
+  return requestApi<EquipmentDeliveryQr>(
+    `/admin/deliveries/requests/${requestId}/qr`,
+    accessToken,
+    { method: "POST" },
+  );
+}
+
+export function deliverEquipmentRequest(
+  accessToken: string,
+  input: EquipmentDeliveryInput,
+) {
+  return requestApi<EquipmentLoan>("/admin/deliveries/deliver", accessToken, {
+    body: JSON.stringify(input),
+    headers: { "Content-Type": "application/json" },
+    method: "POST",
+  });
 }
 
 export function startEquipmentPreparation(accessToken: string, requestId: string) {

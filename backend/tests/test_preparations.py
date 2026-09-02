@@ -174,6 +174,96 @@ def test_preparation_context_includes_available_individual_units() -> None:
     assert context.items[0].available_units[0].asset_tag == "BAT-01-001"
 
 
+def test_prepared_context_includes_selected_units_and_outbound_inspection() -> None:
+    request = {
+        "id": str(REQUEST_ID),
+        "teacher_id": "5d2e4d0c-9304-4f78-bcab-092df680b2e1",
+        "course_section_id": "6d2e4d0c-9304-4f78-bcab-092df680b2e1",
+        "laboratory_id": "7d2e4d0c-9304-4f78-bcab-092df680b2e1",
+        "start_at": "2026-08-21T10:00:00Z",
+        "end_at": "2026-08-21T12:00:00Z",
+        "purpose": "Práctica",
+        "status": "PREPARED",
+        "submitted_at": "2026-08-20T10:00:00Z",
+        "created_at": "2026-08-20T09:00:00Z",
+        "updated_at": "2026-08-20T10:00:00Z",
+    }
+    reservation_detail_id = "e152d7d4-3eb0-4e7f-b2ff-1f7acb1f1450"
+    preparation_id = "b152d7d4-3eb0-4e7f-b2ff-1f7acb1f1450"
+    preparation_detail_id = "a152d7d4-3eb0-4e7f-b2ff-1f7acb1f1450"
+    inventory_item_id = "d152d7d4-3eb0-4e7f-b2ff-1f7acb1f1450"
+    inventory_unit_id = "c152d7d4-3eb0-4e7f-b2ff-1f7acb1f1450"
+    detail = {
+        "id": reservation_detail_id,
+        "inventory_item_id": inventory_item_id,
+        "reserved_quantity": "1",
+        "inventory_items": {
+            "name": "Batidora",
+            "code": "BAT-01",
+            "tracking_mode": "INDIVIDUAL",
+            "unit_of_measure": "unidad",
+        },
+    }
+    unit = {
+        "id": inventory_unit_id,
+        "inventory_item_id": inventory_item_id,
+        "asset_tag": "BAT-01-001",
+        "serial_number": "SN-001",
+        "condition": "GOOD",
+    }
+    inspection = {
+        "id": "1fa85f64-5717-4562-b3fc-2c963f66afa6",
+        "equipment_request_id": str(REQUEST_ID),
+        "equipment_loan_id": None,
+        "equipment_return_id": None,
+        "stage": "OUTBOUND",
+        "inspected_by_user_id": USER_ID,
+        "inspected_at": "2026-08-21T11:00:00Z",
+        "notes": "Salida revisada",
+    }
+
+    def response(payload: object) -> Mock:
+        mocked_response = Mock()
+        mocked_response.json.return_value = payload
+        return mocked_response
+
+    with patch(
+        "app.core.requests.httpx.get",
+        side_effect=[
+            response([request]),
+            response([{"id": "reservation-id"}]),
+            response([detail]),
+            response([unit]),
+            response([{"id": preparation_id}]),
+            response([inspection]),
+            response(
+                [
+                    {
+                        "id": preparation_detail_id,
+                        "equipment_reservation_detail_id": reservation_detail_id,
+                    }
+                ]
+            ),
+            response(
+                [
+                    {
+                        "equipment_preparation_detail_id": preparation_detail_id,
+                        "inventory_unit_id": inventory_unit_id,
+                    }
+                ]
+            ),
+            response([unit]),
+        ],
+    ) as get:
+        context = get_equipment_preparation_context(REQUEST_ID)
+
+    assert get.call_count == 9
+    assert context.items[0].prepared_units[0].asset_tag == "BAT-01-001"
+    assert context.items[0].prepared_units[0].condition == "GOOD"
+    assert context.outbound_inspection is not None
+    assert context.outbound_inspection.stage == "OUTBOUND"
+
+
 def test_manager_can_record_preparation_items() -> None:
     client = TestClient(app)
     _override_manager()
