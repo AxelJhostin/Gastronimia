@@ -8,7 +8,7 @@ El alcance funcional completo está documentado en [`docs/requirements/`](/Users
 
 El backend y Supabase del MVP están implementados y verificados para desarrollo local:
 
-- Frontend Next.js con TypeScript estricto, Tailwind, ESLint y Vitest.
+- Frontend Next.js con TypeScript estricto, Tailwind, ESLint, Vitest y Cypress E2E.
 - Backend FastAPI con configuración tipada, endpoint de salud, Ruff, mypy y pytest.
 - Supabase con PostgreSQL, Auth, RLS, Storage privado y migraciones aplicadas.
 - Plantillas de variables de entorno sin secretos.
@@ -54,7 +54,7 @@ Next.js resuelve la interfaz responsive. FastAPI concentra las reglas de negocio
 | Base de datos | Supabase PostgreSQL |
 | Identidad y archivos | Supabase Auth y Storage privado |
 | Despliegue | Vercel, en dos proyectos independientes |
-| Frontend quality | ESLint, TypeScript, Vitest |
+| Frontend quality | ESLint, TypeScript, Vitest, Cypress E2E |
 | Backend quality | Ruff, mypy, pytest + coverage |
 
 ## Requisitos locales
@@ -148,6 +148,32 @@ npm run build
 ```
 
 La configuración de CI replica estas validaciones en cada pull request y push a `main`.
+
+### Pruebas E2E con Cypress
+
+Los tres smoke tests levantan la aplicación completa contra Supabase local y
+cubren autenticación, el ciclo solicitud → devolución y la recuperación de una
+inspección pendiente después de recargar. Requieren Docker Desktop activo y el
+entorno virtual de `backend/.venv` instalado.
+
+Desde la raíz:
+
+```bash
+npm run test:e2e
+```
+
+El comando reinicia únicamente la base local con `supabase db reset`, compila
+Next.js, inicia temporalmente FastAPI y el frontend, ejecuta Cypress headless y
+detiene esos dos servidores al terminar. Supabase local permanece activo. Para
+usar la interfaz interactiva con los servicios ya levantados:
+
+```bash
+cd frontend
+npm run e2e:open
+```
+
+La clave `service_role` solo llega al proceso Node que prepara datos locales;
+nunca se expone al navegador ni se guarda en los specs.
 
 ### Integración local opt-in
 

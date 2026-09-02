@@ -9,6 +9,7 @@
     "test:frontend": "npm --prefix frontend run test",
     "lint:backend": "cd backend && python -m ruff check app tests",
     "typecheck:backend": "cd backend && python -m mypy app",
-    "test:backend": "cd backend && python -m pytest"
+    "test:backend": "cd backend && python -m pytest",
+    "test:e2e": "npm --prefix frontend run e2e"
   }
 }

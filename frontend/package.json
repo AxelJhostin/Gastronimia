@@ -9,7 +9,11 @@
     "lint": "eslint",
     "typecheck": "next typegen && tsc --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "e2e": "../scripts/run-e2e-local.sh",
+    "e2e:open": "cypress open --e2e",
+    "e2e:run": "cypress run --e2e",
+    "e2e:typecheck": "tsc --project cypress/tsconfig.json --noEmit"
   },
   "dependencies": {
     "@supabase/ssr": "^0.8.0",
@@ -27,6 +31,7 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "cypress": "15.21.1",
     "eslint": "^9",
     "eslint-config-next": "16.3.1",
     "jsdom": "^28.1.0",
