@@ -33,6 +33,41 @@ export type ProvisionedUser = {
   temporary_password: string;
 };
 
+export type ManagedUser = {
+  id: string;
+  email: string;
+  full_name: string;
+  is_active: boolean;
+  roles: RoleCode[];
+};
+
+export type AcademicPeriod = {
+  id: string;
+  name: string;
+  start_date: string;
+  end_date: string;
+  is_active: boolean;
+  created_at: string;
+};
+
+export type Subject = {
+  id: string;
+  code: string | null;
+  name: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+export type Teacher = {
+  id: string;
+  user_id: string;
+  employee_code: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
 export type EquipmentRequestStatus =
   | "DRAFT"
   | "PENDING"
@@ -119,6 +154,102 @@ export type InventoryItem = {
   updated_at: string;
 };
 
+export type InventoryCategory = {
+  id: string;
+  name: string;
+  description: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+export type InventoryLocation = {
+  id: string;
+  code: string | null;
+  name: string;
+  description: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+export type InventoryUnit = {
+  id: string;
+  inventory_item_id: string;
+  location_id: string | null;
+  asset_tag: string;
+  serial_number: string | null;
+  status: "AVAILABLE" | "LOANED" | "MAINTENANCE" | "DISABLED";
+  condition: InventoryUnitCondition;
+  notes: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+export type InventoryUnitHistory = {
+  id: string;
+  inventory_unit_id: string;
+  event_type:
+    | "CREATED"
+    | "UPDATED"
+    | "STATUS_CHANGED"
+    | "CONDITION_CHANGED"
+    | "LOCATION_CHANGED"
+    | "DEACTIVATED"
+    | "REACTIVATED";
+  previous_status: InventoryUnit["status"] | null;
+  current_status: InventoryUnit["status"];
+  previous_condition: InventoryUnitCondition | null;
+  current_condition: InventoryUnitCondition;
+  previous_location_id: string | null;
+  current_location_id: string | null;
+  previous_is_active: boolean | null;
+  current_is_active: boolean;
+  recorded_at: string;
+};
+
+export type InventoryMovement = {
+  id: string;
+  inventory_item_id: string;
+  location_id: string;
+  movement_type: "INITIAL_STOCK" | "ADJUSTMENT_IN" | "ADJUSTMENT_OUT";
+  quantity: number;
+  notes: string | null;
+  occurred_at: string | null;
+  balance_after: number;
+  performed_by_user_id: string;
+  created_at: string;
+};
+
+export type InventoryAvailability = {
+  tracking_mode: "QUANTITY" | "INDIVIDUAL";
+  quantity_available: number;
+  units_available: number;
+};
+
+export type EquipmentMaintenance = {
+  id: string;
+  inventory_unit_id: string;
+  maintenance_type: "PREVENTIVE" | "CORRECTIVE" | "INSPECTION";
+  status: "OPEN" | "COMPLETED" | "CANCELLED";
+  reason: string;
+  description: string | null;
+  created_by_user_id: string;
+  started_at: string;
+  completed_by_user_id: string | null;
+  completed_at: string | null;
+  resolution: string | null;
+};
+
+export type EquipmentMaintenanceEvidence = {
+  id: string;
+  equipment_maintenance_id: string;
+  storage_path: string;
+  uploaded_by_user_id: string;
+  created_at: string;
+};
+
 export type InventoryUnitCondition = "NEW" | "GOOD" | "FAIR" | "DAMAGED";
 
 export type InventoryStock = {
@@ -161,8 +292,26 @@ export type EquipmentLoanPending = {
     loaned_quantity: number;
     returned_quantity: number;
     pending_quantity: number;
+    inventory_item_name: string;
+    inventory_item_code: string | null;
+    unit_of_measure: string;
   }>;
   unit_ids_pending: string[];
+  pending_units: Array<{
+    equipment_loan_unit_id: string;
+    inventory_unit_id: string;
+    asset_tag: string;
+    serial_number: string | null;
+    condition: InventoryUnitCondition;
+  }>;
+};
+
+export type EquipmentReturn = {
+  id: string;
+  equipment_loan_id: string;
+  returned_by_name: string;
+  received_by_user_id: string;
+  returned_at: string;
 };
 
 export type EquipmentPreparationContext = {
@@ -216,6 +365,22 @@ export type EquipmentInspection = {
   inspected_by_user_id: string;
   inspected_at: string;
   notes: string | null;
+  incidents: Array<{
+    id: string;
+    inventory_unit_id: string;
+    incident_type: IncidentType;
+    severity: IncidentSeverity;
+    description: string;
+    requires_unavailable: boolean;
+  }>;
+};
+
+export type EquipmentIncidentEvidence = {
+  id: string;
+  equipment_incident_id: string;
+  storage_path: string;
+  uploaded_by_user_id: string;
+  created_at: string;
 };
 
 export type EquipmentDeliveryQr = {
@@ -380,6 +545,104 @@ export function createManagedUser(
   });
 }
 
+export function getManagedUsers(accessToken: string) {
+  return requestApi<ManagedUser[]>("/admin/users", accessToken);
+}
+
+export function updateManagedUserRoles(
+  accessToken: string,
+  userId: string,
+  roles: RoleCode[],
+) {
+  return requestApi<void>(`/admin/users/${userId}/roles`, accessToken, {
+    body: JSON.stringify({ roles }),
+    headers: { "Content-Type": "application/json" },
+    method: "PUT",
+  });
+}
+
+export function getAcademicPeriods(accessToken: string) {
+  return requestApi<AcademicPeriod[]>("/admin/academic/periods", accessToken);
+}
+
+export function createAcademicPeriod(
+  accessToken: string,
+  input: { name: string; start_date: string; end_date: string; is_active: boolean },
+) {
+  return requestApi<AcademicPeriod>("/admin/academic/periods", accessToken, {
+    body: JSON.stringify(input),
+    headers: { "Content-Type": "application/json" },
+    method: "POST",
+  });
+}
+
+export function getSubjects(accessToken: string) {
+  return requestApi<Subject[]>("/admin/academic/subjects", accessToken);
+}
+
+export function createSubject(
+  accessToken: string,
+  input: { code?: string; name: string; is_active: boolean },
+) {
+  return requestApi<Subject>("/admin/academic/subjects", accessToken, {
+    body: JSON.stringify(input),
+    headers: { "Content-Type": "application/json" },
+    method: "POST",
+  });
+}
+
+export function getTeachers(accessToken: string) {
+  return requestApi<Teacher[]>("/admin/academic/teachers", accessToken);
+}
+
+export function createTeacher(
+  accessToken: string,
+  input: { user_id: string; employee_code?: string; is_active: boolean },
+) {
+  return requestApi<Teacher>("/admin/academic/teachers", accessToken, {
+    body: JSON.stringify(input),
+    headers: { "Content-Type": "application/json" },
+    method: "POST",
+  });
+}
+
+export function getCourseSections(accessToken: string) {
+  return requestApi<CourseSection[]>("/admin/academic/course-sections", accessToken);
+}
+
+export function createCourseSection(
+  accessToken: string,
+  input: {
+    subject_id: string;
+    teacher_id: string;
+    academic_period_id: string;
+    section: string;
+    semester?: string;
+    is_active: boolean;
+  },
+) {
+  return requestApi<CourseSection>("/admin/academic/course-sections", accessToken, {
+    body: JSON.stringify(input),
+    headers: { "Content-Type": "application/json" },
+    method: "POST",
+  });
+}
+
+export function getLaboratories(accessToken: string) {
+  return requestApi<Laboratory[]>("/admin/academic/laboratories", accessToken);
+}
+
+export function createLaboratory(
+  accessToken: string,
+  input: { code?: string; name: string; location_description?: string; is_active: boolean },
+) {
+  return requestApi<Laboratory>("/admin/academic/laboratories", accessToken, {
+    body: JSON.stringify(input),
+    headers: { "Content-Type": "application/json" },
+    method: "POST",
+  });
+}
+
 export function completeTemporaryPasswordChange(accessToken: string) {
   return requestApi<void>("/auth/password-change-complete", accessToken, {
     method: "POST",
@@ -447,6 +710,175 @@ export function getInventoryItems(accessToken: string) {
   return requestApi<InventoryItem[]>("/admin/inventory/items", accessToken);
 }
 
+export function getInventoryCategories(accessToken: string) {
+  return requestApi<InventoryCategory[]>("/admin/inventory/categories", accessToken);
+}
+
+export function createInventoryCategory(
+  accessToken: string,
+  input: { name: string; description?: string; is_active: boolean },
+) {
+  return requestApi<InventoryCategory>("/admin/inventory/categories", accessToken, {
+    body: JSON.stringify(input),
+    headers: { "Content-Type": "application/json" },
+    method: "POST",
+  });
+}
+
+export function getInventoryLocations(accessToken: string) {
+  return requestApi<InventoryLocation[]>("/admin/inventory/locations", accessToken);
+}
+
+export function createInventoryLocation(
+  accessToken: string,
+  input: { code?: string; name: string; description?: string; is_active: boolean },
+) {
+  return requestApi<InventoryLocation>("/admin/inventory/locations", accessToken, {
+    body: JSON.stringify(input),
+    headers: { "Content-Type": "application/json" },
+    method: "POST",
+  });
+}
+
+export function createInventoryItem(
+  accessToken: string,
+  input: {
+    category_id: string;
+    code?: string;
+    name: string;
+    description?: string;
+    tracking_mode: "QUANTITY" | "INDIVIDUAL";
+    unit_of_measure: string;
+    is_active: boolean;
+  },
+) {
+  return requestApi<InventoryItem>("/admin/inventory/items", accessToken, {
+    body: JSON.stringify(input),
+    headers: { "Content-Type": "application/json" },
+    method: "POST",
+  });
+}
+
+export function getInventoryUnits(accessToken: string) {
+  return requestApi<InventoryUnit[]>("/admin/inventory/units", accessToken);
+}
+
+export function getInventoryUnitHistory(accessToken: string, unitId: string) {
+  return requestApi<InventoryUnitHistory[]>(
+    `/admin/inventory/units/${unitId}/history`,
+    accessToken,
+  );
+}
+
+export function createInventoryUnit(
+  accessToken: string,
+  input: {
+    inventory_item_id: string;
+    location_id?: string;
+    asset_tag: string;
+    serial_number?: string;
+    status: InventoryUnit["status"];
+    condition: InventoryUnitCondition;
+    notes?: string;
+    is_active: boolean;
+  },
+) {
+  return requestApi<InventoryUnit>("/admin/inventory/units", accessToken, {
+    body: JSON.stringify(input),
+    headers: { "Content-Type": "application/json" },
+    method: "POST",
+  });
+}
+
+export function getInventoryMovements(accessToken: string) {
+  return requestApi<InventoryMovement[]>("/admin/inventory/movements", accessToken);
+}
+
+export function createInventoryMovement(
+  accessToken: string,
+  input: {
+    inventory_item_id: string;
+    location_id: string;
+    movement_type: InventoryMovement["movement_type"];
+    quantity: number;
+    notes?: string;
+  },
+) {
+  return requestApi<InventoryMovement>("/admin/inventory/movements", accessToken, {
+    body: JSON.stringify(input),
+    headers: { "Content-Type": "application/json" },
+    method: "POST",
+  });
+}
+
+export function getInventoryAvailability(
+  accessToken: string,
+  input: { inventory_item_id: string; start_at: string; end_at: string },
+) {
+  const query = new URLSearchParams(input);
+  return requestApi<InventoryAvailability>(
+    `/admin/inventory/availability?${query.toString()}`,
+    accessToken,
+  );
+}
+
+export function getEquipmentMaintenances(accessToken: string) {
+  return requestApi<EquipmentMaintenance[]>("/admin/maintenance", accessToken);
+}
+
+export function startEquipmentMaintenance(
+  accessToken: string,
+  input: {
+    inventory_unit_id: string;
+    maintenance_type: EquipmentMaintenance["maintenance_type"];
+    reason: string;
+    description?: string;
+  },
+) {
+  return requestApi<EquipmentMaintenance>("/admin/maintenance", accessToken, {
+    body: JSON.stringify(input),
+    headers: { "Content-Type": "application/json" },
+    method: "POST",
+  });
+}
+
+export function closeEquipmentMaintenance(
+  accessToken: string,
+  maintenanceId: string,
+  action: "complete" | "cancel",
+  input: {
+    resolution?: string;
+    final_status: InventoryUnit["status"];
+    final_condition: InventoryUnitCondition;
+  },
+) {
+  return requestApi<EquipmentMaintenance>(
+    `/admin/maintenance/${maintenanceId}/${action}`,
+    accessToken,
+    {
+      body: JSON.stringify(input),
+      headers: { "Content-Type": "application/json" },
+      method: "POST",
+    },
+  );
+}
+
+export function registerMaintenanceEvidence(
+  accessToken: string,
+  maintenanceId: string,
+  storagePath: string,
+) {
+  return requestApi<EquipmentMaintenanceEvidence>(
+    `/admin/maintenance/${maintenanceId}/evidences`,
+    accessToken,
+    {
+      body: JSON.stringify({ storage_path: storagePath }),
+      headers: { "Content-Type": "application/json" },
+      method: "POST",
+    },
+  );
+}
+
 export function getInventoryStock(accessToken: string) {
   return requestApi<InventoryStock[]>("/admin/inventory/stock", accessToken);
 }
@@ -468,16 +900,48 @@ export function recordEquipmentReturn(
   loanId: string,
   input: { returned_by_name: string; quantity_details: Array<{ equipment_loan_detail_id: string; returned_quantity: number; location_id: string }>; loan_unit_ids: string[] },
 ) {
-  return requestApi<void>(`/admin/returns/loans/${loanId}`, accessToken, {
+  return requestApi<EquipmentReturn>(`/admin/returns/loans/${loanId}`, accessToken, {
     body: JSON.stringify(input),
     headers: { "Content-Type": "application/json" },
     method: "POST",
   });
 }
 
+export function recordReturnInspection(
+  accessToken: string,
+  equipmentReturnId: string,
+  input: EquipmentInspectionInput,
+) {
+  return requestApi<EquipmentInspection>(
+    `/admin/inspections/returns/${equipmentReturnId}`,
+    accessToken,
+    {
+      body: JSON.stringify(input),
+      headers: { "Content-Type": "application/json" },
+      method: "POST",
+    },
+  );
+}
+
+export function registerIncidentEvidence(
+  accessToken: string,
+  incidentId: string,
+  storagePath: string,
+) {
+  return requestApi<EquipmentIncidentEvidence>(
+    `/admin/inspections/incidents/${incidentId}/evidences`,
+    accessToken,
+    {
+      body: JSON.stringify({ storage_path: storagePath }),
+      headers: { "Content-Type": "application/json" },
+      method: "POST",
+    },
+  );
+}
+
 export function getOperationalReport(
   accessToken: string,
-  report: "requests" | "loans" | "incidents" | "stock",
+  report: "requests" | "loans" | "incidents" | "stock" | "kardex",
 ) {
   return requestApi<OperationalReportRow[]>(`/admin/reports/${report}`, accessToken);
 }

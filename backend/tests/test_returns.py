@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 from decimal import Decimal
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 from uuid import UUID
 
 from app.api.v1.endpoints.request_reviews import require_request_reviewer
@@ -10,6 +10,7 @@ from app.core.requests import (
     EquipmentLoanPending,
     EquipmentLoanPendingQuantity,
     EquipmentReturn,
+    get_equipment_loan_pending,
 )
 from app.main import app
 from fastapi.testclient import TestClient
@@ -144,3 +145,80 @@ def test_manager_can_see_pending_resources() -> None:
 
     assert response.status_code == 200
     assert response.json()["quantity_details"][0]["pending_quantity"] == "1"
+
+
+def test_pending_resources_include_catalog_and_unit_identity() -> None:
+    loan_unit_id = "4fa85f64-5717-4562-b3fc-2c963f66afa6"
+    inventory_unit_id = "5fa85f64-5717-4562-b3fc-2c963f66afa6"
+    item_id = "2fa85f64-5717-4562-b3fc-2c963f66afa6"
+
+    def response(payload: object) -> Mock:
+        mocked_response = Mock()
+        mocked_response.json.return_value = payload
+        return mocked_response
+
+    with (
+        patch(
+            "app.core.requests.httpx.post",
+            return_value=response(
+                {
+                    "loan": _loan().model_dump(mode="json"),
+                    "quantity_details": [
+                        {
+                            "equipment_loan_detail_id": (
+                                "1fa85f64-5717-4562-b3fc-2c963f66afa6"
+                            ),
+                            "inventory_item_id": item_id,
+                            "loaned_quantity": "2",
+                            "returned_quantity": "1",
+                            "pending_quantity": "1",
+                        }
+                    ],
+                    "unit_ids_pending": [loan_unit_id],
+                }
+            ),
+        ),
+        patch(
+            "app.core.requests.httpx.get",
+            side_effect=[
+                response(
+                    [
+                        {
+                            "id": "1fa85f64-5717-4562-b3fc-2c963f66afa6",
+                            "location_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+                        }
+                    ]
+                ),
+                response(
+                    [
+                        {
+                            "id": item_id,
+                            "name": "Harina",
+                            "code": "HAR-01",
+                            "unit_of_measure": "kg",
+                        }
+                    ]
+                ),
+                response(
+                    [
+                        {
+                            "id": loan_unit_id,
+                            "equipment_preparation_units": {
+                                "inventory_units": {
+                                    "id": inventory_unit_id,
+                                    "asset_tag": "BAT-001",
+                                    "serial_number": "SER-001",
+                                    "condition": "GOOD",
+                                }
+                            },
+                        }
+                    ]
+                ),
+            ],
+        ),
+    ):
+        pending = get_equipment_loan_pending(LOAN_ID)
+
+    assert pending.quantity_details[0].inventory_item_name == "Harina"
+    assert pending.pending_units[0].asset_tag == "BAT-001"
+    assert str(pending.pending_units[0].inventory_unit_id) == inventory_unit_id

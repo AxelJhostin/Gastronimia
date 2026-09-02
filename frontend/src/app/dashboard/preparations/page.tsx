@@ -6,13 +6,13 @@ import { useEffect, useState } from "react";
 import { useDashboardIdentity } from "@/components/auth/dashboard-identity-provider";
 import { GastronomyStatusPage } from "@/components/feedback/gastronomy-status-page";
 import {
-  getPendingRequests,
-  type EquipmentRequest,
+  getRequestOperationalReport,
+  type RequestOperationalReportRow,
 } from "@/lib/api/client";
 
 export default function PreparationsPage() {
   const identity = useDashboardIdentity();
-  const [orders, setOrders] = useState<EquipmentRequest[]>([]);
+  const [orders, setOrders] = useState<RequestOperationalReportRow[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -23,10 +23,14 @@ export default function PreparationsPage() {
   useEffect(() => {
     if (!hasAccess || identity.status !== "authenticated") return;
 
-    void getPendingRequests(identity.accessToken)
-      .then((data: EquipmentRequest[]) => {
-        setOrders(data);
-      })
+    void getRequestOperationalReport(identity.accessToken)
+      .then((data) =>
+        setOrders(
+          data.filter((order) =>
+            ["APPROVED", "PARTIALLY_APPROVED", "PREPARING"].includes(order.status),
+          ),
+        ),
+      )
       .catch((loadError: unknown) =>
         setError(
           loadError instanceof Error
@@ -119,7 +123,7 @@ export default function PreparationsPage() {
                           href={`/dashboard/preparations/${order.id}`}
                           className="text-xs font-semibold text-amber-800 underline hover:text-amber-900"
                         >
-                          Armar paquete →
+                          {order.status === "PREPARING" ? "Continuar armado →" : "Armar paquete →"}
                         </Link>
                       </td>
                     </tr>

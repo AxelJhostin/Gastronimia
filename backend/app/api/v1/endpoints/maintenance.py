@@ -11,11 +11,23 @@ from app.core.inventory import (
     EquipmentMaintenanceEvidenceCreate,
     EquipmentMaintenanceStartCreate,
     close_equipment_maintenance,
+    list_inventory_resources,
     register_equipment_maintenance_evidence,
     start_equipment_maintenance,
 )
 
 router = APIRouter(prefix="/admin/maintenance")
+
+
+@router.get("", response_model=list[EquipmentMaintenance])
+def get_maintenances(
+    _: set[RoleCode] = Depends(require_request_reviewer),  # noqa: B008
+) -> list[EquipmentMaintenance]:
+    return list_inventory_resources(
+        "equipment_maintenances",
+        EquipmentMaintenance,
+        "started_at.desc",
+    )
 
 
 @router.post("", response_model=EquipmentMaintenance)

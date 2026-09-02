@@ -57,12 +57,10 @@ export default function InventoryPage() {
               Consulta la disponibilidad, estado y ubicación de herramientas y utensilios de cocina.
             </p>
           </div>
-          <Link
-            href="/dashboard"
-            className="text-xs font-semibold text-stone-600 hover:text-amber-800 underline"
-          >
-            ← Volver al Panel
-          </Link>
+          <div className="flex gap-4">
+            <Link href="/dashboard/inventory/manage" className="text-xs font-semibold text-amber-800 underline">Gestionar inventario</Link>
+            <Link href="/dashboard" className="text-xs font-semibold text-stone-600 hover:text-amber-800 underline">Volver al panel</Link>
+          </div>
         </div>
 
         {/* Tabla de Inventario */}

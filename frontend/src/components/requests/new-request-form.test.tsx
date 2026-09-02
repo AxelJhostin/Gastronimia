@@ -17,6 +17,7 @@ const identity = vi.hoisted(() => ({
 }));
 const api = vi.hoisted(() => ({
   createEquipmentRequestDraft: vi.fn(),
+  getInventoryAvailability: vi.fn(),
   getEquipmentRequestFormOptions: vi.fn(),
   submitEquipmentRequest: vi.fn(),
 }));
@@ -31,6 +32,7 @@ vi.mock("@/components/auth/dashboard-identity-provider", () => ({
 
 vi.mock("@/lib/api/client", () => ({
   createEquipmentRequestDraft: api.createEquipmentRequestDraft,
+  getInventoryAvailability: api.getInventoryAvailability,
   getEquipmentRequestFormOptions: api.getEquipmentRequestFormOptions,
   submitEquipmentRequest: api.submitEquipmentRequest,
 }));
@@ -81,10 +83,16 @@ describe("NewRequestForm", () => {
     router.push.mockReset();
     api.createEquipmentRequestDraft.mockReset();
     api.getEquipmentRequestFormOptions.mockReset();
+    api.getInventoryAvailability.mockReset();
     api.submitEquipmentRequest.mockReset();
     api.getEquipmentRequestFormOptions.mockResolvedValue(options);
     api.createEquipmentRequestDraft.mockResolvedValue({ id: "request-1" });
     api.submitEquipmentRequest.mockResolvedValue({ id: "request-1", status: "PENDING" });
+    api.getInventoryAvailability.mockResolvedValue({
+      tracking_mode: "QUANTITY",
+      quantity_available: 8,
+      units_available: 0,
+    });
   });
 
   it("crea y envía una solicitud usando el contrato de FastAPI", async () => {
@@ -127,5 +135,28 @@ describe("NewRequestForm", () => {
     });
     expect(api.submitEquipmentRequest).toHaveBeenCalledWith("teacher-token", "request-1");
     expect(router.push).toHaveBeenCalledWith("/dashboard/requests/request-1");
+  });
+
+  it("muestra disponibilidad preliminar para el horario seleccionado", async () => {
+    render(<NewRequestForm />);
+    await screen.findByRole("option", { name: "Laboratorio de cocina" });
+
+    fireEvent.change(screen.getByLabelText("Inicio"), {
+      target: { value: "2035-06-01T13:00" },
+    });
+    fireEvent.change(screen.getByLabelText("Fin"), {
+      target: { value: "2035-06-01T15:00" },
+    });
+    fireEvent.change(screen.getByLabelText("Artículo"), {
+      target: { value: "item-1" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Consultar disponibilidad" }));
+
+    expect(await screen.findByText(/disponibilidad preliminar: 8 unidad/i)).toBeInTheDocument();
+    expect(api.getInventoryAvailability).toHaveBeenCalledWith("teacher-token", {
+      inventory_item_id: "item-1",
+      start_at: new Date("2035-06-01T13:00").toISOString(),
+      end_at: new Date("2035-06-01T15:00").toISOString(),
+    });
   });
 });

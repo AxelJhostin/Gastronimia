@@ -306,30 +306,30 @@ Trabajar en este orden. Cada bloque termina con UI, estados de carga/vacío/erro
 ### Bloque F1 — Fundaciones de interfaz
 
 - [x] Login, logout, sesión SSR y protección base de `/dashboard`.
-- [~] Crear cliente API central con token, errores tipados y JSON. Base disponible para `/auth/me` y altas directas; falta extenderla al resto de módulos.
+- [x] Cliente API central con token, errores tipados y JSON extendido a sesión, academia, inventario, solicitudes, entrega, devolución, mantenimiento, auditoría y reportes.
 - [x] Crear provider/store de sesión: Supabase session + `GET /auth/me` en el área `/dashboard`.
-- [~] Reemplazar dashboard placeholder por layout con navegación filtrada por roles. Disponible el enlace ADMIN; faltan los módulos operativos por rol.
+- [x] Dashboard con layout y navegación operativa filtrada por roles.
 - [x] Crear componentes base: PageHeader, EmptyState, ErrorState, LoadingState, PermissionDenied, badges, formularios, modal de confirmación, tabla, métricas, gráficos y patrones de inventario. Consultar la biblioteca de componentes frontend.
-- [ ] Proteger rutas y redirigir correctamente por sesión/rol.
+- [x] Proteger rutas y redirigir correctamente por sesión/rol; la redirección sin sesión se verificó también en navegador local.
 
 **Salida:** login → `/auth/me` → navegación correcta; 401/403/409/422 se ven correctamente.
 
 ### Bloque F2 — Configuración ADMIN
 
-- [~] Pantalla Usuarios y roles. El alta directa está disponible en `/dashboard/users`; faltan listado y edición visual de roles.
-- [ ] CRUD disponible de períodos, materias, laboratorios, perfiles docentes y secciones.
-- [ ] Formularios con UUID seleccionados mediante listas, no textos manuales.
-- [ ] Filtros, vacío y validación de fechas en período.
+- [x] Pantalla Usuarios y roles: alta directa, listado y edición visual de roles.
+- [~] Listado y creación de períodos, materias, laboratorios, perfiles docentes y secciones disponibles en `/dashboard/academic`; faltan edición y desactivación académica en API/UI.
+- [x] Formularios con relaciones seleccionadas mediante listas, no textos manuales.
+- [~] Estados vacíos y validación de fechas de período disponibles; faltan filtros cuando el volumen de datos los justifique.
 
 **Salida:** ADMIN configura todos los datos requeridos antes de operación.
 
 ### Bloque F3 — Inventario ADMIN/MANAGER
 
-- [ ] Categorías y ubicaciones.
-- [ ] Artículos `QUANTITY` e `INDIVIDUAL` con formularios que cambian según `tracking_mode`.
-- [ ] Unidades individuales, condición, estado y hoja de vida.
-- [ ] Movimientos de cantidad y stock actual.
-- [ ] Consulta de disponibilidad por intervalo.
+- [~] Categorías y ubicaciones: listado y alta operativos; falta edición/desactivación visual.
+- [x] Artículos `QUANTITY` e `INDIVIDUAL` con formularios que cambian según `tracking_mode`.
+- [x] Unidades individuales, condición, estado y hoja de vida.
+- [x] Movimientos de cantidad y stock actual.
+- [x] Consulta de disponibilidad por intervalo integrada en nueva solicitud.
 
 **Salida:** personal puede registrar y localizar recursos sin ver campos que no aplican al tipo de artículo.
 
@@ -337,7 +337,7 @@ Trabajar en este orden. Cada bloque termina con UI, estados de carga/vacío/erro
 
 - [x] Dashboard docente y listado de sus solicitudes.
 - [x] Nueva solicitud: sección, laboratorio, fecha/hora, propósito, artículos y cantidades.
-- [ ] Consulta de disponibilidad previa al envío; hoy la disponibilidad se valida al aprobar/reservar.
+- [x] Consulta de disponibilidad preliminar previa al envío; el backend conserva la revalidación definitiva al aprobar/reservar.
 - [x] Borrador, envío y lectura clara de estado/rechazo.
 
 **Salida:** docente crea y entiende una solicitud sin acceder a funciones de personal.
@@ -353,30 +353,30 @@ Trabajar en este orden. Cada bloque termina con UI, estados de carga/vacío/erro
 
 ### Bloque F6 — Entrega y préstamos
 
-- [ ] Inspección de salida.
-- [ ] Vista/lector de QR temporal (primero mostrar token/QR; integrar cámara solo si aporta valor).
-- [ ] Formulario de entrega con quien retira y ubicaciones/cantidades.
-- [ ] Lista de préstamos, retrasos y detalle pendiente.
+- [x] Inspección de salida.
+- [~] Token temporal visible con vencimiento y regeneración; queda como mejora opcional renderizar QR/lector con cámara.
+- [x] Formulario de entrega con quien retira y ubicaciones/cantidades.
+- [x] Lista de préstamos, retrasos y detalle pendiente.
 
 **Salida:** una solicitud preparada se convierte en préstamo trazable.
 
 ### Bloque F7 — Devolución, inspección y mantenimiento
 
-- [ ] Devolución parcial/total desde pendientes del préstamo.
-- [ ] Inspección de retorno con condición, completitud e incidencias.
-- [ ] Carga y visualización autenticada de evidencias.
-- [ ] Mantenimiento: iniciar, completar/cancelar y evidencia.
+- [x] Devolución parcial/total desde pendientes del préstamo.
+- [x] Inspección de retorno con condición, completitud e incidencias.
+- [~] Carga autenticada de evidencias privadas operativa; falta galería/descarga autenticada.
+- [x] Mantenimiento: iniciar, listar, completar/cancelar y adjuntar evidencia.
 
 **Salida:** ninguna unidad dañada vuelve visualmente a disponible sin inspección/mantenimiento válido.
 
 ### Bloque F8 — Reportes, auditoría y cierre UX
 
-- [ ] Reportes de solicitudes, préstamos, incidentes, stock y kardex.
-- [ ] Hoja de vida por unidad y filtros de fechas/estado donde aplique.
+- [x] Reportes de solicitudes, préstamos, incidentes, stock y kardex, más auditoría operativa.
+- [~] Hoja de vida por unidad disponible; faltan filtros de fechas/estado donde aplique.
 - [ ] Estados vacíos, loading, error, éxito y permiso en todos los módulos.
 - [ ] Responsive real para escritorio, tablet y teléfono.
 - [ ] Accesibilidad: teclado, foco, etiquetas, contraste y mensajes no basados solo en color.
-- [ ] Pruebas de componentes y flujos críticos; validaciones finales.
+- [~] Pruebas de componentes y flujos críticos: 21 pruebas frontend y 80 backend pasan; falta recorrido manual con cuentas y datos reales.
 
 **Salida:** MVP navegable para los tres roles y listo para demostración.
 

@@ -43,6 +43,12 @@ const NAV_ITEMS: NavItem[] = [
     roles: ["ADMIN", "MANAGER"],
   },
   {
+    label: "Entregas",
+    href: "/dashboard/deliveries",
+    icon: Package,
+    roles: ["ADMIN", "MANAGER"],
+  },
+  {
     label: "Inventario y Stock",
     href: "/dashboard/inventory",
     icon: Package,
@@ -52,6 +58,12 @@ const NAV_ITEMS: NavItem[] = [
     label: "Devoluciones",
     href: "/dashboard/returns",
     icon: RotateCcw,
+    roles: ["ADMIN", "MANAGER"],
+  },
+  {
+    label: "Mantenimiento",
+    href: "/dashboard/maintenance",
+    icon: Package,
     roles: ["ADMIN", "MANAGER"],
   },
   {
@@ -67,10 +79,16 @@ const NAV_ITEMS: NavItem[] = [
     roles: ["ADMIN"],
   },
   {
+    label: "Academia",
+    href: "/dashboard/academic",
+    icon: ClipboardList,
+    roles: ["ADMIN"],
+  },
+  {
     label: "Auditoría",
     href: "/dashboard/audit-log",
     icon: ClipboardList,
-    roles: ["ADMIN"],
+    roles: ["ADMIN", "MANAGER"],
   },
   {
     label: "Reportes",

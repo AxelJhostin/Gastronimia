@@ -8,8 +8,10 @@ import { useDashboardIdentity } from "@/components/auth/dashboard-identity-provi
 import { GastronomyStatusPage } from "@/components/feedback/gastronomy-status-page";
 import {
   createEquipmentRequestDraft,
+  getInventoryAvailability,
   getEquipmentRequestFormOptions,
   submitEquipmentRequest,
+  type InventoryAvailability,
   type EquipmentRequestFormOptions,
 } from "@/lib/api/client";
 
@@ -38,6 +40,8 @@ export function NewRequestForm() {
   const [items, setItems] = useState<RequestItemInput[]>(initialItems);
   const [loadingOptions, setLoadingOptions] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [checkingAvailability, setCheckingAvailability] = useState(false);
+  const [availability, setAvailability] = useState<Record<string, InventoryAvailability>>({});
   const [error, setError] = useState<string | null>(null);
 
   const isTeacher =
@@ -136,6 +140,43 @@ export function NewRequestForm() {
       );
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleCheckAvailability = async () => {
+    if (!accessToken || !startAt || !endAt || selectedItemIds.length === 0) {
+      setError("Selecciona el horario y al menos un artículo para consultar disponibilidad.");
+      return;
+    }
+    const startDate = new Date(startAt);
+    const endDate = new Date(endAt);
+    if (endDate <= startDate) {
+      setError("La fecha de fin debe ser posterior al inicio.");
+      return;
+    }
+
+    setCheckingAvailability(true);
+    setError(null);
+    try {
+      const results = await Promise.all(
+        selectedItemIds.map(async (inventoryItemId) => [
+          inventoryItemId,
+          await getInventoryAvailability(accessToken, {
+            inventory_item_id: inventoryItemId,
+            start_at: startDate.toISOString(),
+            end_at: endDate.toISOString(),
+          }),
+        ] as const),
+      );
+      setAvailability(Object.fromEntries(results));
+    } catch (availabilityError: unknown) {
+      setError(
+        availabilityError instanceof Error
+          ? availabilityError.message
+          : "No fue posible consultar la disponibilidad.",
+      );
+    } finally {
+      setCheckingAvailability(false);
     }
   };
 
@@ -307,6 +348,7 @@ export function NewRequestForm() {
                   <Trash2 className="size-4" />
                 </button>
                 {selectedItem ? <p className="col-span-2 text-xs text-slate-500">Unidad: {selectedItem.unit_of_measure} · {selectedItem.tracking_mode === "INDIVIDUAL" ? "equipo individual" : "control por cantidad"}</p> : null}
+                {selectedItem && availability[selectedItem.id] ? <p className="col-span-2 rounded-md bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-800">Disponibilidad preliminar: {selectedItem.tracking_mode === "INDIVIDUAL" ? availability[selectedItem.id].units_available : availability[selectedItem.id].quantity_available} {selectedItem.unit_of_measure}</p> : null}
               </div>
             );
           })}
@@ -314,6 +356,7 @@ export function NewRequestForm() {
       </fieldset>
 
       <div className="flex justify-end gap-3 border-t border-slate-100 pt-4">
+        <button className="rounded-lg border border-emerald-300 px-4 py-2 text-sm font-semibold text-emerald-800 disabled:opacity-50" disabled={checkingAvailability || loadingOptions || !isReady} onClick={() => void handleCheckAvailability()} type="button">{checkingAvailability ? "Consultando…" : "Consultar disponibilidad"}</button>
         <button
           className="rounded-lg px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100"
           onClick={() => router.back()}

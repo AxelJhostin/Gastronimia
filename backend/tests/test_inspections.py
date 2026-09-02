@@ -1,10 +1,14 @@
 from datetime import datetime, timezone
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 from uuid import UUID
 
 from app.api.v1.endpoints.request_reviews import require_request_reviewer
 from app.core.auth import AuthenticatedUser, RoleCode, get_current_user
-from app.core.requests import EquipmentInspection
+from app.core.requests import (
+    EquipmentInspection,
+    EquipmentInspectionCreate,
+    record_return_inspection,
+)
 from app.main import app
 from fastapi.testclient import TestClient
 
@@ -69,3 +73,48 @@ def test_manager_can_record_return_inspection() -> None:
         app.dependency_overrides.clear()
     assert response.status_code == 200
     assert response.json()["stage"] == "RETURN"
+
+
+def test_return_inspection_exposes_created_incidents() -> None:
+    detail_id = "6fa85f64-5717-4562-b3fc-2c963f66afa6"
+    unit_id = "7fa85f64-5717-4562-b3fc-2c963f66afa6"
+    incident_id = "8fa85f64-5717-4562-b3fc-2c963f66afa6"
+
+    def response(payload: object) -> Mock:
+        mocked_response = Mock()
+        mocked_response.json.return_value = payload
+        return mocked_response
+
+    with (
+        patch(
+            "app.core.requests._inspection_rpc",
+            return_value=_inspection("RETURN"),
+        ),
+        patch(
+            "app.core.requests.httpx.get",
+            side_effect=[
+                response([{"id": detail_id, "inventory_unit_id": unit_id}]),
+                response(
+                    [
+                        {
+                            "id": incident_id,
+                            "equipment_inspection_detail_id": detail_id,
+                            "incident_type": "DAMAGE",
+                            "severity": "HIGH",
+                            "description": "Golpe visible",
+                            "requires_unavailable": True,
+                        }
+                    ]
+                ),
+            ],
+        ),
+    ):
+        inspection = record_return_inspection(
+            RETURN_ID,
+            EquipmentInspectionCreate(items=[]),
+            USER_ID,
+        )
+
+    assert str(inspection.incidents[0].id) == incident_id
+    assert str(inspection.incidents[0].inventory_unit_id) == unit_id
+    assert inspection.incidents[0].requires_unavailable is True

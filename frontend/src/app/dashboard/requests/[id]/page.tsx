@@ -204,6 +204,22 @@ export default function RequestDetailPage({ params }: { params: Promise<{ id: st
             </div>
           </div>
         ) : null}
+
+        {isStaff && ["APPROVED", "PARTIALLY_APPROVED", "PREPARING"].includes(detail.request.status) ? (
+          <div className="mt-6 flex justify-end">
+            <Link className="rounded-lg bg-amber-700 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-800" href={`/dashboard/preparations/${detail.request.id}`}>
+              {detail.request.status === "PREPARING" ? "Continuar preparación" : "Iniciar preparación"}
+            </Link>
+          </div>
+        ) : null}
+
+        {isStaff && detail.request.status === "PREPARED" ? (
+          <div className="mt-6 flex justify-end">
+            <Link className="rounded-lg bg-emerald-700 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-800" href={`/dashboard/deliveries/${detail.request.id}`}>
+              Inspeccionar y entregar
+            </Link>
+          </div>
+        ) : null}
       </section>
     </main>
   );

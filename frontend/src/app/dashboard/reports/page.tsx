@@ -10,7 +10,7 @@ import {
   type OperationalReportRow,
 } from "@/lib/api/client";
 
-type ReportType = "requests" | "loans" | "incidents" | "stock";
+type ReportType = "requests" | "loans" | "incidents" | "stock" | "kardex";
 
 type ReportErrorState = {
   key: string;
@@ -178,6 +178,10 @@ export default function ReportsPage() {
               {
                 id: "incidents",
                 label: "Novedades",
+              },
+              {
+                id: "kardex",
+                label: "Kardex",
               },
             ] as const
           ).map((tab) => (

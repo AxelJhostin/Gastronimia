@@ -177,7 +177,7 @@ Criterio de salida:
 - `[x]` Permitir al docente crear un borrador. La interfaz crea y envía la solicitud con perfil docente; la transacción y las pruebas unitarias lo cubren.
 - `[x]` Seleccionar asignatura/curso, laboratorio, fecha y horario. La pantalla usa las opciones del docente y la base valida pertenencia, laboratorio e intervalo.
 - `[x]` Seleccionar artículos y cantidades. El borrador incorpora los ítems en la misma transacción; se validan artículos activos y cantidades enteras para unidades individuales.
-- `[~]` Mostrar disponibilidad durante la creación. La consulta de disponibilidad ya admite docentes autenticados; falta integración de interfaz y prueba real.
+- `[x]` Mostrar disponibilidad durante la creación. La interfaz consulta por artículo e intervalo y muestra el saldo preliminar; la prueba de componente verifica el contrato y la aprobación conserva la revalidación definitiva.
 - `[x]` Enviar solicitud a estado `PENDING`. El formulario ejecuta el envío al crear el borrador.
 - `[x]` Permitir consultar solicitudes propias. Hay listado y detalle con control de acceso por propietario.
 - `[x]` Permitir al encargado revisar solicitudes pendientes. La bandeja y el detalle permiten revisar cantidades.
@@ -211,17 +211,17 @@ Criterio de salida:
 
 ### Fase 7 — QR y entrega
 
-- `[~]` Generar QR asociado a la solicitud. Endpoint y RPC generan token efímero para solicitudes `PREPARED`; falta interfaz visual QR y prueba real.
-- `[~]` Usar un identificador/token verificable, sin información sensible. Solo se persiste el hash del token, expira en 30 minutos y se consume una vez.
+- `[~]` Generar QR asociado a la solicitud. La interfaz muestra y regenera el token efímero con cuenta regresiva; queda pendiente renderizarlo como QR si se mantiene ese requisito visual.
+- `[x]` Usar un identificador/token verificable, sin información sensible. Solo se persiste el hash del token, expira en 30 minutos, se consume una vez y la UI bloquea tokens vencidos.
 - `[ ]` Permitir leer el QR desde teléfono o tablet.
-- `[~]` Validar estado antes de entregar. La RPC exige QR válido y solicitud `PREPARED`.
-- `[~]` Registrar docente responsable. Se deriva de la solicitud y se guarda en el préstamo.
-- `[~]` Registrar persona que retira: docente, estudiante u otra. Se registra nombre obligatorio al entregar.
-- `[~]` Registrar encargado que entrega. Se registra el usuario ADMIN/MANAGER responsable.
-- `[~]` Crear préstamo y detalles. Operación atómica con detalles por ubicación y unidades físicas.
-- `[~]` Cambiar unidades a `LOANED` cuando corresponda. Se actualizan las unidades preparadas al confirmar entrega.
-- `[~]` Consumir reservas. La reserva se marca `CONSUMED` al crear el préstamo.
-- `[~]` Crear movimiento `LOAN_OUT`. Cada salida `QUANTITY` por ubicación queda en kardex.
+- `[x]` Validar estado antes de entregar. La pantalla sólo opera solicitudes `PREPARED` y la RPC exige token válido e inspección de salida.
+- `[x]` Registrar docente responsable. Se deriva de la solicitud y se guarda en el préstamo.
+- `[x]` Registrar persona que retira: docente, estudiante u otra. La interfaz exige el nombre al entregar.
+- `[x]` Registrar encargado que entrega. Se registra el usuario ADMIN/MANAGER responsable.
+- `[x]` Crear préstamo y detalles. La interfaz distribuye cantidades por ubicación y la operación es atómica con unidades físicas.
+- `[x]` Cambiar unidades a `LOANED` cuando corresponda. Se actualizan las unidades preparadas al confirmar entrega.
+- `[x]` Consumir reservas. La reserva se marca `CONSUMED` al crear el préstamo.
+- `[x]` Crear movimiento `LOAN_OUT`. Cada salida `QUANTITY` por ubicación queda en kardex.
 - `[ ]` Auditar la entrega.
 
 Criterio de salida:
@@ -304,10 +304,10 @@ Criterio de salida:
 
 - `[ ]` Dashboard del docente: solicitudes, estados, préstamos y notificaciones.
 - `[ ]` Dashboard del encargado: pendientes, preparaciones, préstamos, devoluciones, novedades e inventario.
-- `[ ]` Dashboard del administrador: usuarios, configuración, reportes y auditoría.
+- `[~]` Dashboard del administrador: navegación y pantallas de usuarios/roles, academia, inventario, reportes y auditoría operativas; falta pulido de métricas del inicio.
 - `[x]` Reportes operativos mínimos. Endpoints tipados para solicitudes, préstamos, novedades, stock y kardex.
 - `[x]` Reportes históricos mínimos. Kardex filtrable y hoja de vida por unidad disponibles para el frontend.
-- `[ ]` Estados de carga, vacío, error, éxito y sin permisos en todas las áreas.
+- `[~]` Estados de carga, vacío, error, éxito y sin permisos cubiertos en los flujos operativos principales; falta auditoría visual exhaustiva de todas las variantes.
 - `[ ]` Revisión responsive final.
 - `[ ]` Revisión de accesibilidad y teclado.
 - `[~]` Prueba de flujo completo con datos representativos. La colección Postman manual cubre Auth, académico, inventario, solicitudes, operación, mantenimiento y reportes; la prueba real opt-in Auth → JWT → API está preparada. Falta ejecutarlas con cuentas y datos de prueba del equipo. Los IDs internos de reserva/préstamo deben copiarse desde Supabase hasta exponer su endpoint de detalle.
