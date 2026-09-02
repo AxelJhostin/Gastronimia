@@ -233,6 +233,61 @@ def test_local_request_to_return_workflow(
 
     admin_token = _token(client, environment, admin_email, password)
     teacher_token = _token(client, environment, teacher_email, password)
+
+    updated_subject = client.patch(
+        f"{environment['api_base_url']}/api/v1/admin/academic/subjects/"
+        f"{subject['id']}",
+        headers=_api_headers(admin_token),
+        json={
+            "code": subject["code"],
+            "name": f"Integration subject updated {marker}",
+            "is_active": True,
+        },
+    )
+    assert updated_subject.status_code == 200, updated_subject.text
+    assert updated_subject.json()["name"].endswith(marker)
+
+    updated_category = client.patch(
+        f"{environment['api_base_url']}/api/v1/admin/inventory/categories/"
+        f"{category['id']}",
+        headers=_api_headers(admin_token),
+        json={
+            "name": category["name"],
+            "description": "Updated through FastAPI",
+            "is_active": True,
+        },
+    )
+    assert updated_category.status_code == 200, updated_category.text
+    assert updated_category.json()["description"] == "Updated through FastAPI"
+
+    self_deactivation = client.patch(
+        f"{environment['api_base_url']}/api/v1/admin/users/"
+        f"{admin_user_id}/status",
+        headers=_api_headers(admin_token),
+        json={"is_active": False},
+    )
+    assert self_deactivation.status_code == 409, self_deactivation.text
+
+    deactivated_teacher = client.patch(
+        f"{environment['api_base_url']}/api/v1/admin/users/"
+        f"{teacher_user_id}/status",
+        headers=_api_headers(admin_token),
+        json={"is_active": False},
+    )
+    assert deactivated_teacher.status_code == 204, deactivated_teacher.text
+    inactive_access = client.get(
+        f"{environment['api_base_url']}/api/v1/requests/mine",
+        headers=_api_headers(teacher_token),
+    )
+    assert inactive_access.status_code == 403, inactive_access.text
+    reactivated_teacher = client.patch(
+        f"{environment['api_base_url']}/api/v1/admin/users/"
+        f"{teacher_user_id}/status",
+        headers=_api_headers(admin_token),
+        json={"is_active": True},
+    )
+    assert reactivated_teacher.status_code == 204, reactivated_teacher.text
+
     start_at = datetime(2035, 6, 1, 13, tzinfo=timezone.utc).isoformat()
     end_at = datetime(2035, 6, 1, 15, tzinfo=timezone.utc).isoformat()
 
@@ -290,19 +345,21 @@ def test_local_request_to_return_workflow(
     )
     assert preparation_context.status_code == 200, preparation_context.text
     assert preparation_context.json()["request"]["status"] == "APPROVED"
-    assert preparation_context.json()["items"] == [
-        {
-            "equipment_reservation_detail_id": reservation_detail["id"],
-            "inventory_item_id": item["id"],
-            "inventory_item_name": item["name"],
-            "inventory_item_code": item["code"],
-            "tracking_mode": "QUANTITY",
-            "unit_of_measure": item["unit_of_measure"],
-            "reserved_quantity": 3,
-            "available_units": [],
-            "prepared_units": [],
-        }
-    ]
+    preparation_items = preparation_context.json()["items"]
+    assert len(preparation_items) == 1
+    preparation_item = preparation_items[0]
+    assert preparation_item == {
+        "equipment_reservation_detail_id": reservation_detail["id"],
+        "inventory_item_id": item["id"],
+        "inventory_item_name": item["name"],
+        "inventory_item_code": item["code"],
+        "tracking_mode": "QUANTITY",
+        "unit_of_measure": item["unit_of_measure"],
+        "reserved_quantity": preparation_item["reserved_quantity"],
+        "available_units": [],
+        "prepared_units": [],
+    }
+    assert float(preparation_item["reserved_quantity"]) == 3
     started = client.post(
         f"{environment['api_base_url']}/api/v1/admin/requests/{request_id}/preparation/start",
         headers=_api_headers(admin_token),
@@ -388,6 +445,22 @@ def test_local_request_to_return_workflow(
     )
     assert returned.status_code == 200, returned.text
 
+    pending_inspections = client.get(
+        f"{environment['api_base_url']}/api/v1/admin/returns/pending-inspections",
+        headers=_api_headers(admin_token),
+    )
+    assert pending_inspections.status_code == 200, pending_inspections.text
+    assert returned.json()["id"] in {
+        item["equipment_return"]["id"] for item in pending_inspections.json()
+    }
+    pending_inspection = client.get(
+        f"{environment['api_base_url']}/api/v1/admin/returns/"
+        f"pending-inspections/{returned.json()['id']}",
+        headers=_api_headers(admin_token),
+    )
+    assert pending_inspection.status_code == 200, pending_inspection.text
+    assert pending_inspection.json()["equipment_return"]["id"] == returned.json()["id"]
+
     return_inspection = client.post(
         f"{environment['api_base_url']}/api/v1/admin/inspections/returns/{returned.json()['id']}",
         headers=_api_headers(admin_token),
@@ -396,12 +469,23 @@ def test_local_request_to_return_workflow(
     assert return_inspection.status_code == 200, return_inspection.text
     assert return_inspection.json()["stage"] == "RETURN"
 
+    completed_inspections = client.get(
+        f"{environment['api_base_url']}/api/v1/admin/returns/pending-inspections",
+        headers=_api_headers(admin_token),
+    )
+    assert completed_inspections.status_code == 200, completed_inspections.text
+    assert returned.json()["id"] not in {
+        item["equipment_return"]["id"] for item in completed_inspections.json()
+    }
+
     closed_request = client.get(
         f"{environment['api_base_url']}/api/v1/requests/{request_id}",
         headers=_api_headers(admin_token),
     )
     assert closed_request.status_code == 200, closed_request.text
     assert closed_request.json()["request"]["status"] == "CLOSED"
+    assert closed_request.json()["review"]["decision"] == "APPROVED"
+    assert float(closed_request.json()["items"][0]["approved_quantity"]) == 3
     closed_loan = _select_one(
         client, environment, "equipment_loans", id=f"eq.{loan_id}"
     )

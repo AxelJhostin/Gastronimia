@@ -10,6 +10,7 @@ from app.core.academic import (
     AcademicPeriodCreate,
     create_academic_resource,
     list_academic_resources,
+    update_academic_resource,
 )
 from app.core.auth import RoleCode
 from app.main import app
@@ -68,6 +69,30 @@ def test_academic_period_rejects_invalid_dates() -> None:
         )
 
 
+def test_administrator_can_update_academic_period() -> None:
+    client = TestClient(app)
+    app.dependency_overrides[require_admin] = lambda: {RoleCode.ADMIN}
+    try:
+        with patch(
+            "app.api.v1.endpoints.academic.update_academic_resource",
+            return_value=_academic_period(),
+        ) as update:
+            response = client.patch(
+                "/api/v1/admin/academic/periods/3fa85f64-5717-4562-b3fc-2c963f66afa6",
+                json={
+                    "name": "2026-A",
+                    "start_date": "2026-04-01",
+                    "end_date": "2026-08-31",
+                    "is_active": False,
+                },
+            )
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 200
+    update.assert_called_once()
+
+
 def test_create_academic_resource_posts_json_payload() -> None:
     response = Mock()
     response.json.return_value = [_academic_period().model_dump(mode="json")]
@@ -96,6 +121,48 @@ def test_list_academic_resources_maps_data_api_rows() -> None:
         )
 
     assert periods == [_academic_period()]
+
+
+def test_update_academic_resource_patches_selected_row() -> None:
+    response = Mock()
+    response.json.return_value = [_academic_period().model_dump(mode="json")]
+    payload = AcademicPeriodCreate(
+        name="2026-A",
+        start_date=date(2026, 4, 1),
+        end_date=date(2026, 8, 31),
+        is_active=False,
+    )
+
+    period_id = _academic_period().id
+    with patch("app.core.academic.httpx.patch", return_value=response) as patch_call:
+        updated = update_academic_resource(
+            "academic_periods",
+            period_id,
+            payload,
+            AcademicPeriod,
+        )
+
+    assert updated.name == "2026-A"
+    assert patch_call.call_args.kwargs["params"] == {"id": f"eq.{period_id}"}
+    assert patch_call.call_args.kwargs["json"]["is_active"] is False
+
+
+def test_update_academic_resource_reports_missing_row() -> None:
+    response = Mock()
+    response.json.return_value = []
+    payload = AcademicPeriodCreate(
+        name="2026-A",
+        start_date=date(2026, 4, 1),
+        end_date=date(2026, 8, 31),
+    )
+
+    with patch("app.core.academic.httpx.patch", return_value=response):
+        with pytest.raises(HTTPException) as captured:
+            update_academic_resource(
+                "academic_periods", _academic_period().id, payload, AcademicPeriod
+            )
+
+    assert captured.value.status_code == 404
 
 
 def test_create_academic_resource_maps_conflict() -> None:

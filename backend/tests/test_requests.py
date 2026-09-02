@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+from decimal import Decimal
 from unittest.mock import Mock, patch
 from uuid import UUID
 
@@ -227,14 +228,42 @@ def test_request_detail_returns_items_for_staff() -> None:
             "unit_of_measure": "unidad",
         }
     ]
+    reviews_response = Mock()
+    reviews_response.json.return_value = [
+        {
+            "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+            "equipment_request_id": str(REQUEST_ID),
+            "reviewed_by_user_id": USER_ID,
+            "previous_status": "PENDING",
+            "decision": "APPROVED",
+            "reason": None,
+            "reviewed_at": "2026-08-21T12:00:00Z",
+        }
+    ]
+    item_reviews_response = Mock()
+    item_reviews_response.json.return_value = [
+        {
+            "equipment_request_item_id": "1fa85f64-5717-4562-b3fc-2c963f66afa6",
+            "approved_quantity": "1.5",
+        }
+    ]
     with patch(
         "app.core.requests.httpx.get",
-        side_effect=[request_response, items_response, catalog_response],
+        side_effect=[
+            request_response,
+            items_response,
+            catalog_response,
+            reviews_response,
+            item_reviews_response,
+        ],
     ):
         detail = get_equipment_request_detail(REQUEST_ID, USER_ID, {"ADMIN"})
 
     assert detail.request.id == REQUEST_ID
     assert detail.items[0].inventory_item_name == "Batidora"
+    assert detail.items[0].approved_quantity == Decimal("1.5")
+    assert detail.review is not None
+    assert detail.review.decision is EquipmentRequestStatus.APPROVED
 
 
 def test_staff_can_read_request_detail_endpoint() -> None:

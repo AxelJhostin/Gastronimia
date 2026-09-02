@@ -10,12 +10,16 @@ from app.core.requests import (
     EquipmentLoanPending,
     EquipmentLoanPendingQuantity,
     EquipmentReturn,
+    EquipmentReturnInspectionContext,
+    EquipmentReturnInspectionUnit,
     get_equipment_loan_pending,
+    list_equipment_returns_pending_inspection,
 )
 from app.main import app
 from fastapi.testclient import TestClient
 
 LOAN_ID = UUID("7fa85f64-5717-4562-b3fc-2c963f66afa6")
+RETURN_ID = UUID("9fa85f64-5717-4562-b3fc-2c963f66afa6")
 USER_ID = "3fa85f64-5717-4562-b3fc-2c963f66afa6"
 
 
@@ -44,6 +48,16 @@ def _loan() -> EquipmentLoan:
     )
 
 
+def _return() -> EquipmentReturn:
+    return EquipmentReturn(
+        id=RETURN_ID,
+        equipment_loan_id=LOAN_ID,
+        returned_by_name="Estudiante delegado",
+        received_by_user_id=UUID(USER_ID),
+        returned_at=datetime(2026, 8, 21, 12, tzinfo=timezone.utc),
+    )
+
+
 def test_returns_require_staff() -> None:
     response = TestClient(app).get("/api/v1/admin/returns/loans")
     assert response.status_code == 401
@@ -63,6 +77,36 @@ def test_manager_can_list_active_loans() -> None:
 
     assert response.status_code == 200
     assert response.json()[0]["id"] == str(LOAN_ID)
+
+
+def test_manager_can_list_returns_pending_inspection() -> None:
+    client = TestClient(app)
+    _override_manager()
+    context = EquipmentReturnInspectionContext(
+        equipment_return=_return(),
+        loan=_loan(),
+        units=[
+            EquipmentReturnInspectionUnit(
+                inventory_unit_id=UUID("5fa85f64-5717-4562-b3fc-2c963f66afa6"),
+                asset_tag="BAT-001",
+                serial_number="SER-001",
+                condition="GOOD",
+            )
+        ],
+    )
+    try:
+        with patch(
+            "app.api.v1.endpoints.returns."
+            "list_equipment_returns_pending_inspection",
+            return_value=[context],
+        ):
+            response = client.get("/api/v1/admin/returns/pending-inspections")
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 200
+    assert response.json()[0]["equipment_return"]["id"] == str(RETURN_ID)
+    assert response.json()[0]["units"][0]["asset_tag"] == "BAT-001"
 
 
 def test_manager_can_record_partial_return() -> None:
@@ -222,3 +266,49 @@ def test_pending_resources_include_catalog_and_unit_identity() -> None:
     assert pending.quantity_details[0].inventory_item_name == "Harina"
     assert pending.pending_units[0].asset_tag == "BAT-001"
     assert str(pending.pending_units[0].inventory_unit_id) == inventory_unit_id
+
+
+def test_pending_inspection_context_reconstructs_returned_units() -> None:
+    inventory_unit_id = "5fa85f64-5717-4562-b3fc-2c963f66afa6"
+
+    def response(payload: object) -> Mock:
+        mocked_response = Mock()
+        mocked_response.json.return_value = payload
+        return mocked_response
+
+    return_row = {
+        **_return().model_dump(mode="json"),
+        "equipment_loans": {
+            **_loan().model_dump(mode="json", exclude={"is_overdue"}),
+            "equipment_requests": {"end_at": "2026-08-22T10:00:00Z"},
+        },
+    }
+    with patch(
+        "app.core.requests.httpx.get",
+        side_effect=[
+            response([]),
+            response([return_row]),
+            response(
+                [
+                    {
+                        "equipment_return_id": str(RETURN_ID),
+                        "equipment_loan_units": {
+                            "equipment_preparation_units": {
+                                "inventory_units": {
+                                    "id": inventory_unit_id,
+                                    "asset_tag": "BAT-001",
+                                    "serial_number": "SER-001",
+                                    "condition": "GOOD",
+                                }
+                            }
+                        },
+                    }
+                ]
+            ),
+        ],
+    ):
+        contexts = list_equipment_returns_pending_inspection()
+
+    assert len(contexts) == 1
+    assert contexts[0].equipment_return.id == RETURN_ID
+    assert contexts[0].units[0].asset_tag == "BAT-001"

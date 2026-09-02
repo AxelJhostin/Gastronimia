@@ -1,7 +1,13 @@
 "use client";
 
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
-import { getCurrentUser, type CurrentUser } from "@/lib/api/client";
+import { useRouter } from "next/navigation";
+import {
+  API_SESSION_EXPIRED_EVENT,
+  API_SESSION_REFRESHED_EVENT,
+  getCurrentUser,
+  type CurrentUser,
+} from "@/lib/api/client";
 
 type DashboardIdentityState =
   | { status: "loading" }
@@ -11,6 +17,7 @@ type DashboardIdentityState =
 const DashboardIdentityContext = createContext<DashboardIdentityState | null>(null);
 
 export function DashboardIdentityProvider({ children }: { children: React.ReactNode }) {
+  const router = useRouter();
   const [identity, setIdentity] = useState<DashboardIdentityState>({
     status: "loading",
   });
@@ -18,9 +25,11 @@ export function DashboardIdentityProvider({ children }: { children: React.ReactN
   useEffect(() => {
     let isActive = true;
 
-    async function loadIdentity() {
+    async function loadIdentity(explicitAccessToken?: string) {
       const accessToken =
-        localStorage.getItem("access_token") || localStorage.getItem("token");
+        explicitAccessToken ||
+        localStorage.getItem("access_token") ||
+        localStorage.getItem("token");
 
       if (!accessToken) {
         if (isActive) {
@@ -37,7 +46,7 @@ export function DashboardIdentityProvider({ children }: { children: React.ReactN
         if (isActive) {
           setIdentity({
             status: "authenticated",
-            accessToken,
+            accessToken: localStorage.getItem("access_token") || accessToken,
             user,
           });
         }
@@ -51,12 +60,31 @@ export function DashboardIdentityProvider({ children }: { children: React.ReactN
       }
     }
 
+    const handleSessionRefreshed = (event: Event) => {
+      const accessToken = (event as CustomEvent<{ accessToken?: string }>).detail
+        ?.accessToken;
+      if (accessToken) void loadIdentity(accessToken);
+    };
+    const handleSessionExpired = () => {
+      if (isActive) {
+        setIdentity({
+          status: "unavailable",
+          message: "Tu sesión expiró. Inicia sesión nuevamente.",
+        });
+      }
+      router.replace("/login?reason=session-expired");
+    };
+
+    window.addEventListener(API_SESSION_REFRESHED_EVENT, handleSessionRefreshed);
+    window.addEventListener(API_SESSION_EXPIRED_EVENT, handleSessionExpired);
     void loadIdentity();
 
     return () => {
       isActive = false;
+      window.removeEventListener(API_SESSION_REFRESHED_EVENT, handleSessionRefreshed);
+      window.removeEventListener(API_SESSION_EXPIRED_EVENT, handleSessionExpired);
     };
-  }, []);
+  }, [router]);
 
   const value = useMemo(() => identity, [identity]);
 

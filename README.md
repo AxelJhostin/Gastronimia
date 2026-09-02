@@ -168,7 +168,7 @@ cd backend
 set -a
 source .env.integration
 set +a
-.venv/bin/python -m pytest tests/integration/test_local_workflow.py
+.venv/bin/python -m pytest --no-cov tests/integration/test_local_workflow.py
 ```
 
 La prueba se omite por defecto. Si falta una variable, no realiza operaciones;

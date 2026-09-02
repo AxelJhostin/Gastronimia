@@ -126,6 +126,7 @@ describe("flujo de devolución", () => {
       target: { value: "Golpe en la carcasa" },
     });
     fireEvent.click(screen.getByRole("button", { name: "Registrar devolución e inspección" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Registrar devolución" }));
 
     await waitFor(() =>
       expect(api.recordEquipmentReturn).toHaveBeenCalledWith("test-token", "loan-1", {

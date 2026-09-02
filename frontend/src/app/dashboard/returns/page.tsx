@@ -5,11 +5,19 @@ import { useEffect, useState } from "react";
 
 import { useDashboardIdentity } from "@/components/auth/dashboard-identity-provider";
 import { GastronomyStatusPage } from "@/components/feedback/gastronomy-status-page";
-import { getActiveLoans, type EquipmentLoan } from "@/lib/api/client";
+import {
+  getActiveLoans,
+  getPendingReturnInspections,
+  type EquipmentLoan,
+  type EquipmentReturnInspectionContext,
+} from "@/lib/api/client";
 
 export default function ReturnsPage() {
   const identity = useDashboardIdentity();
   const [loans, setLoans] = useState<EquipmentLoan[]>([]);
+  const [pendingInspections, setPendingInspections] = useState<
+    EquipmentReturnInspectionContext[]
+  >([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -20,8 +28,14 @@ export default function ReturnsPage() {
   useEffect(() => {
     if (!hasAccess || identity.status !== "authenticated") return;
 
-    void getActiveLoans(identity.accessToken)
-      .then(setLoans)
+    void Promise.all([
+      getActiveLoans(identity.accessToken),
+      getPendingReturnInspections(identity.accessToken),
+    ])
+      .then(([activeLoans, inspections]) => {
+        setLoans(activeLoans);
+        setPendingInspections(inspections);
+      })
       .catch((err: unknown) =>
         setError(
           err instanceof Error
@@ -66,6 +80,38 @@ export default function ReturnsPage() {
             ← Volver al Panel
           </Link>
         </div>
+
+        {pendingInspections.length > 0 ? (
+          <section className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 p-5">
+            <h2 className="text-sm font-bold uppercase tracking-wider text-amber-900">
+              Inspecciones pendientes
+            </h2>
+            <p className="mt-1 text-sm text-amber-800">
+              Estas devoluciones ya afectaron el inventario y deben inspeccionarse antes de liberar sus unidades.
+            </p>
+            <div className="mt-4 grid gap-3 md:grid-cols-2">
+              {pendingInspections.map((context) => (
+                <article className="rounded-xl border border-amber-200 bg-white p-4" key={context.equipment_return.id}>
+                  <p className="font-mono text-xs font-semibold text-stone-500">
+                    Devolución #{context.equipment_return.id.slice(0, 8)}
+                  </p>
+                  <p className="mt-1 font-semibold text-stone-900">
+                    {context.equipment_return.returned_by_name}
+                  </p>
+                  <p className="mt-1 text-xs text-stone-600">
+                    {new Date(context.equipment_return.returned_at).toLocaleString("es-EC")} · {context.units.length} unidades
+                  </p>
+                  <Link
+                    className="mt-3 inline-block text-sm font-semibold text-amber-900 underline"
+                    href={`/dashboard/returns/inspections/${context.equipment_return.id}`}
+                  >
+                    Continuar inspección →
+                  </Link>
+                </article>
+              ))}
+            </div>
+          </section>
+        ) : null}
 
         <div className="mt-6 overflow-x-auto">
           {error ? (

@@ -9,6 +9,7 @@ from app.core.admin import (
     list_managed_users,
     provision_managed_user,
     replace_managed_user_roles,
+    update_managed_user_status,
 )
 from app.core.auth import AuthenticatedUser, RoleCode, get_current_user
 from app.main import app
@@ -74,6 +75,46 @@ def test_admin_can_replace_user_roles() -> None:
         "3fa85f64-5717-4562-b3fc-2c963f66afa6",
         {RoleCode.MANAGER, RoleCode.TEACHER},
     )
+
+
+def test_admin_can_deactivate_another_user() -> None:
+    client = TestClient(app)
+    app.dependency_overrides[require_admin] = lambda: {RoleCode.ADMIN}
+    app.dependency_overrides[get_current_user] = lambda: AuthenticatedUser(
+        id="admin-id", access_token="token", email="admin@example.com"
+    )
+    try:
+        with patch("app.api.v1.endpoints.admin.update_managed_user_status") as update:
+            response = client.patch(
+                "/api/v1/admin/users/3fa85f64-5717-4562-b3fc-2c963f66afa6/status",
+                json={"is_active": False},
+            )
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 204
+    update.assert_called_once_with(
+        "3fa85f64-5717-4562-b3fc-2c963f66afa6", False
+    )
+
+
+def test_admin_cannot_deactivate_own_user() -> None:
+    user_id = "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+    client = TestClient(app)
+    app.dependency_overrides[require_admin] = lambda: {RoleCode.ADMIN}
+    app.dependency_overrides[get_current_user] = lambda: AuthenticatedUser(
+        id=user_id, access_token="token", email="admin@example.com"
+    )
+    try:
+        response = client.patch(
+            f"/api/v1/admin/users/{user_id}/status",
+            json={"is_active": False},
+        )
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 409
+    assert response.json()["detail"] == "No puedes desactivar tu propia cuenta."
 
 
 def test_admin_can_create_user_invitation() -> None:
@@ -150,6 +191,28 @@ def test_replace_managed_user_roles_reports_conflict() -> None:
             replace_managed_user_roles("user-id", {RoleCode.ADMIN})
 
     assert captured.value.status_code == 409
+
+
+def test_update_managed_user_status_patches_selected_user() -> None:
+    response = Mock()
+    response.json.return_value = [{"id": "user-id"}]
+
+    with patch("app.core.admin.httpx.patch", return_value=response) as patch_call:
+        update_managed_user_status("user-id", False)
+
+    assert patch_call.call_args.kwargs["params"] == {"id": "eq.user-id"}
+    assert patch_call.call_args.kwargs["json"] == {"is_active": False}
+
+
+def test_update_managed_user_status_reports_missing_user() -> None:
+    response = Mock()
+    response.json.return_value = []
+
+    with patch("app.core.admin.httpx.patch", return_value=response):
+        with pytest.raises(HTTPException) as captured:
+            update_managed_user_status("missing-user", False)
+
+    assert captured.value.status_code == 404
 
 
 def test_provision_managed_user_creates_user_and_assigns_roles() -> None:

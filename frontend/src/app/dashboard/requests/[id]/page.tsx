@@ -4,6 +4,7 @@ import Link from "next/link";
 import { use, useEffect, useState } from "react";
 
 import { useDashboardIdentity } from "@/components/auth/dashboard-identity-provider";
+import { ConfirmModal } from "@/components/ui/confirm-modal";
 import {
   approveEquipmentRequest,
   getEquipmentRequestDetail,
@@ -19,6 +20,7 @@ export default function RequestDetailPage({ params }: { params: Promise<{ id: st
   const [rejectionReason, setRejectionReason] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [reviewing, setReviewing] = useState(false);
+  const [confirmation, setConfirmation] = useState<"approve" | "reject" | null>(null);
 
   const isStaff =
     identity.status === "authenticated" &&
@@ -63,6 +65,7 @@ export default function RequestDetailPage({ params }: { params: Promise<{ id: st
     try {
       const request = await approveEquipmentRequest(accessToken, id, items);
       setDetail({ ...detail, request });
+      setConfirmation(null);
     } catch (reviewError) {
       setError(
         reviewError instanceof Error
@@ -85,6 +88,7 @@ export default function RequestDetailPage({ params }: { params: Promise<{ id: st
     try {
       const request = await rejectEquipmentRequest(accessToken, id, rejectionReason.trim());
       setDetail({ ...detail, request });
+      setConfirmation(null);
     } catch (reviewError) {
       setError(
         reviewError instanceof Error
@@ -139,6 +143,7 @@ export default function RequestDetailPage({ params }: { params: Promise<{ id: st
                 <th className="px-4 py-3">Código</th>
                 <th className="px-4 py-3 text-right">Solicitado</th>
                 {canReview ? <th className="px-4 py-3 text-right">Aprobar</th> : null}
+                {!canReview && detail.review?.decision !== "REJECTED" ? <th className="px-4 py-3 text-right">Aprobado</th> : null}
               </tr>
             </thead>
             <tbody className="divide-y divide-stone-100">
@@ -161,12 +166,38 @@ export default function RequestDetailPage({ params }: { params: Promise<{ id: st
                         value={approvedQuantities[item.id] ?? ""}
                       />
                     </td>
+                  ) : detail.review?.decision !== "REJECTED" ? (
+                    <td className="px-4 py-3 text-right">
+                      {item.approved_quantity === null
+                        ? "—"
+                        : `${item.approved_quantity} ${item.unit_of_measure}`}
+                    </td>
                   ) : null}
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
+
+        {detail.review ? (
+          <section className={`mt-6 rounded-xl border p-4 ${detail.review.decision === "REJECTED" ? "border-red-200 bg-red-50" : "border-emerald-200 bg-emerald-50"}`}>
+            <h2 className={`font-semibold ${detail.review.decision === "REJECTED" ? "text-red-950" : "text-emerald-950"}`}>
+              {detail.review.decision === "REJECTED"
+                ? "Solicitud rechazada"
+                : detail.review.decision === "PARTIALLY_APPROVED"
+                  ? "Solicitud aprobada parcialmente"
+                  : "Solicitud aprobada"}
+            </h2>
+            <p className={`mt-1 text-sm ${detail.review.decision === "REJECTED" ? "text-red-800" : "text-emerald-800"}`}>
+              Revisada el {new Date(detail.review.reviewed_at).toLocaleString("es-EC")}.
+            </p>
+            {detail.review.reason ? (
+              <p className="mt-3 rounded-lg bg-white/70 p-3 text-sm text-red-900">
+                <strong>Motivo:</strong> {detail.review.reason}
+              </p>
+            ) : null}
+          </section>
+        ) : null}
 
         {canReview ? (
           <div className="mt-6 space-y-4 rounded-xl border border-amber-200 bg-amber-50 p-4">
@@ -188,7 +219,14 @@ export default function RequestDetailPage({ params }: { params: Promise<{ id: st
               <button
                 className="rounded-lg border border-red-300 bg-white px-4 py-2 text-sm font-semibold text-red-700 hover:bg-red-50 disabled:opacity-50"
                 disabled={reviewing}
-                onClick={submitRejection}
+                onClick={() => {
+                  if (!rejectionReason.trim()) {
+                    setError("Indica el motivo del rechazo.");
+                    return;
+                  }
+                  setError(null);
+                  setConfirmation("reject");
+                }}
                 type="button"
               >
                 Rechazar
@@ -196,7 +234,7 @@ export default function RequestDetailPage({ params }: { params: Promise<{ id: st
               <button
                 className="rounded-lg bg-emerald-700 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-800 disabled:opacity-50"
                 disabled={reviewing}
-                onClick={submitApproval}
+                onClick={() => setConfirmation("approve")}
                 type="button"
               >
                 {reviewing ? "Guardando…" : "Aprobar solicitud"}
@@ -221,6 +259,16 @@ export default function RequestDetailPage({ params }: { params: Promise<{ id: st
           </div>
         ) : null}
       </section>
+      <ConfirmModal
+        confirmLabel={confirmation === "reject" ? "Rechazar solicitud" : "Aprobar solicitud"}
+        description={confirmation === "reject" ? `La solicitud será rechazada con el motivo: “${rejectionReason.trim()}”.` : "Se reservarán las cantidades indicadas y la decisión no podrá editarse después."}
+        isOpen={confirmation !== null}
+        isSubmitting={reviewing}
+        onClose={() => setConfirmation(null)}
+        onConfirm={() => void (confirmation === "reject" ? submitRejection() : submitApproval())}
+        title={confirmation === "reject" ? "Confirmar rechazo" : "Confirmar aprobación"}
+        tone={confirmation === "reject" ? "danger" : "positive"}
+      />
     </main>
   );
 }

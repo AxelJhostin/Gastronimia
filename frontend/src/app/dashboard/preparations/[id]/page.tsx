@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 
 import { useDashboardIdentity } from "@/components/auth/dashboard-identity-provider";
 import { GastronomyStatusPage } from "@/components/feedback/gastronomy-status-page";
+import { ConfirmModal } from "@/components/ui/confirm-modal";
 import {
   completeEquipmentPreparation,
   getEquipmentPreparationContext,
@@ -34,6 +35,7 @@ export default function PreparationDetailPage() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [confirmation, setConfirmation] = useState<"start" | "complete" | null>(null);
 
   const isAuthenticated = identity.status === "authenticated";
   const accessToken = isAuthenticated ? identity.accessToken : null;
@@ -71,6 +73,7 @@ export default function PreparationDetailPage() {
       setContext(nextContext);
       setQuantities(initializeQuantities(nextContext));
       setSelectedUnitIds({});
+      setConfirmation(null);
     } catch (actionError: unknown) {
       setError(
         actionError instanceof Error
@@ -322,7 +325,7 @@ export default function PreparationDetailPage() {
           {canStart && (
             <button
               type="button"
-              onClick={handleStartPreparation}
+              onClick={() => setConfirmation("start")}
               disabled={submitting}
               className="rounded-lg bg-amber-800 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-amber-900 disabled:opacity-50"
             >
@@ -332,7 +335,7 @@ export default function PreparationDetailPage() {
           {isPreparing && (
             <button
               type="button"
-              onClick={handleRecordAndComplete}
+              onClick={() => setConfirmation("complete")}
               disabled={submitting}
               className="rounded-lg bg-amber-800 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-amber-900 disabled:opacity-50"
             >
@@ -344,6 +347,16 @@ export default function PreparationDetailPage() {
           )}
         </div>
       </section>
+      <ConfirmModal
+        confirmLabel={confirmation === "complete" ? "Finalizar preparación" : "Iniciar preparación"}
+        description={confirmation === "complete" ? "Se registrarán las cantidades y unidades seleccionadas y la solicitud quedará lista para inspección y entrega." : "La solicitud cambiará a preparación y quedará asignada al flujo operativo del pañol."}
+        isOpen={confirmation !== null}
+        isSubmitting={submitting}
+        onClose={() => setConfirmation(null)}
+        onConfirm={() => void (confirmation === "complete" ? handleRecordAndComplete() : handleStartPreparation())}
+        title={confirmation === "complete" ? "Confirmar preparación" : "Iniciar trabajo de preparación"}
+        tone="warning"
+      />
     </main>
   );
 }

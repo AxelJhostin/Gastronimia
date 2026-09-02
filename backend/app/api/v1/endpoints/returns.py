@@ -9,8 +9,11 @@ from app.core.requests import (
     EquipmentLoanPending,
     EquipmentReturn,
     EquipmentReturnCreate,
+    EquipmentReturnInspectionContext,
     get_equipment_loan_pending,
+    get_equipment_return_inspection_context,
     list_active_equipment_loans,
+    list_equipment_returns_pending_inspection,
     record_equipment_return,
 )
 
@@ -22,6 +25,27 @@ def get_active_loans(
     _: set[RoleCode] = Depends(require_request_reviewer),  # noqa: B008
 ) -> list[EquipmentLoan]:
     return list_active_equipment_loans()
+
+
+@router.get(
+    "/pending-inspections",
+    response_model=list[EquipmentReturnInspectionContext],
+)
+def get_pending_return_inspections(
+    _: set[RoleCode] = Depends(require_request_reviewer),  # noqa: B008
+) -> list[EquipmentReturnInspectionContext]:
+    return list_equipment_returns_pending_inspection()
+
+
+@router.get(
+    "/pending-inspections/{equipment_return_id}",
+    response_model=EquipmentReturnInspectionContext,
+)
+def get_pending_return_inspection(
+    equipment_return_id: UUID,
+    _: set[RoleCode] = Depends(require_request_reviewer),  # noqa: B008
+) -> EquipmentReturnInspectionContext:
+    return get_equipment_return_inspection_context(equipment_return_id)
 
 
 @router.get("/loans/{equipment_loan_id}/pending", response_model=EquipmentLoanPending)

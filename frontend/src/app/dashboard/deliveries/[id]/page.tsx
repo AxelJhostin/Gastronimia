@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import { useDashboardIdentity } from "@/components/auth/dashboard-identity-provider";
 import { GastronomyStatusPage } from "@/components/feedback/gastronomy-status-page";
+import { ConfirmModal } from "@/components/ui/confirm-modal";
 import {
   deliverEquipmentRequest,
   generateEquipmentDeliveryQr,
@@ -93,6 +94,7 @@ export default function DeliveryDetailPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [now, setNow] = useState(() => Date.now());
+  const [confirmation, setConfirmation] = useState<"inspection" | "delivery" | null>(null);
 
   const isAuthenticated = identity.status === "authenticated";
   const accessToken = isAuthenticated ? identity.accessToken : null;
@@ -178,6 +180,7 @@ export default function DeliveryDetailPage() {
         })),
       });
       setInspection(result);
+      setConfirmation(null);
     } catch (actionError: unknown) {
       setError(
         actionError instanceof Error
@@ -252,6 +255,7 @@ export default function DeliveryDetailPage() {
         quantity_locations: quantityLocations,
       });
       setLoan(result);
+      setConfirmation(null);
     } catch (actionError: unknown) {
       setError(
         actionError instanceof Error
@@ -327,7 +331,7 @@ export default function DeliveryDetailPage() {
               {!inspection ? <label className="mt-4 block text-sm font-medium text-stone-700">Notas de inspección
                 <textarea className="mt-1 min-h-20 w-full rounded-lg border border-stone-300 px-3 py-2" value={inspectionNotes} onChange={(event) => setInspectionNotes(event.target.value)} />
               </label> : null}
-              {!inspection ? <button className="mt-4 rounded-lg bg-amber-700 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50" disabled={submitting} onClick={() => void handleInspection()} type="button">{submitting ? "Registrando…" : "Registrar inspección de salida"}</button> : null}
+              {!inspection ? <button className="mt-4 rounded-lg bg-amber-700 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50" disabled={submitting} onClick={() => setConfirmation("inspection")} type="button">{submitting ? "Registrando…" : "Registrar inspección de salida"}</button> : null}
             </section>
 
             <section className={`rounded-2xl border p-5 ${inspection ? "border-stone-200" : "border-stone-100 bg-stone-50 opacity-60"}`}>
@@ -352,11 +356,21 @@ export default function DeliveryDetailPage() {
                   </div>
                 </fieldset>
               ))}
-              <button className="mt-5 rounded-lg bg-emerald-700 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50" disabled={!qr || secondsRemaining <= 0 || submitting} onClick={() => void handleDelivery()} type="button">{submitting ? "Confirmando…" : "Confirmar entrega"}</button>
+              <button className="mt-5 rounded-lg bg-emerald-700 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50" disabled={!qr || secondsRemaining <= 0 || submitting} onClick={() => setConfirmation("delivery")} type="button">{submitting ? "Confirmando…" : "Confirmar entrega"}</button>
             </section>
           </div>
         )}
       </section>
+      <ConfirmModal
+        confirmLabel={confirmation === "delivery" ? "Registrar entrega" : "Registrar inspección"}
+        description={confirmation === "delivery" ? `Los recursos se entregarán a ${collectedByName.trim() || "la persona indicada"} y pasarán a estado prestado.` : "Las condiciones observadas quedarán registradas como control previo a la entrega."}
+        isOpen={confirmation !== null}
+        isSubmitting={submitting}
+        onClose={() => setConfirmation(null)}
+        onConfirm={() => void (confirmation === "delivery" ? handleDelivery() : handleInspection())}
+        title={confirmation === "delivery" ? "Confirmar entrega de recursos" : "Confirmar inspección de salida"}
+        tone={confirmation === "delivery" ? "positive" : "warning"}
+      />
     </main>
   );
 }

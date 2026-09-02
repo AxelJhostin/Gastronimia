@@ -102,7 +102,17 @@ export type EquipmentRequestDetail = {
     inventory_item_name: string;
     inventory_item_code: string | null;
     unit_of_measure: string;
+    approved_quantity: number | null;
   }>;
+  review: {
+    id: string;
+    equipment_request_id: string;
+    reviewed_by_user_id: string;
+    previous_status: EquipmentRequestStatus;
+    decision: EquipmentRequestStatus;
+    reason: string | null;
+    reviewed_at: string;
+  } | null;
 };
 
 export type CourseSection = {
@@ -314,6 +324,17 @@ export type EquipmentReturn = {
   returned_at: string;
 };
 
+export type EquipmentReturnInspectionContext = {
+  equipment_return: EquipmentReturn;
+  loan: EquipmentLoan;
+  units: Array<{
+    inventory_unit_id: string;
+    asset_tag: string;
+    serial_number: string | null;
+    condition: InventoryUnitCondition;
+  }>;
+};
+
 export type EquipmentPreparationContext = {
   request: EquipmentRequest;
   items: Array<{
@@ -457,10 +478,54 @@ export class ApiError extends Error {
   }
 }
 
+export const API_SESSION_EXPIRED_EVENT = "gastronomia:session-expired";
+export const API_SESSION_REFRESHED_EVENT = "gastronomia:session-refreshed";
+
+function getApiErrorMessage(detail: unknown): string {
+  if (typeof detail === "string" && detail.trim()) return detail;
+  if (Array.isArray(detail)) {
+    const messages = detail
+      .map((issue) => {
+        if (typeof issue === "object" && issue !== null && "msg" in issue) {
+          return typeof issue.msg === "string" ? issue.msg : null;
+        }
+        return null;
+      })
+      .filter((message): message is string => Boolean(message));
+    if (messages.length > 0) return [...new Set(messages)].join(" ");
+  }
+  return "No fue posible completar la operación.";
+}
+
+async function refreshApiSession(): Promise<string | null> {
+  if (typeof window === "undefined") return null;
+  const { createClient } = await import("@/lib/supabase/client");
+  const supabase = createClient();
+  const { data, error } = await supabase.auth.refreshSession();
+  if (error || !data.session) {
+    localStorage.removeItem("access_token");
+    localStorage.removeItem("token");
+    await supabase.auth.signOut({ scope: "local" });
+    window.dispatchEvent(new Event(API_SESSION_EXPIRED_EVENT));
+    return null;
+  }
+
+  const refreshedToken = data.session.access_token;
+  localStorage.setItem("access_token", refreshedToken);
+  localStorage.setItem("token", refreshedToken);
+  window.dispatchEvent(
+    new CustomEvent(API_SESSION_REFRESHED_EVENT, {
+      detail: { accessToken: refreshedToken },
+    }),
+  );
+  return refreshedToken;
+}
+
 async function requestApi<T>(
   path: string,
   accessToken: string,
   init: RequestInit = {},
+  allowSessionRefresh = true,
 ): Promise<T> {
   const { NEXT_PUBLIC_API_BASE_URL } = getClientEnv();
   const response = await fetch(`${NEXT_PUBLIC_API_BASE_URL}/api/v1${path}`, {
@@ -472,14 +537,18 @@ async function requestApi<T>(
     },
   });
 
+  if (response.status === 401 && allowSessionRefresh) {
+    const refreshedToken = await refreshApiSession();
+    if (refreshedToken) {
+      return requestApi<T>(path, refreshedToken, init, false);
+    }
+  }
+
   if (!response.ok) {
     const body = (await response.json().catch(() => null)) as {
       detail?: unknown;
     } | null;
-    const message =
-      typeof body?.detail === "string"
-        ? body.detail
-        : "No fue posible completar la operación.";
+    const message = getApiErrorMessage(body?.detail);
     throw new ApiError(message, response.status);
   }
 
@@ -561,6 +630,18 @@ export function updateManagedUserRoles(
   });
 }
 
+export function updateManagedUserStatus(
+  accessToken: string,
+  userId: string,
+  isActive: boolean,
+) {
+  return requestApi<void>(`/admin/users/${userId}/status`, accessToken, {
+    body: JSON.stringify({ is_active: isActive }),
+    headers: { "Content-Type": "application/json" },
+    method: "PATCH",
+  });
+}
+
 export function getAcademicPeriods(accessToken: string) {
   return requestApi<AcademicPeriod[]>("/admin/academic/periods", accessToken);
 }
@@ -574,6 +655,22 @@ export function createAcademicPeriod(
     headers: { "Content-Type": "application/json" },
     method: "POST",
   });
+}
+
+export function updateAcademicPeriod(
+  accessToken: string,
+  periodId: string,
+  input: { name: string; start_date: string; end_date: string; is_active: boolean },
+) {
+  return requestApi<AcademicPeriod>(
+    `/admin/academic/periods/${periodId}`,
+    accessToken,
+    {
+      body: JSON.stringify(input),
+      headers: { "Content-Type": "application/json" },
+      method: "PATCH",
+    },
+  );
 }
 
 export function getSubjects(accessToken: string) {
@@ -591,6 +688,18 @@ export function createSubject(
   });
 }
 
+export function updateSubject(
+  accessToken: string,
+  subjectId: string,
+  input: { code?: string; name: string; is_active: boolean },
+) {
+  return requestApi<Subject>(`/admin/academic/subjects/${subjectId}`, accessToken, {
+    body: JSON.stringify(input),
+    headers: { "Content-Type": "application/json" },
+    method: "PATCH",
+  });
+}
+
 export function getTeachers(accessToken: string) {
   return requestApi<Teacher[]>("/admin/academic/teachers", accessToken);
 }
@@ -603,6 +712,18 @@ export function createTeacher(
     body: JSON.stringify(input),
     headers: { "Content-Type": "application/json" },
     method: "POST",
+  });
+}
+
+export function updateTeacher(
+  accessToken: string,
+  teacherId: string,
+  input: { user_id: string; employee_code?: string; is_active: boolean },
+) {
+  return requestApi<Teacher>(`/admin/academic/teachers/${teacherId}`, accessToken, {
+    body: JSON.stringify(input),
+    headers: { "Content-Type": "application/json" },
+    method: "PATCH",
   });
 }
 
@@ -628,6 +749,29 @@ export function createCourseSection(
   });
 }
 
+export function updateCourseSection(
+  accessToken: string,
+  courseSectionId: string,
+  input: {
+    subject_id: string;
+    teacher_id: string;
+    academic_period_id: string;
+    section: string;
+    semester?: string;
+    is_active: boolean;
+  },
+) {
+  return requestApi<CourseSection>(
+    `/admin/academic/course-sections/${courseSectionId}`,
+    accessToken,
+    {
+      body: JSON.stringify(input),
+      headers: { "Content-Type": "application/json" },
+      method: "PATCH",
+    },
+  );
+}
+
 export function getLaboratories(accessToken: string) {
   return requestApi<Laboratory[]>("/admin/academic/laboratories", accessToken);
 }
@@ -641,6 +785,22 @@ export function createLaboratory(
     headers: { "Content-Type": "application/json" },
     method: "POST",
   });
+}
+
+export function updateLaboratory(
+  accessToken: string,
+  laboratoryId: string,
+  input: { code?: string; name: string; location_description?: string; is_active: boolean },
+) {
+  return requestApi<Laboratory>(
+    `/admin/academic/laboratories/${laboratoryId}`,
+    accessToken,
+    {
+      body: JSON.stringify(input),
+      headers: { "Content-Type": "application/json" },
+      method: "PATCH",
+    },
+  );
 }
 
 export function completeTemporaryPasswordChange(accessToken: string) {
@@ -725,6 +885,22 @@ export function createInventoryCategory(
   });
 }
 
+export function updateInventoryCategory(
+  accessToken: string,
+  categoryId: string,
+  input: { name: string; description?: string; is_active: boolean },
+) {
+  return requestApi<InventoryCategory>(
+    `/admin/inventory/categories/${categoryId}`,
+    accessToken,
+    {
+      body: JSON.stringify(input),
+      headers: { "Content-Type": "application/json" },
+      method: "PATCH",
+    },
+  );
+}
+
 export function getInventoryLocations(accessToken: string) {
   return requestApi<InventoryLocation[]>("/admin/inventory/locations", accessToken);
 }
@@ -738,6 +914,22 @@ export function createInventoryLocation(
     headers: { "Content-Type": "application/json" },
     method: "POST",
   });
+}
+
+export function updateInventoryLocation(
+  accessToken: string,
+  locationId: string,
+  input: { code?: string; name: string; description?: string; is_active: boolean },
+) {
+  return requestApi<InventoryLocation>(
+    `/admin/inventory/locations/${locationId}`,
+    accessToken,
+    {
+      body: JSON.stringify(input),
+      headers: { "Content-Type": "application/json" },
+      method: "PATCH",
+    },
+  );
 }
 
 export function createInventoryItem(
@@ -756,6 +948,26 @@ export function createInventoryItem(
     body: JSON.stringify(input),
     headers: { "Content-Type": "application/json" },
     method: "POST",
+  });
+}
+
+export function updateInventoryItem(
+  accessToken: string,
+  itemId: string,
+  input: {
+    category_id: string;
+    code?: string;
+    name: string;
+    description?: string;
+    tracking_mode: "QUANTITY" | "INDIVIDUAL";
+    unit_of_measure: string;
+    is_active: boolean;
+  },
+) {
+  return requestApi<InventoryItem>(`/admin/inventory/items/${itemId}`, accessToken, {
+    body: JSON.stringify(input),
+    headers: { "Content-Type": "application/json" },
+    method: "PATCH",
   });
 }
 
@@ -787,6 +999,27 @@ export function createInventoryUnit(
     body: JSON.stringify(input),
     headers: { "Content-Type": "application/json" },
     method: "POST",
+  });
+}
+
+export function updateInventoryUnit(
+  accessToken: string,
+  unitId: string,
+  input: {
+    inventory_item_id: string;
+    location_id?: string;
+    asset_tag: string;
+    serial_number?: string;
+    status: InventoryUnit["status"];
+    condition: InventoryUnitCondition;
+    notes?: string;
+    is_active: boolean;
+  },
+) {
+  return requestApi<InventoryUnit>(`/admin/inventory/units/${unitId}`, accessToken, {
+    body: JSON.stringify(input),
+    headers: { "Content-Type": "application/json" },
+    method: "PATCH",
   });
 }
 
@@ -891,6 +1124,20 @@ export function getActiveLoans(accessToken: string) {
   return requestApi<EquipmentLoan[]>("/admin/returns/loans", accessToken);
 }
 
+export function getPendingReturnInspections(accessToken: string) {
+  return requestApi<EquipmentReturnInspectionContext[]>(
+    "/admin/returns/pending-inspections",
+    accessToken,
+  );
+}
+
+export function getPendingReturnInspection(accessToken: string, returnId: string) {
+  return requestApi<EquipmentReturnInspectionContext>(
+    `/admin/returns/pending-inspections/${returnId}`,
+    accessToken,
+  );
+}
+
 export function getLoanPending(accessToken: string, loanId: string) {
   return requestApi<EquipmentLoanPending>(`/admin/returns/loans/${loanId}/pending`, accessToken);
 }
@@ -936,6 +1183,13 @@ export function registerIncidentEvidence(
       headers: { "Content-Type": "application/json" },
       method: "POST",
     },
+  );
+}
+
+export function getIncidentEvidences(accessToken: string, incidentId: string) {
+  return requestApi<EquipmentIncidentEvidence[]>(
+    `/admin/inspections/incidents/${incidentId}/evidences`,
+    accessToken,
   );
 }
 

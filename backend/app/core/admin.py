@@ -116,6 +116,29 @@ def replace_managed_user_roles(user_id: str, roles: set[RoleCode]) -> None:
         ) from error
 
 
+def update_managed_user_status(user_id: str, is_active: bool) -> None:
+    try:
+        response = httpx.patch(
+            f"{_supabase_url()}/rest/v1/users",
+            params={"id": f"eq.{user_id}"},
+            json={"is_active": is_active},
+            headers={**_service_headers(), "Prefer": "return=representation"},
+            timeout=5.0,
+        )
+        response.raise_for_status()
+    except httpx.HTTPError as error:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="No fue posible actualizar el estado del usuario.",
+        ) from error
+
+    if not response.json():
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="El usuario no existe.",
+        )
+
+
 def _extract_invited_user_id(payload: Any) -> str:
     user: Any = payload.get("user") if isinstance(payload, dict) else None
     if not isinstance(user, dict):

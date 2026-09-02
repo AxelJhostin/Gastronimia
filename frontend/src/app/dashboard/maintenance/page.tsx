@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 
 import { useDashboardIdentity } from "@/components/auth/dashboard-identity-provider";
 import { GastronomyStatusPage } from "@/components/feedback/gastronomy-status-page";
+import { ConfirmModal } from "@/components/ui/confirm-modal";
 import {
   closeEquipmentMaintenance,
   getEquipmentMaintenances,
@@ -32,6 +33,8 @@ export default function MaintenancePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [warning, setWarning] = useState<string | null>(null);
+  const [closeConfirmation, setCloseConfirmation] = useState<"complete" | "cancel" | null>(null);
 
   const hasAccess =
     identity.status === "authenticated" &&
@@ -77,6 +80,7 @@ export default function MaintenancePage() {
     setSaving(true);
     setError(null);
     setSuccess(null);
+    setWarning(null);
     try {
       const created = await startEquipmentMaintenance(token, {
         inventory_unit_id: String(form.get("inventory_unit_id")),
@@ -94,11 +98,23 @@ export default function MaintenancePage() {
       if (file instanceof File && file.size > 0) {
         const extension = file.name.split(".").pop()?.toLowerCase() || "jpg";
         const storagePath = `${identity.user.id}/${crypto.randomUUID()}.${extension}`;
-        const { error: uploadError } = await createClient().storage
-          .from("evidence")
+        const storage = createClient().storage.from("evidence");
+        const { error: uploadError } = await storage
           .upload(storagePath, file, { contentType: file.type, upsert: false });
-        if (uploadError) throw new Error(uploadError.message);
-        await registerMaintenanceEvidence(token, created.id, storagePath);
+        if (uploadError) {
+          setWarning(`El mantenimiento quedó iniciado, pero la evidencia no se pudo subir: ${uploadError.message}`);
+        } else {
+          try {
+            await registerMaintenanceEvidence(token, created.id, storagePath);
+          } catch (registrationError: unknown) {
+            await storage.remove([storagePath]);
+            setWarning(
+              registrationError instanceof Error
+                ? `El mantenimiento quedó iniciado, pero la evidencia no se pudo registrar: ${registrationError.message}`
+                : "El mantenimiento quedó iniciado, pero la evidencia no se pudo registrar.",
+            );
+          }
+        }
       }
       formElement.reset();
       setSuccess("Mantenimiento iniciado; la unidad quedó fuera de disponibilidad.");
@@ -140,6 +156,7 @@ export default function MaintenancePage() {
         ),
       );
       setSelectedMaintenanceId(null);
+      setCloseConfirmation(null);
       setResolution("");
       setSuccess(action === "complete" ? "Mantenimiento completado." : "Mantenimiento cancelado.");
     } catch (actionError: unknown) {
@@ -162,12 +179,12 @@ export default function MaintenancePage() {
   return (
     <main className="flex flex-1 justify-center bg-stone-50 p-6 text-stone-900"><section className="w-full max-w-6xl rounded-2xl border border-stone-200 bg-white p-8 shadow-sm">
       <div className="flex flex-col gap-4 border-b border-stone-100 pb-6 sm:flex-row sm:items-center sm:justify-between"><div><p className="text-xs font-bold uppercase tracking-[0.2em] text-amber-700">Cuidado de equipos</p><h1 className="mt-1 text-3xl font-bold">Mantenimiento</h1><p className="mt-1 text-sm text-stone-600">Abre, documenta y cierra intervenciones sobre unidades individuales.</p></div><Link className="text-xs font-semibold text-stone-600 underline" href="/dashboard">Volver al panel</Link></div>
-      {error ? <div className="mt-5 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700" role="alert">{error}</div> : null}{success ? <div className="mt-5 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-700" role="status">{success}</div> : null}
+      {error ? <div className="mt-5 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700" role="alert">{error}</div> : null}{success ? <div className="mt-5 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-700" role="status">{success}</div> : null}{warning ? <div className="mt-5 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800" role="status">{warning}</div> : null}
       {loading ? <p className="mt-6 text-sm text-stone-500">Cargando intervenciones…</p> : <div className="mt-6 grid gap-8 lg:grid-cols-[0.8fr_1.2fr]">
         <section><h2 className="text-lg font-bold">Iniciar mantenimiento</h2><form className="mt-4 space-y-3 rounded-xl bg-stone-50 p-4" onSubmit={handleStart}><Select label="Unidad" name="inventory_unit_id" options={eligibleUnits.map((unit) => ({ value: unit.id, label: `${unit.asset_tag} · ${itemById[unit.inventory_item_id]?.name ?? "Equipo"}` }))} /><Select label="Tipo" name="maintenance_type" options={[{ value: "PREVENTIVE", label: "Preventivo" }, { value: "CORRECTIVE", label: "Correctivo" }, { value: "INSPECTION", label: "Inspección" }]} /><Field label="Motivo" name="reason" required /><Field label="Descripción" name="description" /><label className="block text-xs font-semibold text-stone-600">Evidencia opcional<input accept="image/jpeg,image/png,image/webp" className="mt-1 block w-full text-sm" name="evidence" type="file" /></label><button className="w-full rounded-lg bg-amber-800 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50" disabled={saving || !eligibleUnits.length} type="submit">{saving ? "Guardando…" : "Iniciar mantenimiento"}</button></form></section>
-        <section><h2 className="text-lg font-bold">Historial de intervenciones</h2><div className="mt-4 space-y-3">{maintenances.map((maintenance) => { const unit = unitById[maintenance.inventory_unit_id]; return <article className="rounded-xl border border-stone-200 p-4" key={maintenance.id}><div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"><div><p className="font-semibold">{unit?.asset_tag ?? "Unidad"} · {maintenance.maintenance_type}</p><p className="text-xs text-stone-500">{maintenance.reason} · {new Date(maintenance.started_at).toLocaleString("es-EC")}</p></div><span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${maintenance.status === "OPEN" ? "bg-amber-50 text-amber-800" : "bg-stone-100 text-stone-600"}`}>{maintenance.status}</span></div>{maintenance.status === "OPEN" ? selectedMaintenanceId === maintenance.id ? <div className="mt-4 grid gap-3 sm:grid-cols-2"><FieldControlled label="Resolución" value={resolution} onChange={setResolution} /><SelectControlled label="Estado final" value={finalStatus} onChange={(value) => setFinalStatus(value as typeof finalStatus)} options={[{ value: "AVAILABLE", label: "Disponible" }, { value: "MAINTENANCE", label: "Sigue en mantenimiento" }, { value: "DISABLED", label: "Dada de baja" }]} /><SelectControlled label="Condición final" value={finalCondition} onChange={(value) => setFinalCondition(value as InventoryUnitCondition)} options={[{ value: "NEW", label: "Nuevo" }, { value: "GOOD", label: "Bueno" }, { value: "FAIR", label: "Regular" }, { value: "DAMAGED", label: "Dañado" }]} /><div className="flex items-end gap-2"><button className="rounded-lg bg-emerald-700 px-3 py-2 text-xs font-semibold text-white" onClick={() => void handleClose("complete")} type="button">Completar</button><button className="rounded-lg border border-stone-300 px-3 py-2 text-xs font-semibold" onClick={() => void handleClose("cancel")} type="button">Cancelar intervención</button></div></div> : <button className="mt-3 text-xs font-semibold text-amber-800 underline" onClick={() => setSelectedMaintenanceId(maintenance.id)} type="button">Cerrar intervención</button> : maintenance.resolution ? <p className="mt-3 text-sm text-stone-600">{maintenance.resolution}</p> : null}</article>; })}{!maintenances.length ? <p className="rounded-xl bg-stone-50 p-5 text-sm text-stone-500">No hay mantenimientos registrados.</p> : null}</div></section>
+        <section><h2 className="text-lg font-bold">Historial de intervenciones</h2><div className="mt-4 space-y-3">{maintenances.map((maintenance) => { const unit = unitById[maintenance.inventory_unit_id]; return <article className="rounded-xl border border-stone-200 p-4" key={maintenance.id}><div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"><div><p className="font-semibold">{unit?.asset_tag ?? "Unidad"} · {maintenance.maintenance_type}</p><p className="text-xs text-stone-500">{maintenance.reason} · {new Date(maintenance.started_at).toLocaleString("es-EC")}</p></div><span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${maintenance.status === "OPEN" ? "bg-amber-50 text-amber-800" : "bg-stone-100 text-stone-600"}`}>{maintenance.status}</span></div>{maintenance.status === "OPEN" ? selectedMaintenanceId === maintenance.id ? <div className="mt-4 grid gap-3 sm:grid-cols-2"><FieldControlled label="Resolución" value={resolution} onChange={setResolution} /><SelectControlled label="Estado final" value={finalStatus} onChange={(value) => setFinalStatus(value as typeof finalStatus)} options={[{ value: "AVAILABLE", label: "Disponible" }, { value: "MAINTENANCE", label: "Sigue en mantenimiento" }, { value: "DISABLED", label: "Dada de baja" }]} /><SelectControlled label="Condición final" value={finalCondition} onChange={(value) => setFinalCondition(value as InventoryUnitCondition)} options={[{ value: "NEW", label: "Nuevo" }, { value: "GOOD", label: "Bueno" }, { value: "FAIR", label: "Regular" }, { value: "DAMAGED", label: "Dañado" }]} /><div className="flex items-end gap-2"><button className="rounded-lg bg-emerald-700 px-3 py-2 text-xs font-semibold text-white" onClick={() => setCloseConfirmation("complete")} type="button">Completar</button><button className="rounded-lg border border-stone-300 px-3 py-2 text-xs font-semibold" onClick={() => setCloseConfirmation("cancel")} type="button">Cancelar intervención</button></div></div> : <button className="mt-3 text-xs font-semibold text-amber-800 underline" onClick={() => setSelectedMaintenanceId(maintenance.id)} type="button">Cerrar intervención</button> : maintenance.resolution ? <p className="mt-3 text-sm text-stone-600">{maintenance.resolution}</p> : null}</article>; })}{!maintenances.length ? <p className="rounded-xl bg-stone-50 p-5 text-sm text-stone-500">No hay mantenimientos registrados.</p> : null}</div></section>
       </div>}
-    </section></main>
+    </section><ConfirmModal confirmLabel={closeConfirmation === "cancel" ? "Cancelar intervención" : "Completar mantenimiento"} description={closeConfirmation === "cancel" ? "La intervención se marcará como cancelada y se aplicarán el estado y condición final seleccionados." : "El mantenimiento se cerrará y la unidad adoptará el estado y condición final seleccionados."} isOpen={closeConfirmation !== null} isSubmitting={saving} onClose={() => setCloseConfirmation(null)} onConfirm={() => void handleClose(closeConfirmation ?? "complete")} title={closeConfirmation === "cancel" ? "Confirmar cancelación" : "Confirmar cierre de mantenimiento"} tone={closeConfirmation === "cancel" ? "danger" : "positive"} /></main>
   );
 }
 

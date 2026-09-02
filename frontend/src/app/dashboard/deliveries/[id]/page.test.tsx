@@ -135,6 +135,7 @@ describe("flujo de entrega", () => {
 
     expect(await screen.findByRole("heading", { name: /entregar solicitud/i })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Registrar inspección de salida" }));
+    fireEvent.click(screen.getByRole("button", { name: "Registrar inspección" }));
 
     await waitFor(() =>
       expect(api.recordOutboundInspection).toHaveBeenCalledWith("test-token", "request-1", {
@@ -156,6 +157,7 @@ describe("flujo de entrega", () => {
       target: { value: "María Pérez" },
     });
     fireEvent.click(screen.getByRole("button", { name: "Confirmar entrega" }));
+    fireEvent.click(screen.getByRole("button", { name: "Registrar entrega" }));
 
     await waitFor(() =>
       expect(api.deliverEquipmentRequest).toHaveBeenCalledWith("test-token", {

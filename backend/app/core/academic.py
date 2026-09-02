@@ -116,6 +116,36 @@ def create_academic_resource(
     return model.model_validate(response.json()[0])
 
 
+def update_academic_resource(
+    resource: str,
+    resource_id: UUID,
+    payload: BaseModel,
+    model: type[ModelType],
+) -> ModelType:
+    try:
+        response = httpx.patch(
+            f"{_supabase_url()}/rest/v1/{resource}",
+            params={"id": f"eq.{resource_id}"},
+            json=payload.model_dump(mode="json"),
+            headers={**_service_headers(), "Prefer": "return=representation"},
+            timeout=5.0,
+        )
+        response.raise_for_status()
+    except httpx.HTTPError as error:
+        raise _data_api_error(
+            "No fue posible actualizar el registro académico.",
+            error,
+        ) from error
+
+    rows = response.json()
+    if not rows:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="El registro académico no existe.",
+        )
+    return model.model_validate(rows[0])
+
+
 def list_academic_resources(
     resource: str,
     model: type[ModelType],

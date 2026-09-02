@@ -70,11 +70,23 @@ class EquipmentRequestDetailItem(EquipmentRequestItem):
     inventory_item_name: str
     inventory_item_code: Optional[str] = None
     unit_of_measure: str
+    approved_quantity: Optional[Decimal] = None
+
+
+class EquipmentRequestReview(BaseModel):
+    id: UUID
+    equipment_request_id: UUID
+    reviewed_by_user_id: UUID
+    previous_status: EquipmentRequestStatus
+    decision: EquipmentRequestStatus
+    reason: Optional[str] = None
+    reviewed_at: datetime
 
 
 class EquipmentRequestDetail(BaseModel):
     request: EquipmentRequest
     items: list[EquipmentRequestDetailItem]
+    review: Optional[EquipmentRequestReview] = None
 
 
 class EquipmentRequestFormOptions(BaseModel):
@@ -196,6 +208,19 @@ class EquipmentReturn(BaseModel):
     returned_by_name: str
     received_by_user_id: UUID
     returned_at: datetime
+
+
+class EquipmentReturnInspectionUnit(BaseModel):
+    inventory_unit_id: UUID
+    asset_tag: str
+    serial_number: Optional[str] = None
+    condition: str
+
+
+class EquipmentReturnInspectionContext(BaseModel):
+    equipment_return: EquipmentReturn
+    loan: EquipmentLoan
+    units: list[EquipmentReturnInspectionUnit] = Field(default_factory=list)
 
 
 class EquipmentLoanPendingQuantity(BaseModel):
@@ -531,6 +556,42 @@ def get_equipment_request_detail(
             catalog = {row["id"]: row for row in catalog_response.json()}
         else:
             catalog = {}
+        reviews_response = httpx.get(
+            f"{_supabase_url()}/rest/v1/equipment_request_reviews",
+            params={
+                "select": "*",
+                "equipment_request_id": f"eq.{equipment_request_id}",
+                "order": "reviewed_at.desc",
+                "limit": "1",
+            },
+            headers=_service_headers(),
+            timeout=5.0,
+        )
+        reviews_response.raise_for_status()
+        item_review_response = (
+            httpx.get(
+                f"{_supabase_url()}/rest/v1/equipment_request_item_reviews",
+                params={
+                    "select": "equipment_request_item_id,approved_quantity",
+                    "equipment_request_item_id": (
+                        f"in.({','.join(str(item.id) for item in items)})"
+                    ),
+                },
+                headers=_service_headers(),
+                timeout=5.0,
+            )
+            if items
+            else None
+        )
+        if item_review_response is not None:
+            item_review_response.raise_for_status()
+            approved_by_item = {
+                row["equipment_request_item_id"]: row["approved_quantity"]
+                for row in item_review_response.json()
+            }
+        else:
+            approved_by_item = {}
+        review_rows = reviews_response.json()
     except HTTPException:
         raise
     except httpx.HTTPError as error:
@@ -552,9 +613,15 @@ def get_equipment_request_detail(
                 unit_of_measure=catalog.get(str(item.inventory_item_id), {}).get(
                     "unit_of_measure", "unidad"
                 ),
+                approved_quantity=approved_by_item.get(str(item.id)),
             )
             for item in items
         ],
+        review=(
+            EquipmentRequestReview.model_validate(review_rows[0])
+            if review_rows
+            else None
+        ),
     )
 
 
@@ -1005,6 +1072,125 @@ def list_active_equipment_loans() -> list[EquipmentLoan]:
     return loans
 
 
+def list_equipment_returns_pending_inspection(
+) -> list[EquipmentReturnInspectionContext]:
+    try:
+        inspections_response = httpx.get(
+            f"{_supabase_url()}/rest/v1/equipment_inspections",
+            params={
+                "select": "equipment_return_id",
+                "stage": "eq.RETURN",
+                "equipment_return_id": "not.is.null",
+            },
+            headers=_service_headers(),
+            timeout=5.0,
+        )
+        inspections_response.raise_for_status()
+        returns_response = httpx.get(
+            f"{_supabase_url()}/rest/v1/equipment_returns",
+            params={
+                "select": (
+                    "*,equipment_loans!inner("
+                    "*,equipment_requests!inner(end_at))"
+                ),
+                "order": "returned_at.asc",
+            },
+            headers=_service_headers(),
+            timeout=5.0,
+        )
+        returns_response.raise_for_status()
+    except httpx.HTTPError as error:
+        raise _request_error(
+            "No fue posible consultar las devoluciones pendientes de inspección.",
+            error,
+        ) from error
+
+    inspected_return_ids = {
+        row["equipment_return_id"]
+        for row in inspections_response.json()
+        if row.get("equipment_return_id")
+    }
+    pending_rows = [
+        row
+        for row in returns_response.json()
+        if row["id"] not in inspected_return_ids
+    ]
+    if not pending_rows:
+        return []
+
+    return_ids = ",".join(row["id"] for row in pending_rows)
+    try:
+        units_response = httpx.get(
+            f"{_supabase_url()}/rest/v1/equipment_return_units",
+            params={
+                "select": (
+                    "equipment_return_id,equipment_loan_units!inner("
+                    "equipment_preparation_units!inner("
+                    "inventory_units!inner("
+                    "id,asset_tag,serial_number,condition)))"
+                ),
+                "equipment_return_id": f"in.({return_ids})",
+            },
+            headers=_service_headers(),
+            timeout=5.0,
+        )
+        units_response.raise_for_status()
+    except httpx.HTTPError as error:
+        raise _request_error(
+            "No fue posible cargar las unidades pendientes de inspección.",
+            error,
+        ) from error
+
+    units_by_return: dict[str, list[EquipmentReturnInspectionUnit]] = {}
+    for row in units_response.json():
+        inventory_unit = row["equipment_loan_units"][
+            "equipment_preparation_units"
+        ]["inventory_units"]
+        units_by_return.setdefault(row["equipment_return_id"], []).append(
+            EquipmentReturnInspectionUnit(
+                inventory_unit_id=inventory_unit["id"],
+                asset_tag=inventory_unit["asset_tag"],
+                serial_number=inventory_unit.get("serial_number"),
+                condition=inventory_unit["condition"],
+            )
+        )
+
+    contexts: list[EquipmentReturnInspectionContext] = []
+    for row in pending_rows:
+        loan_data = row["equipment_loans"]
+        request_data = loan_data["equipment_requests"]
+        end_at = datetime.fromisoformat(request_data["end_at"].replace("Z", "+00:00"))
+        loan = EquipmentLoan.model_validate(
+            {
+                **loan_data,
+                "is_overdue": end_at < datetime.now(timezone.utc),
+            }
+        )
+        return_data = {
+            key: value for key, value in row.items() if key != "equipment_loans"
+        }
+        contexts.append(
+            EquipmentReturnInspectionContext(
+                equipment_return=EquipmentReturn.model_validate(return_data),
+                loan=loan,
+                units=units_by_return.get(row["id"], []),
+            )
+        )
+    return contexts
+
+
+def get_equipment_return_inspection_context(
+    equipment_return_id: UUID,
+) -> EquipmentReturnInspectionContext:
+    for context in list_equipment_returns_pending_inspection():
+        if context.equipment_return.id == equipment_return_id:
+            return context
+    raise HTTPException(
+        status_code=status.HTTP_404_NOT_FOUND,
+        detail="La devolución no existe o ya fue inspeccionada.",
+    )
+
+
 def get_equipment_loan_pending(equipment_loan_id: UUID) -> EquipmentLoanPending:
     try:
         response = httpx.post(
@@ -1235,3 +1421,27 @@ def register_equipment_incident_evidence(
         "No fue posible registrar la evidencia de la novedad.",
         EquipmentIncidentEvidence,
     )  # type: ignore[return-value]
+
+
+def list_equipment_incident_evidences(
+    equipment_incident_id: UUID,
+) -> list[EquipmentIncidentEvidence]:
+    try:
+        response = httpx.get(
+            f"{_supabase_url()}/rest/v1/equipment_incident_evidences",
+            params={
+                "select": "*",
+                "equipment_incident_id": f"eq.{equipment_incident_id}",
+                "order": "created_at.asc",
+            },
+            headers=_service_headers(),
+            timeout=5.0,
+        )
+        response.raise_for_status()
+    except httpx.HTTPError as error:
+        raise _request_error(
+            "No fue posible consultar las evidencias de la novedad.", error
+        ) from error
+    return [
+        EquipmentIncidentEvidence.model_validate(row) for row in response.json()
+    ]

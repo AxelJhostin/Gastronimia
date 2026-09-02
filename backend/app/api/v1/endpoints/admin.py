@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 
 from app.core.admin import (
@@ -9,6 +9,7 @@ from app.core.admin import (
     list_managed_users,
     provision_managed_user,
     replace_managed_user_roles,
+    update_managed_user_status,
 )
 from app.core.auth import AuthenticatedUser, RoleCode, get_current_user, require_roles
 
@@ -30,6 +31,10 @@ class CreateUserInvitationRequest(BaseModel):
     roles: set[RoleCode] = Field(min_length=1)
 
 
+class UpdateManagedUserStatusRequest(BaseModel):
+    is_active: bool
+
+
 @router.get("/users", response_model=list[ManagedUser])
 def get_managed_users(
     _: set[RoleCode] = Depends(require_admin),  # noqa: B008
@@ -48,6 +53,25 @@ def update_managed_user_roles(
     _: set[RoleCode] = Depends(require_admin),  # noqa: B008
 ) -> None:
     replace_managed_user_roles(str(user_id), payload.roles)
+
+
+@router.patch(
+    "/users/{user_id}/status",
+    response_model=None,
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+def update_user_status(
+    user_id: UUID,
+    payload: UpdateManagedUserStatusRequest,
+    current_user: AuthenticatedUser = Depends(get_current_user),  # noqa: B008
+    _: set[RoleCode] = Depends(require_admin),  # noqa: B008
+) -> None:
+    if str(user_id) == current_user.id and not payload.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="No puedes desactivar tu propia cuenta.",
+        )
+    update_managed_user_status(str(user_id), payload.is_active)
 
 
 @router.post(

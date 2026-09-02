@@ -1,0 +1,4 @@
+-- Los catálogos estructurales (por ejemplo, roles) se cargan en sus migraciones.
+-- Los datos de negocio para pruebas se crean con identificadores únicos desde
+-- backend/tests/integration/test_local_workflow.py para mantener este seed
+-- determinista y seguro al ejecutar `supabase db reset`.

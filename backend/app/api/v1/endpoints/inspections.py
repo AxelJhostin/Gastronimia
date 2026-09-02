@@ -9,12 +9,24 @@ from app.core.requests import (
     EquipmentIncidentEvidenceCreate,
     EquipmentInspection,
     EquipmentInspectionCreate,
+    list_equipment_incident_evidences,
     record_outbound_inspection,
     record_return_inspection,
     register_equipment_incident_evidence,
 )
 
 router = APIRouter(prefix="/admin/inspections")
+
+
+@router.get(
+    "/incidents/{equipment_incident_id}/evidences",
+    response_model=list[EquipmentIncidentEvidence],
+)
+def get_incident_evidences(
+    equipment_incident_id: UUID,
+    _: set[RoleCode] = Depends(require_request_reviewer),  # noqa: B008
+) -> list[EquipmentIncidentEvidence]:
+    return list_equipment_incident_evidences(equipment_incident_id)
 
 
 @router.post(

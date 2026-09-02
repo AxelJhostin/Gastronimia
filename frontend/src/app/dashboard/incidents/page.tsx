@@ -6,11 +6,13 @@ import { useEffect, useState } from "react";
 import { useDashboardIdentity } from "@/components/auth/dashboard-identity-provider";
 import { GastronomyStatusPage } from "@/components/feedback/gastronomy-status-page";
 import {
+  getIncidentEvidences,
   getIncidentReport,
   type IncidentOperationalReportRow,
   type IncidentSeverity,
   type IncidentType,
 } from "@/lib/api/client";
+import { createClient } from "@/lib/supabase/client";
 
 const INCIDENT_LABELS: Record<IncidentType, string> = {
   BREAKAGE: "Rotura",
@@ -36,6 +38,10 @@ export default function IncidentsPage() {
   const [incidents, setIncidents] = useState<IncidentOperationalReportRow[]>([]);
   const [loadedToken, setLoadedToken] = useState<string | null>(null);
   const [errorState, setErrorState] = useState<ErrorState>(null);
+  const [evidences, setEvidences] = useState<
+    Record<string, Array<{ path: string; signedUrl: string }>>
+  >({});
+  const [loadingEvidenceId, setLoadingEvidenceId] = useState<string | null>(null);
 
   const isAuthenticated = identity.status === "authenticated";
   const accessToken = isAuthenticated ? identity.accessToken : null;
@@ -72,6 +78,46 @@ export default function IncidentsPage() {
       active = false;
     };
   }, [accessToken, hasAccess]);
+
+  const loadEvidences = async (incidentId: string) => {
+    if (!accessToken) return;
+    if (evidences[incidentId]) {
+      setEvidences((current) => {
+        const next = { ...current };
+        delete next[incidentId];
+        return next;
+      });
+      return;
+    }
+    setLoadingEvidenceId(incidentId);
+    setErrorState(null);
+    try {
+      const records = await getIncidentEvidences(accessToken, incidentId);
+      const { data, error: signingError } = await createClient().storage
+        .from("evidence")
+        .createSignedUrls(records.map((record) => record.storage_path), 300);
+      if (signingError) throw new Error(signingError.message);
+      setEvidences((current) => ({
+        ...current,
+        [incidentId]: data
+          .filter(
+            (item): item is typeof item & { path: string; signedUrl: string } =>
+              Boolean(item.path && item.signedUrl),
+          )
+          .map((item) => ({ path: item.path, signedUrl: item.signedUrl })),
+      }));
+    } catch (evidenceError: unknown) {
+      setErrorState({
+        message:
+          evidenceError instanceof Error
+            ? evidenceError.message
+            : "No fue posible abrir las evidencias.",
+        token: accessToken,
+      });
+    } finally {
+      setLoadingEvidenceId(null);
+    }
+  };
 
   if (identity.status === "loading") {
     return <p className="p-6 text-sm text-stone-600">Cargando incidencias…</p>;
@@ -150,6 +196,22 @@ export default function IncidentsPage() {
                     <td className="max-w-sm px-4 py-3">
                       <p className="text-stone-800">{incident.description}</p>
                       <p className="mt-1 text-xs text-stone-500">{incident.evidence_count} evidencia{incident.evidence_count === 1 ? "" : "s"}</p>
+                      {incident.evidence_count > 0 ? (
+                        <button className="mt-2 text-xs font-semibold text-amber-800 underline" disabled={loadingEvidenceId === incident.id} onClick={() => void loadEvidences(incident.id)} type="button">
+                          {loadingEvidenceId === incident.id ? "Generando enlaces…" : evidences[incident.id] ? "Ocultar evidencias" : "Ver evidencias"}
+                        </button>
+                      ) : null}
+                      {evidences[incident.id] ? (
+                        <ul className="mt-2 space-y-1 rounded-lg bg-stone-100 p-2">
+                          {evidences[incident.id].map((evidence, index) => (
+                            <li key={evidence.path}>
+                              <a className="text-xs font-semibold text-amber-900 underline" href={evidence.signedUrl} rel="noreferrer" target="_blank">
+                                Abrir evidencia {index + 1}
+                              </a>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : null}
                     </td>
                     <td className="px-4 py-3 text-xs font-semibold">
                       {incident.requires_unavailable ? <span className="text-red-700">Unidad no disponible</span> : <span className="text-emerald-700">Sin bloqueo automático</span>}

@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 
 import { useDashboardIdentity } from "@/components/auth/dashboard-identity-provider";
 import { GastronomyStatusPage } from "@/components/feedback/gastronomy-status-page";
+import { ConfirmModal } from "@/components/ui/confirm-modal";
 import {
   getLoanPending,
   recordEquipmentReturn,
@@ -76,6 +77,7 @@ export default function ReturnDetailPage() {
   const [notes, setNotes] = useState("");
   const [quantities, setQuantities] = useState<Record<string, number>>({});
   const [units, setUnits] = useState<Record<string, UnitReturnState>>({});
+  const [confirmationOpen, setConfirmationOpen] = useState(false);
 
   const isAuthenticated = identity.status === "authenticated";
   const accessToken = isAuthenticated ? identity.accessToken : null;
@@ -131,17 +133,22 @@ export default function ReturnDetailPage() {
       for (const file of files) {
         const extension = file.name.split(".").pop()?.toLowerCase() || "jpg";
         const storagePath = `${identity.user.id}/${crypto.randomUUID()}.${extension}`;
-        const { error: uploadError } = await supabase.storage
-          .from("evidence")
+        const storage = supabase.storage.from("evidence");
+        const { error: uploadError } = await storage
           .upload(storagePath, file, { contentType: file.type, upsert: false });
         if (uploadError) throw new Error(uploadError.message);
-        await registerIncidentEvidence(accessToken, incident.id, storagePath);
+        try {
+          await registerIncidentEvidence(accessToken, incident.id, storagePath);
+        } catch (registrationError) {
+          await storage.remove([storagePath]);
+          throw registrationError;
+        }
       }
     }
   };
 
-  const handleSubmit = async (event: React.FormEvent) => {
-    event.preventDefault();
+  const handleSubmit = async (event?: React.FormEvent) => {
+    event?.preventDefault();
     if (!accessToken || !loanId || !pending || inspection) return;
     if (!returnedBy.trim()) {
       setError("Indica quién devuelve los recursos.");
@@ -192,6 +199,11 @@ export default function ReturnDetailPage() {
       setError("Las evidencias deben ser JPEG, PNG o WebP de máximo 10 MB.");
       return;
     }
+    if (event) {
+      setError(null);
+      setConfirmationOpen(true);
+      return;
+    }
 
     setSubmitting(true);
     setError(null);
@@ -227,6 +239,7 @@ export default function ReturnDetailPage() {
         }),
       });
       setInspection(result);
+      setConfirmationOpen(false);
 
       try {
         await uploadEvidences(result);
@@ -325,6 +338,16 @@ export default function ReturnDetailPage() {
           </form>
         )}
       </section>
+      <ConfirmModal
+        confirmLabel="Registrar devolución"
+        description="Las cantidades volverán al stock y las unidades quedarán fuera de disponibilidad hasta completar su inspección. Esta operación no se puede deshacer desde la interfaz."
+        isOpen={confirmationOpen}
+        isSubmitting={submitting}
+        onClose={() => setConfirmationOpen(false)}
+        onConfirm={() => void handleSubmit()}
+        title="Confirmar recepción de recursos"
+        tone="warning"
+      />
     </main>
   );
 }
