@@ -1124,6 +1124,10 @@ export function getActiveLoans(accessToken: string) {
   return requestApi<EquipmentLoan[]>("/admin/returns/loans", accessToken);
 }
 
+export function getOwnLoans(accessToken: string) {
+  return requestApi<EquipmentLoan[]>("/requests/my-loans", accessToken);
+}
+
 export function getPendingReturnInspections(accessToken: string) {
   return requestApi<EquipmentReturnInspectionContext[]>(
     "/admin/returns/pending-inspections",

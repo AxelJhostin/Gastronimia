@@ -181,15 +181,15 @@ No llamar `fetch()` repetido desde cada componente y no incluir URLs API dispers
 
 | Rol | Puede ver/operar |
 | --- | --- |
-| `TEACHER` | Inicio docente, disponibilidad, crear borrador, enviar solicitud y ver solo sus solicitudes. |
-| `MANAGER` | Inventario, revisión, preparación, inspecciones, entrega, préstamos, devoluciones, mantenimiento, auditoría y reportes. |
-| `ADMIN` | Todo lo de `MANAGER` + usuarios, roles y configuración académica. |
+| `TEACHER` | Inicio docente, disponibilidad, crear borrador, enviar solicitud, ver sus solicitudes y sus préstamos. |
+| `MANAGER` | Inventario, revisión, preparación, inspecciones, entrega, préstamos, devoluciones, mantenimiento, incidencias y reportes. |
+| `ADMIN` | Todo lo de `MANAGER` + auditoría, usuarios, roles y configuración académica. |
 
 Propuesta de navegación inicial:
 
 ```text
 TEACHER
-  Inicio | Nueva solicitud | Mis solicitudes | Disponibilidad
+  Inicio | Nueva solicitud | Mis solicitudes | Mis préstamos | Disponibilidad
 
 MANAGER
   Inicio operativo | Pendientes | Preparación | Entregas | Devoluciones

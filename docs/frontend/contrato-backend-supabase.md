@@ -81,6 +81,7 @@ Todos los paths siguientes son relativos a `/api/v1`. Las rutas `ADMIN/MANAGER` 
 | --- | --- | --- |
 | `POST /requests/drafts` | TEACHER | Crear solicitud con artículos. |
 | `GET /requests/mine` | TEACHER | Solicitudes propias. |
+| `GET /requests/my-loans` | TEACHER | Historial de préstamos asociados al docente autenticado. |
 | `GET /requests/{id}` | Participante o Personal | Detalle de una solicitud y sus ítems; el docente solo puede leer las propias. |
 | `POST /requests/{id}/submit` | TEACHER | Cambia `DRAFT` a `PENDING`. |
 | `GET /admin/requests/pending` | Personal | Bandeja de revisión. |

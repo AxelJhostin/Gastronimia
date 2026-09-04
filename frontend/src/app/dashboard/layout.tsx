@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { Sidebar } from "@/components/dashboard/sidebar";
+import { DashboardShell } from "@/components/dashboard/sidebar";
 import { DashboardIdentityProvider } from "@/components/auth/dashboard-identity-provider";
 import { createClient } from "@/lib/supabase/server";
 
@@ -27,12 +27,7 @@ export default async function DashboardLayout({
 
   return (
     <DashboardIdentityProvider>
-      <div className="flex min-h-screen bg-stone-100">
-        <Sidebar />
-        <div className="flex flex-1 flex-col overflow-y-auto">
-          {children}
-        </div>
-      </div>
+      <DashboardShell>{children}</DashboardShell>
     </DashboardIdentityProvider>
   );
 }

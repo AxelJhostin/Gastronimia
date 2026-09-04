@@ -6,6 +6,7 @@ from uuid import UUID
 from app.api.v1.endpoints.requests import require_request_reader, require_teacher
 from app.core.auth import AuthenticatedUser, RoleCode, get_current_user
 from app.core.requests import (
+    EquipmentLoan,
     EquipmentRequest,
     EquipmentRequestDraftCreate,
     EquipmentRequestFormOptions,
@@ -13,6 +14,7 @@ from app.core.requests import (
     create_equipment_request_draft,
     get_equipment_request_detail,
     get_equipment_request_form_options,
+    list_teacher_equipment_loans,
     submit_equipment_request,
 )
 from app.main import app
@@ -64,6 +66,21 @@ def _teacher_user() -> AuthenticatedUser:
     )
 
 
+def _loan() -> EquipmentLoan:
+    return EquipmentLoan(
+        id=UUID("4fa85f64-5717-4562-b3fc-2c963f66afa6"),
+        equipment_request_id=REQUEST_ID,
+        responsible_teacher_id=UUID("e152d7d4-3eb0-4e7f-b2ff-1f7acb1f1450"),
+        collected_by_name="Docente",
+        delivered_by_user_id=UUID(USER_ID),
+        delivered_at=datetime(2026, 8, 22, 8, tzinfo=timezone.utc),
+        created_at=datetime(2026, 8, 22, 8, tzinfo=timezone.utc),
+        status="CLOSED",
+        closed_at=datetime(2026, 8, 22, 11, tzinfo=timezone.utc),
+        is_overdue=False,
+    )
+
+
 def test_request_draft_requires_teacher() -> None:
     response = TestClient(app).post("/api/v1/requests/drafts", json=_draft_payload())
 
@@ -110,6 +127,50 @@ def test_teacher_can_create_request_draft() -> None:
 
     assert response.status_code == 201
     assert response.json()["status"] == "DRAFT"
+
+
+def test_teacher_can_read_own_loan_history() -> None:
+    client = TestClient(app)
+    app.dependency_overrides[require_teacher] = lambda: {RoleCode.TEACHER}
+    app.dependency_overrides[get_current_user] = _teacher_user
+    try:
+        with patch(
+            "app.api.v1.endpoints.requests.list_teacher_equipment_loans",
+            return_value=[_loan()],
+        ) as list_loans:
+            response = client.get("/api/v1/requests/my-loans")
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 200
+    assert response.json()[0]["status"] == "CLOSED"
+    assert list_loans.call_args.args == (USER_ID,)
+
+
+def test_teacher_loan_history_is_filtered_by_teacher_profile() -> None:
+    teacher_response = Mock()
+    teacher_response.json.return_value = [
+        {"id": "e152d7d4-3eb0-4e7f-b2ff-1f7acb1f1450"}
+    ]
+    loan_response = Mock()
+    loan_response.json.return_value = [
+        {
+            **_loan().model_dump(mode="json"),
+            "equipment_requests": {"end_at": "2026-08-22T10:00:00Z"},
+        }
+    ]
+
+    with patch(
+        "app.core.requests.httpx.get",
+        side_effect=[teacher_response, loan_response],
+    ) as get:
+        loans = list_teacher_equipment_loans(USER_ID)
+
+    assert loans[0].status == "CLOSED"
+    assert loans[0].is_overdue is False
+    assert get.call_args_list[1].kwargs["params"]["responsible_teacher_id"] == (
+        "eq.e152d7d4-3eb0-4e7f-b2ff-1f7acb1f1450"
+    )
 
 
 def test_draft_rejects_invalid_interval() -> None:

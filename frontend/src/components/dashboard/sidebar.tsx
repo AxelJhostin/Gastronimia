@@ -1,105 +1,113 @@
 "use client";
 
-import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { useRouter } from "next/navigation";
 import {
-  Home, 
-  Package, 
-  FileText, 
-  Utensils, 
-  RotateCcw, 
-  AlertTriangle, 
-  Users, 
-  ClipboardList, 
-  BarChart3 
+  BarChart3,
+  FileText,
+  GraduationCap,
+  History,
+  House,
+  Package,
+  RotateCcw,
+  ShieldCheck,
+  TriangleAlert,
+  Truck,
+  Users,
+  Utensils,
+  Wrench,
 } from "lucide-react";
 import { useDashboardIdentity } from "@/components/auth/dashboard-identity-provider";
+import { AppShell, type NavigationItem } from "@/components/layout/app-shell";
+import { createClient } from "@/lib/supabase/client";
 import type { RoleCode } from "@/lib/api/client";
 
-interface NavItem {
-  label: string;
-  href: string;
-  icon: React.ComponentType<{ className?: string }>;
+type RoleNavigationItem = Omit<NavigationItem, "roles"> & {
   roles: RoleCode[];
-}
+};
 
-const NAV_ITEMS: NavItem[] = [
+const NAV_ITEMS: RoleNavigationItem[] = [
   {
     label: "Inicio",
     href: "/dashboard",
-    icon: Home,
+    icon: <House className="size-4" />,
     roles: ["ADMIN", "MANAGER", "TEACHER"],
   },
   {
     label: "Solicitudes",
     href: "/dashboard/requests",
-    icon: FileText,
+    icon: <FileText className="size-4" />,
     roles: ["ADMIN", "MANAGER", "TEACHER"],
+  },
+  {
+    label: "Mis préstamos",
+    href: "/dashboard/loans",
+    icon: <History className="size-4" />,
+    roles: ["TEACHER"],
   },
   {
     label: "Preparaciones",
     href: "/dashboard/preparations",
-    icon: Utensils,
+    icon: <Utensils className="size-4" />,
     roles: ["ADMIN", "MANAGER"],
   },
   {
     label: "Entregas",
     href: "/dashboard/deliveries",
-    icon: Package,
+    icon: <Truck className="size-4" />,
     roles: ["ADMIN", "MANAGER"],
   },
   {
-    label: "Inventario y Stock",
+    label: "Inventario y stock",
     href: "/dashboard/inventory",
-    icon: Package,
+    icon: <Package className="size-4" />,
     roles: ["ADMIN", "MANAGER"],
   },
   {
-    label: "Devoluciones",
+    label: "Préstamos y devoluciones",
     href: "/dashboard/returns",
-    icon: RotateCcw,
+    icon: <RotateCcw className="size-4" />,
     roles: ["ADMIN", "MANAGER"],
   },
   {
     label: "Mantenimiento",
     href: "/dashboard/maintenance",
-    icon: Package,
+    icon: <Wrench className="size-4" />,
     roles: ["ADMIN", "MANAGER"],
   },
   {
     label: "Incidencias",
     href: "/dashboard/incidents",
-    icon: AlertTriangle,
+    icon: <TriangleAlert className="size-4" />,
     roles: ["ADMIN", "MANAGER"],
   },
   {
     label: "Usuarios",
     href: "/dashboard/users",
-    icon: Users,
+    icon: <Users className="size-4" />,
     roles: ["ADMIN"],
   },
   {
     label: "Academia",
     href: "/dashboard/academic",
-    icon: ClipboardList,
+    icon: <GraduationCap className="size-4" />,
     roles: ["ADMIN"],
   },
   {
     label: "Auditoría",
     href: "/dashboard/audit-log",
-    icon: ClipboardList,
-    roles: ["ADMIN", "MANAGER"],
+    icon: <ShieldCheck className="size-4" />,
+    roles: ["ADMIN"],
   },
   {
     label: "Reportes",
     href: "/dashboard/reports",
-    icon: BarChart3,
+    icon: <BarChart3 className="size-4" />,
     roles: ["ADMIN", "MANAGER"],
   },
 ];
 
-export function Sidebar() {
-  const pathname = usePathname();
+export function DashboardShell({ children }: { children: React.ReactNode }) {
+  const router = useRouter();
   const identityState = useDashboardIdentity();
 
   const userRoles =
@@ -111,52 +119,24 @@ export function Sidebar() {
     item.roles.some((role) => userRoles.includes(role))
   );
 
-  return (
-    <aside className="w-64 bg-slate-900 text-slate-100 flex flex-col h-screen border-r border-slate-800">
-      <div className="p-4 border-b border-slate-800 flex items-center gap-2">
-        <Utensils className="h-6 w-6 text-emerald-500" />
-        <span className="font-bold text-lg tracking-tight">Gastronomía</span>
-      </div>
+  const identity = identityState.status === "authenticated" ? (
+    <div className="flex items-center gap-3">
+      <span aria-hidden="true" className="grid size-9 shrink-0 place-items-center rounded-full bg-white/10 text-sm font-bold text-white">{identityState.user.email?.slice(0, 1).toUpperCase() ?? "U"}</span>
+      <div className="min-w-0"><p className="truncate text-sm font-semibold text-white">{identityState.user.email}</p><p className="mt-0.5 truncate text-xs text-white/55">{identityState.user.roles.map(roleLabel).join(" · ")}</p></div>
+    </div>
+  ) : <p className="text-xs text-white/60">Cargando tu perfil…</p>;
 
-      <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-        {visibleNavItems.map((item) => {
-          const Icon = item.icon;
-          const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
+  async function handleLogout() {
+    await createClient().auth.signOut();
+    localStorage.removeItem("access_token");
+    localStorage.removeItem("token");
+    router.replace("/login");
+    router.refresh();
+  }
 
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                isActive
-                  ? "bg-emerald-600 text-white"
-                  : "text-slate-400 hover:text-slate-100 hover:bg-slate-800"
-              }`}
-            >
-              <Icon className="h-4 w-4" />
-              <span>{item.label}</span>
-            </Link>
-          );
-        })}
-      </nav>
+  return <AppShell identity={identity} navigation={visibleNavItems} onLogout={handleLogout}>{children}</AppShell>;
+}
 
-      {identityState.status === "authenticated" && (
-        <div className="p-4 border-t border-slate-800 bg-slate-950/50">
-          <p className="text-xs font-semibold text-slate-300 truncate">
-            {identityState.user.email}
-          </p>
-          <div className="flex flex-wrap gap-1 mt-1">
-            {identityState.user.roles.map((role) => (
-              <span
-                key={role}
-                className="inline-block px-2 py-0.5 text-[10px] font-medium rounded uppercase bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
-              >
-                {role}
-              </span>
-            ))}
-          </div>
-        </div>
-      )}
-    </aside>
-  );
+function roleLabel(role: RoleCode) {
+  return { ADMIN: "Administrador", MANAGER: "Encargado", TEACHER: "Docente", "PAÑOLERO": "Pañolero" }[role];
 }

@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, status
 
 from app.core.auth import AuthenticatedUser, RoleCode, get_current_user, require_roles
 from app.core.requests import (
+    EquipmentLoan,
     EquipmentRequest,
     EquipmentRequestDetail,
     EquipmentRequestDraftCreate,
@@ -12,6 +13,7 @@ from app.core.requests import (
     get_equipment_request_detail,
     get_equipment_request_form_options,
     list_own_equipment_requests,
+    list_teacher_equipment_loans,
     submit_equipment_request,
 )
 
@@ -51,6 +53,14 @@ def get_own_requests(
     _: set[RoleCode] = Depends(require_teacher),  # noqa: B008
 ) -> list[EquipmentRequest]:
     return list_own_equipment_requests(current_user.id)
+
+
+@router.get("/my-loans", response_model=list[EquipmentLoan])
+def get_own_loans(
+    current_user: AuthenticatedUser = Depends(get_current_user),  # noqa: B008
+    _: set[RoleCode] = Depends(require_teacher),  # noqa: B008
+) -> list[EquipmentLoan]:
+    return list_teacher_equipment_loans(current_user.id)
 
 
 @router.get("/{equipment_request_id}", response_model=EquipmentRequestDetail)

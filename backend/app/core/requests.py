@@ -1072,6 +1072,47 @@ def list_active_equipment_loans() -> list[EquipmentLoan]:
     return loans
 
 
+def list_teacher_equipment_loans(teacher_user_id: str) -> list[EquipmentLoan]:
+    """Return every loan owned by the authenticated teacher, including closed ones."""
+    try:
+        teacher_response = httpx.get(
+            f"{_supabase_url()}/rest/v1/teachers",
+            params={"select": "id", "user_id": f"eq.{teacher_user_id}"},
+            headers=_service_headers(),
+            timeout=5.0,
+        )
+        teacher_response.raise_for_status()
+        teachers = teacher_response.json()
+        if not teachers:
+            return []
+
+        response = httpx.get(
+            f"{_supabase_url()}/rest/v1/equipment_loans",
+            params={
+                "select": "*,equipment_requests!inner(end_at)",
+                "responsible_teacher_id": f"eq.{teachers[0]['id']}",
+                "order": "delivered_at.desc",
+            },
+            headers=_service_headers(),
+            timeout=5.0,
+        )
+        response.raise_for_status()
+    except httpx.HTTPError as error:
+        raise _request_error(
+            "No fue posible consultar tus préstamos.", error
+        ) from error
+
+    loans: list[EquipmentLoan] = []
+    for row in response.json():
+        request = row.pop("equipment_requests", {})
+        end_at = datetime.fromisoformat(request["end_at"].replace("Z", "+00:00"))
+        row["is_overdue"] = (
+            row.get("status") != "CLOSED" and end_at < datetime.now(timezone.utc)
+        )
+        loans.append(EquipmentLoan.model_validate(row))
+    return loans
+
+
 def list_equipment_returns_pending_inspection(
 ) -> list[EquipmentReturnInspectionContext]:
     try:

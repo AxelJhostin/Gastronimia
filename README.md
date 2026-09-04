@@ -61,6 +61,7 @@ Next.js resuelve la interfaz responsive. FastAPI concentra las reglas de negocio
 
 - Node.js 22 LTS o superior y npm.
 - Python 3.9 o superior (se recomienda 3.12 para igualar producción).
+- Docker Desktop abierto para ejecutar Supabase local.
 - Una cuenta/proyecto compartido de Supabase cuando se vaya a integrar la base de datos.
 
 ## Inicio rápido
@@ -96,7 +97,23 @@ Completa los valores con el proyecto de Supabase y deja las claves de servicio �
 
 ### 4. Iniciar los servicios
 
-En una terminal:
+La primera vez, o cuando quieras volver a cargar el escenario de demostración,
+abre Docker Desktop y ejecuta desde la raíz:
+
+```bash
+npm run seed:demo
+```
+
+El comando inicia Supabase local, crea datos de inventario y solicitudes, y deja
+listas estas cuentas exclusivamente para desarrollo local:
+
+| Rol | Correo | Contraseña |
+| --- | --- | --- |
+| Administrador | `axel@gmail.com` | `axelaxel` |
+| Encargado | `encargado@gastronomia.test` | `Prueba-Encargado-2026!` |
+| Docente | `docente@gastronomia.test` | `Prueba-Docente-2026!` |
+
+Después, en una terminal:
 
 ```bash
 npm run dev:frontend
@@ -126,6 +143,10 @@ Luego abre [http://localhost:3000](http://localhost:3000). La documentación int
 No renombres ni subas `.env.local` o `.env`. Las plantillas `*.env.example` sí se mantienen actualizadas en el repositorio para que cualquier integrante pueda empezar.
 
 ## Pruebas y validaciones
+
+Para ejecutar una revisión manual completa por roles y recorrer el flujo
+Docente → Encargado → préstamo → devolución, usa el
+[plan de pruebas manuales y QA](/Users/hernandezaxel/proyectos/Gastronimia/docs/qa/plan-pruebas-manuales.md).
 
 Antes de subir un cambio, ejecutar:
 

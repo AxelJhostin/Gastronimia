@@ -1,137 +1,119 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { PackagePlus } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 
 import { useDashboardIdentity } from "@/components/auth/dashboard-identity-provider";
+import { InventoryItemCard, InventoryToolbar, type InventoryUnitState } from "@/components/domain/inventory";
 import { GastronomyStatusPage } from "@/components/feedback/gastronomy-status-page";
-import { getInventoryItems, getInventoryStock, type InventoryItem, type InventoryStock } from "@/lib/api/client";
+import { EmptyState, ErrorState, FilterSelect, LoadingState, PageHeader } from "@/components/ui";
+import {
+  getInventoryCategories,
+  getInventoryItems,
+  getInventoryStock,
+  getInventoryUnits,
+  type InventoryCategory,
+  type InventoryItem,
+  type InventoryStock,
+  type InventoryUnit,
+} from "@/lib/api/client";
+
+const demoImages: Record<string, string> = {
+  "BAT-004": "/demo/inventory/batidora-planetaria.webp",
+  "BOWL-002": "/demo/inventory/menaje-pasteleria.webp",
+  "CUCH-001": "/demo/inventory/cuchilleria.webp",
+  "MANGA-003": "/demo/inventory/menaje-pasteleria.webp",
+};
 
 export default function InventoryPage() {
   const identity = useDashboardIdentity();
   const [items, setItems] = useState<InventoryItem[]>([]);
   const [stock, setStock] = useState<InventoryStock[]>([]);
+  const [units, setUnits] = useState<InventoryUnit[]>([]);
+  const [categories, setCategories] = useState<InventoryCategory[]>([]);
+  const [query, setQuery] = useState("");
+  const [category, setCategory] = useState("all");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const hasAccess =
-    identity.status === "authenticated" &&
-    identity.user.roles.some((role) => role === "ADMIN" || role === "MANAGER");
+  const hasAccess = identity.status === "authenticated" && identity.user.roles.some((role) => role === "ADMIN" || role === "MANAGER");
+  const accessToken = identity.status === "authenticated" ? identity.accessToken : null;
 
   useEffect(() => {
-    if (!hasAccess) return;
-
-    void Promise.all([getInventoryItems(identity.accessToken), getInventoryStock(identity.accessToken)])
-      .then(([nextItems, nextStock]) => {
+    if (!hasAccess || !accessToken) return;
+    const token = accessToken;
+    let active = true;
+    void Promise.all([getInventoryItems(token), getInventoryStock(token), getInventoryUnits(token), getInventoryCategories(token)])
+      .then(([nextItems, nextStock, nextUnits, nextCategories]) => {
+        if (!active) return;
         setItems(nextItems);
         setStock(nextStock);
+        setUnits(nextUnits);
+        setCategories(nextCategories);
       })
-      .catch((loadError) =>
-        setError(loadError instanceof Error ? loadError.message : "No fue posible cargar el inventario.")
-      )
-      .finally(() => setLoading(false));
-  }, [identity, hasAccess]);
+      .catch((loadError) => {
+        if (active) setError(loadError instanceof Error ? loadError.message : "No fue posible cargar el inventario.");
+      })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, [accessToken, hasAccess]);
 
-  if (identity.status === "loading") return <p className="p-6 text-sm text-stone-600">Cargando inventario…</p>;
-  if (identity.status === "unavailable") return <p className="p-6 text-sm text-red-700">{identity.message}</p>;
-  if (!hasAccess) return <GastronomyStatusPage kind="forbidden" />;
-
-  const quantityByItem = stock.reduce<Record<string, number>>((total, row) => {
+  const quantityByItem = useMemo(() => stock.reduce<Record<string, number>>((total, row) => {
     total[row.inventory_item_id] = (total[row.inventory_item_id] ?? 0) + Number(row.quantity);
     return total;
-  }, {});
+  }, {}), [stock]);
+  const categoryById = useMemo(() => Object.fromEntries(categories.map((item) => [item.id, item.name])), [categories]);
+  const filteredItems = useMemo(() => {
+    const normalizedQuery = query.trim().toLocaleLowerCase("es");
+    return items.filter((item) => {
+      const matchesCategory = category === "all" || item.category_id === category;
+      const matchesQuery = !normalizedQuery || `${item.name} ${item.code ?? ""}`.toLocaleLowerCase("es").includes(normalizedQuery);
+      return matchesCategory && matchesQuery;
+    });
+  }, [category, items, query]);
 
-  return (
-    <main className="flex flex-1 justify-center bg-stone-50 p-6 text-stone-900">
-      <section className="w-full max-w-6xl rounded-2xl border border-stone-200 bg-white p-8 shadow-sm">
-        {/* Cabecera */}
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-stone-100 pb-6">
-          <div>
-            <p className="text-xs font-bold uppercase tracking-[0.2em] text-amber-700">
-              Control de Pañol
-            </p>
-            <h1 className="mt-1 text-3xl font-bold tracking-tight text-stone-900">
-              Inventarios de Equipos
-            </h1>
-            <p className="mt-1 text-sm text-stone-600">
-              Consulta la disponibilidad, estado y ubicación de herramientas y utensilios de cocina.
-            </p>
-          </div>
-          <div className="flex gap-4">
-            <Link href="/dashboard/inventory/manage" className="text-xs font-semibold text-amber-800 underline">Gestionar inventario</Link>
-            <Link href="/dashboard" className="text-xs font-semibold text-stone-600 hover:text-amber-800 underline">Volver al panel</Link>
-          </div>
-        </div>
+  if (identity.status === "loading") return <LoadingState label="Cargando inventario…" />;
+  if (identity.status === "unavailable") return <ErrorState description={identity.message} title="No pudimos cargar tu sesión" />;
+  if (!hasAccess) return <GastronomyStatusPage kind="forbidden" />;
 
-        {/* Tabla de Inventario */}
-        <div className="mt-6 overflow-x-auto">
-          {error ? (
-            <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-              Error al cargar el inventario: {error}
-            </div>
-          ) : (
-            <table className="w-full text-left text-sm text-stone-700">
-              <thead className="bg-stone-50 text-xs uppercase tracking-wider text-stone-500 border-b border-stone-200">
-                <tr>
-                  <th className="px-4 py-3 font-semibold">Equipo / Útil</th>
-                  <th className="px-4 py-3 font-semibold">Categoría</th>
-                  <th className="px-4 py-3 font-semibold">Stock Total</th>
-                  <th className="px-4 py-3 font-semibold">Estado</th>
-                  <th className="px-4 py-3 font-semibold text-right">Detalle</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-stone-100">
-                {loading ? (
-                  <tr>
-                    <td colSpan={5} className="px-4 py-8 text-center text-stone-500">
-                      Cargando inventario…
-                    </td>
-                  </tr>
-                ) : items.length > 0 ? (
-                  items.map((item) => (
-                    <tr key={item.id} className="hover:bg-stone-50/60 transition-colors">
-                      <td className="px-4 py-3.5 font-medium text-stone-900">
-                        {item.name}
-                      </td>
-                      <td className="px-4 py-3.5 text-stone-600">
-                        {item.tracking_mode === "QUANTITY" ? "Por cantidad" : "Por unidad"}
-                      </td>
-                      <td className="px-4 py-3.5 font-semibold text-stone-900">
-                        {quantityByItem[item.id] ?? 0} {item.unit_of_measure}
-                      </td>
-                      <td className="px-4 py-3.5">
-                        <span
-                          className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset ${
-                            item.is_active
-                              ? "bg-emerald-50 text-emerald-700 ring-emerald-600/20"
-                              : "bg-stone-100 text-stone-700 ring-stone-500/20"
-                          }`}
-                        >
-                          {item.is_active ? "ACTIVO" : "INACTIVO"}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3.5 text-right">
-                        <Link
-                          href={`/dashboard/inventory/${item.id}`}
-                          className="text-xs font-semibold text-amber-800 underline hover:text-amber-900"
-                        >
-                          Ver ficha →
-                        </Link>
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan={5} className="px-4 py-8 text-center text-stone-500">
-                      No hay equipos registrados en el inventario.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          )}
-        </div>
-      </section>
-    </main>
-  );
+  return <div className="space-y-7">
+    <PageHeader
+      actions={<Link className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-gastro-action px-4 text-sm font-semibold text-white hover:bg-gastro-action-hover" href="/dashboard/inventory/manage"><PackagePlus className="size-4" /> Gestionar inventario</Link>}
+      description="Consulta existencias, condición y trazabilidad de los recursos disponibles para prácticas."
+      eyebrow="Control de bodega"
+      title="Inventario"
+    />
+    <InventoryToolbar onSearchChange={setQuery} searchValue={query}>
+      <FilterSelect aria-label="Filtrar por categoría" onChange={(event) => setCategory(event.target.value)} value={category}>
+        <option value="all">Todas las categorías</option>
+        {categories.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
+      </FilterSelect>
+    </InventoryToolbar>
+    {loading ? <LoadingState label="Consultando equipos y utensilios…" /> : null}
+    {error ? <ErrorState description={error} title="No pudimos cargar el inventario" /> : null}
+    {!loading && !error && !filteredItems.length ? <EmptyState description={query || category !== "all" ? "Prueba otra búsqueda o elimina el filtro seleccionado." : "Agrega el primer recurso desde Gestión de inventario."} title={query || category !== "all" ? "No encontramos coincidencias" : "No hay recursos registrados"} /> : null}
+    {!loading && !error && filteredItems.length ? <section aria-label="Recursos de inventario" className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">{filteredItems.map((item) => {
+      const itemUnits = units.filter((unit) => unit.inventory_item_id === item.id && unit.is_active);
+      const status = getItemStatus(item, itemUnits, quantityByItem[item.id] ?? 0);
+      const quantityLabel = item.tracking_mode === "QUANTITY" ? `${quantityByItem[item.id] ?? 0} ${item.unit_of_measure}` : `${itemUnits.length} ${itemUnits.length === 1 ? "unidad" : "unidades"}`;
+      return <Link aria-label={`Ver ficha de ${item.name}`} className="rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gastro-action focus-visible:ring-offset-2" href={`/dashboard/inventory/${item.id}`} key={item.id}>
+        <InventoryItemCard assetCode={item.code ?? "Sin código"} category={categoryById[item.category_id] ?? "Sin categoría"} condition={getCondition(item, itemUnits)} imageAlt={`${item.name} en el laboratorio de Gastronomía`} imageUrl={item.code ? demoImages[item.code] : undefined} name={item.name} quantityLabel={quantityLabel} status={status} trackingLabel={item.tracking_mode === "QUANTITY" ? "Por cantidad" : "Individual"} />
+      </Link>;
+    })}</section> : null}
+  </div>;
+}
+
+function getItemStatus(item: InventoryItem, units: InventoryUnit[], quantity: number): InventoryUnitState {
+  if (!item.is_active) return "MAINTENANCE";
+  if (item.tracking_mode === "QUANTITY") return quantity > 0 ? "AVAILABLE" : "RESERVED";
+  if (units.some((unit) => unit.status === "AVAILABLE")) return "AVAILABLE";
+  if (units.some((unit) => unit.status === "MAINTENANCE" || unit.status === "DISABLED")) return "MAINTENANCE";
+  return "RESERVED";
+}
+
+function getCondition(item: InventoryItem, units: InventoryUnit[]) {
+  if (item.tracking_mode === "QUANTITY") return item.is_active ? "Disponible" : "Inactivo";
+  const worst = units.some((unit) => unit.condition === "DAMAGED") ? "DAMAGED" : units.some((unit) => unit.condition === "FAIR") ? "FAIR" : units.some((unit) => unit.condition === "GOOD") ? "GOOD" : "NEW";
+  return { NEW: "Nuevo", GOOD: "Bueno", FAIR: "Requiere revisión", DAMAGED: "Dañado" }[worst];
 }
