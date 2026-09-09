@@ -9,8 +9,9 @@ describe("autenticación", () => {
       cy.contains("button", "Iniciar sesión").click();
 
       cy.location("pathname").should("eq", "/dashboard");
-      cy.contains("h1", `Bienvenido, ${admin.email}`).should("be.visible");
-      cy.contains("ADMIN").should("be.visible");
+      cy.contains("h1", "Hola,").should("be.visible");
+      cy.get('[aria-label="Roles activos"]').should("contain", "Administrador");
+      cy.get('aside:visible').should("contain", admin.email);
     });
   });
 });

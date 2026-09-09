@@ -7,6 +7,7 @@ export type SeedUser = {
 export type SeedScenario = {
   marker: string;
   admin: SeedUser;
+  manager: SeedUser;
   teacher: SeedUser;
   courseSectionId: string;
   laboratoryId: string;

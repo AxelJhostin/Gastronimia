@@ -1,0 +1,743 @@
+{
+  "startedAt": "2026-09-09T03:36:47.673Z",
+  "endedAt": "2026-09-09T03:38:43.999Z",
+  "browser": "electron",
+  "browserVersion": "138.0.7204.251",
+  "total": 137,
+  "passed": 127,
+  "failed": 10,
+  "pending": 0,
+  "skipped": 0,
+  "runs": [
+    {
+      "spec": "cypress/e2e/auth.cy.ts",
+      "tests": [
+        {
+          "title": "autenticación > protege el dashboard y permite ingresar con una cuenta local",
+          "state": "passed",
+          "error": null
+        }
+      ]
+    },
+    {
+      "spec": "cypress/e2e/qa-boundaries.cy.ts",
+      "tests": [
+        {
+          "title": "QA límites de acceso, accesibilidad y estados > QA-AUTH-04 docente no queda cargando al abrir detalle preparations",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA límites de acceso, accesibilidad y estados > QA-AUTH-04 docente no queda cargando al abrir detalle deliveries",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA límites de acceso, accesibilidad y estados > QA-AUTH-04 docente no queda cargando al abrir detalle returns",
+          "state": "failed",
+          "error": "AssertionError: Timed out retrying after 4000ms: Expected to find content: 'Esta estación no está en tu menú.' within the selector: 'h1' but never did.\n    at Context.eval (webpack://frontend/./cypress/e2e/qa-boundaries.cy.ts:12:61)"
+        },
+        {
+          "title": "QA límites de acceso, accesibilidad y estados > QA-AUTH-04 docente no queda cargando al abrir detalle inventory",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA límites de acceso, accesibilidad y estados > QA-AUTH-04 docente no queda cargando al abrir detalle inventory/units",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA límites de acceso, accesibilidad y estados > QA-AUTH-04 docente no queda cargando al abrir detalle returns/inspections",
+          "state": "failed",
+          "error": "AssertionError: Timed out retrying after 4000ms: Expected to find content: 'Esta estación no está en tu menú.' within the selector: 'h1' but never did.\n    at Context.eval (webpack://frontend/./cypress/e2e/qa-boundaries.cy.ts:12:61)"
+        },
+        {
+          "title": "QA límites de acceso, accesibilidad y estados > QA-A11Y-01 confirmación recibe foco al abrir",
+          "state": "failed",
+          "error": "AssertionError: Timed out retrying after 4000ms: Expected to find element: `[role=\"dialog\"]`, but never found it. Queried from:\n\n              > cy.focused()\n    at Context.eval (webpack://frontend/./cypress/e2e/qa-boundaries.cy.ts:22:44)"
+        },
+        {
+          "title": "QA límites de acceso, accesibilidad y estados > QA-A11Y-01 confirmación cierra con Escape y devuelve foco",
+          "state": "failed",
+          "error": "AssertionError: Timed out retrying after 4000ms: Expected <div.bg-white.w-full.max-w-md.rounded-xl.border.border-slate-200.shadow-xl.overflow-hidden.animate-in.fade-in.zoom-in-95.duration-150> not to exist in the DOM, but it was continuously found.\n    at Context.eval (webpack://frontend/./cypress/e2e/qa-boundaries.cy.ts:31:30)"
+        },
+        {
+          "title": "QA límites de acceso, accesibilidad y estados > QA-NAV-04 el menú móvil bloquea el scroll del contenido de fondo",
+          "state": "failed",
+          "error": "AssertionError: scroll del fondo bloqueado: expected false to equal true\n    at Context.eval (webpack://frontend/./cypress/e2e/qa-boundaries.cy.ts:45:54)\n    at getRet (http://localhost:3000/__cypress/runner/cypress_runner.js:121394:20)\n    at tryCatcher (http://localhost:3000/__cypress/runner/cypress_runner.js:1780:23)\n    at Promise.attempt.Promise.try (http://localhost:3000/__cypress/runner/cypress_runner.js:4288:29)\n    at Context.thenFn (http://localhost:3000/__cypress/runner/cypress_runner.js:121405:66)\n    at Context.then (http://localhost:3000/__cypress/runner/cypress_runner.js:121656:21)"
+        },
+        {
+          "title": "QA límites de acceso, accesibilidad y estados > QA-UX-01 admin inventario 390x844 sin desbordamiento",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA límites de acceso, accesibilidad y estados > QA-UX-01 admin inventario 768x1024 sin desbordamiento",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA límites de acceso, accesibilidad y estados > QA-UX-01 admin inventario 1440x900 sin desbordamiento",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA límites de acceso, accesibilidad y estados > QA-UX-01 manager inventario 390x844 sin desbordamiento",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA límites de acceso, accesibilidad y estados > QA-UX-01 manager inventario 768x1024 sin desbordamiento",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA límites de acceso, accesibilidad y estados > QA-UX-01 manager inventario 1440x900 sin desbordamiento",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA límites de acceso, accesibilidad y estados > QA-INV-01 búsqueda y estado vacío con datos propios",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA límites de acceso, accesibilidad y estados > QA-A11Y-02 encabezados principales únicos y etiquetas en nueva solicitud",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA límites de acceso, accesibilidad y estados > QA-ERR-02 login controla indisponibilidad de Auth (red simulada)",
+          "state": "passed",
+          "error": null
+        }
+      ]
+    },
+    {
+      "spec": "cypress/e2e/qa-forms-ux.cy.ts",
+      "tests": [
+        {
+          "title": "QA autenticación, formularios y UX > QA-AUTH-02 credenciales inválidas",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA autenticación, formularios y UX > SMK-03 / QA-AUTH-03 cerrar sesión bloquea acceso posterior",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA autenticación, formularios y UX > SMK-06 admin conserva identidad después de recargar",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA autenticación, formularios y UX > QA-NAV-04 admin menú móvil abre, navega y cierra",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA autenticación, formularios y UX > SMK-06 manager conserva identidad después de recargar",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA autenticación, formularios y UX > QA-NAV-04 manager menú móvil abre, navega y cierra",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA autenticación, formularios y UX > SMK-06 teacher conserva identidad después de recargar",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA autenticación, formularios y UX > QA-NAV-04 teacher menú móvil abre, navega y cierra",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA autenticación, formularios y UX > QA-UX-01 docente /dashboard sin desbordamiento 390x844",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA autenticación, formularios y UX > QA-UX-01 docente /dashboard/requests/new sin desbordamiento 390x844",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA autenticación, formularios y UX > QA-UX-01 docente /dashboard/loans sin desbordamiento 390x844",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA autenticación, formularios y UX > QA-UX-01 docente /dashboard sin desbordamiento 768x1024",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA autenticación, formularios y UX > QA-UX-01 docente /dashboard/requests/new sin desbordamiento 768x1024",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA autenticación, formularios y UX > QA-UX-01 docente /dashboard/loans sin desbordamiento 768x1024",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA autenticación, formularios y UX > QA-UX-01 docente /dashboard sin desbordamiento 1440x900",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA autenticación, formularios y UX > QA-UX-01 docente /dashboard/requests/new sin desbordamiento 1440x900",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA autenticación, formularios y UX > QA-UX-01 docente /dashboard/loans sin desbordamiento 1440x900",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA autenticación, formularios y UX > QA-ERR-01 error controlado y recuperación de API (red simulada)",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA autenticación, formularios y UX > QA-DOC-04 > requiere horario y artículo",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA autenticación, formularios y UX > QA-DOC-04 > rechaza intervalo inválido y conserva los campos",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA autenticación, formularios y UX > QA-DOC-04 > rechaza cantidad cero mediante validación HTML",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA autenticación, formularios y UX > QA-DOC-04 > impide duplicar artículo",
+          "state": "passed",
+          "error": null
+        }
+      ]
+    },
+    {
+      "spec": "cypress/e2e/qa-incidents.cy.ts",
+      "tests": [
+        {
+          "title": "QA-INC / QA-MAN equipo individual y evidencia privada > QA-INC-02 devolución con daño, fotografía, bloqueo y mantenimiento correctivo",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-INC / QA-MAN equipo individual y evidencia privada > QA-DOC-02/03 aislamiento entre dos docentes en API",
+          "state": "passed",
+          "error": null
+        }
+      ]
+    },
+    {
+      "spec": "cypress/e2e/qa-management.cy.ts",
+      "tests": [
+        {
+          "title": "QA gestión y reportes > QA-INV-03 API listado admite movimientos de préstamo y devolución",
+          "state": "failed",
+          "error": "AssertionError: GET /admin/inventory/movements: expected 500 to equal 200\n    at Context.eval (webpack://frontend/./cypress/support/api.ts:16:54)\n    at getRet (http://localhost:3000/__cypress/runner/cypress_runner.js:121394:20)\n    at tryCatcher (http://localhost:3000/__cypress/runner/cypress_runner.js:1780:23)\n    at Promise.attempt.Promise.try (http://localhost:3000/__cypress/runner/cypress_runner.js:4288:29)\n    at Context.thenFn (http://localhost:3000/__cypress/runner/cypress_runner.js:121405:66)\n    at Context.then (http://localhost:3000/__cypress/runner/cypress_runner.js:121656:21)"
+        },
+        {
+          "title": "QA gestión y reportes > QA-INV-02 UI crear, editar, desactivar y reactivar categoría",
+          "state": "failed",
+          "error": "AssertionError: Timed out retrying after 4000ms: Expected to find content: 'QA categoría dfa38d58e010 editada' within the selector: 'li' but never did.\n    at Context.eval (webpack://frontend/./cypress/e2e/qa-management.cy.ts:39:9)"
+        },
+        {
+          "title": "QA gestión y reportes > QA-INV-02 UI crear, editar, desactivar y reactivar ubicación",
+          "state": "failed",
+          "error": "AssertionError: Timed out retrying after 4000ms: Expected to find content: 'QA ubicación dfa38d58e010 editada' within the selector: 'li' but never did.\n    at Context.eval (webpack://frontend/./cypress/e2e/qa-management.cy.ts:39:9)"
+        },
+        {
+          "title": "QA gestión y reportes > QA-ADM-02 API alta, edición, desactivación y reactivación periods",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA gestión y reportes > QA-ADM-02 API alta, edición, desactivación y reactivación subjects",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA gestión y reportes > QA-ADM-02 API alta, edición, desactivación y reactivación laboratories",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA gestión y reportes > QA-INV-03 API ajuste válido, saldo, kardex y rechazo de cero",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA gestión y reportes > QA-MAN-01 / QA-INV-04 API unidad individual, mantenimiento e historial",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA gestión y reportes > QA-ADM-01 API cambios de roles, baja bloquea token previo y reactivación",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA gestión y reportes > QA-REP-01 UI reporte Solicitudes carga datos reales",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA gestión y reportes > QA-REP-01 UI reporte Préstamos carga datos reales",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA gestión y reportes > QA-REP-01 UI reporte Stock carga datos reales",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA gestión y reportes > QA-REP-01 UI reporte Novedades carga datos reales",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA gestión y reportes > QA-REP-01 UI reporte Kardex carga datos reales",
+          "state": "passed",
+          "error": null
+        }
+      ]
+    },
+    {
+      "spec": "cypress/e2e/qa-permissions.cy.ts",
+      "tests": [
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > admin > QA-AUTH-04 UI /dashboard: permitido",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > admin > QA-AUTH-04 UI /dashboard/requests: permitido",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > admin > QA-AUTH-04 UI /dashboard/requests/new: 403",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > admin > QA-AUTH-04 UI /dashboard/loans: 403",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > admin > QA-AUTH-04 UI /dashboard/preparations: permitido",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > admin > QA-AUTH-04 UI /dashboard/deliveries: permitido",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > admin > QA-AUTH-04 UI /dashboard/inventory: permitido",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > admin > QA-AUTH-04 UI /dashboard/inventory/manage: permitido",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > admin > QA-AUTH-04 UI /dashboard/returns: permitido",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > admin > QA-AUTH-04 UI /dashboard/maintenance: permitido",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > admin > QA-AUTH-04 UI /dashboard/incidents: permitido",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > admin > QA-AUTH-04 UI /dashboard/reports: permitido",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > admin > QA-AUTH-04 UI /dashboard/audit-log: permitido",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > admin > QA-AUTH-04 UI /dashboard/users: permitido",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > admin > QA-AUTH-04 UI /dashboard/users/new: permitido",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > admin > QA-AUTH-04 UI /dashboard/academic: permitido",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > admin > QA-AUTH-04 API /requests/form-options: 403",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > admin > QA-AUTH-04 API /admin/inventory/items: 200",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > admin > QA-AUTH-04 API /admin/returns/loans: 200",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > admin > QA-AUTH-04 API /admin/maintenance: 200",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > admin > QA-AUTH-04 API /admin/reports/stock: 200",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > admin > QA-AUTH-04 API /admin/audit: 200",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > admin > QA-AUTH-04 API /admin/users: 200",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > admin > QA-AUTH-04 API /admin/academic/periods: 200",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > admin > QA-NAV menú corresponde exactamente al rol",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > manager > QA-AUTH-04 UI /dashboard: permitido",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > manager > QA-AUTH-04 UI /dashboard/requests: permitido",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > manager > QA-AUTH-04 UI /dashboard/requests/new: 403",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > manager > QA-AUTH-04 UI /dashboard/loans: 403",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > manager > QA-AUTH-04 UI /dashboard/preparations: permitido",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > manager > QA-AUTH-04 UI /dashboard/deliveries: permitido",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > manager > QA-AUTH-04 UI /dashboard/inventory: permitido",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > manager > QA-AUTH-04 UI /dashboard/inventory/manage: permitido",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > manager > QA-AUTH-04 UI /dashboard/returns: permitido",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > manager > QA-AUTH-04 UI /dashboard/maintenance: permitido",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > manager > QA-AUTH-04 UI /dashboard/incidents: permitido",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > manager > QA-AUTH-04 UI /dashboard/reports: permitido",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > manager > QA-AUTH-04 UI /dashboard/audit-log: 403",
+          "state": "failed",
+          "error": "AssertionError: Timed out retrying after 4000ms: Expected to find content: 'Esta estación no está en tu menú.' within the selector: 'h1' but never did.\n    at Context.eval (webpack://frontend/./cypress/e2e/qa-permissions.cy.ts:51:67)"
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > manager > QA-AUTH-04 UI /dashboard/users: 403",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > manager > QA-AUTH-04 UI /dashboard/users/new: 403",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > manager > QA-AUTH-04 UI /dashboard/academic: 403",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > manager > QA-AUTH-04 API /requests/form-options: 403",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > manager > QA-AUTH-04 API /admin/inventory/items: 200",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > manager > QA-AUTH-04 API /admin/returns/loans: 200",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > manager > QA-AUTH-04 API /admin/maintenance: 200",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > manager > QA-AUTH-04 API /admin/reports/stock: 200",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > manager > QA-AUTH-04 API /admin/audit: 403",
+          "state": "failed",
+          "error": "AssertionError: Timed out retrying after 4000ms: expected 200 to equal 403\n    at Context.eval (webpack://frontend/./cypress/e2e/qa-permissions.cy.ts:67:29)\n    at getRet (http://localhost:3000/__cypress/runner/cypress_runner.js:121394:20)\n    at tryCatcher (http://localhost:3000/__cypress/runner/cypress_runner.js:1780:23)\n    at Promise.attempt.Promise.try (http://localhost:3000/__cypress/runner/cypress_runner.js:4288:29)\n    at Context.thenFn (http://localhost:3000/__cypress/runner/cypress_runner.js:121405:66)\n    at Context.then (http://localhost:3000/__cypress/runner/cypress_runner.js:121656:21)\n    at wrapped (http://localhost:3000/__cypress/runner/cypress_runner.js:146597:19)"
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > manager > QA-AUTH-04 API /admin/users: 403",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > manager > QA-AUTH-04 API /admin/academic/periods: 403",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > manager > QA-NAV menú corresponde exactamente al rol",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > teacher > QA-AUTH-04 UI /dashboard: permitido",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > teacher > QA-AUTH-04 UI /dashboard/requests: permitido",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > teacher > QA-AUTH-04 UI /dashboard/requests/new: permitido",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > teacher > QA-AUTH-04 UI /dashboard/loans: permitido",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > teacher > QA-AUTH-04 UI /dashboard/preparations: 403",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > teacher > QA-AUTH-04 UI /dashboard/deliveries: 403",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > teacher > QA-AUTH-04 UI /dashboard/inventory: 403",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > teacher > QA-AUTH-04 UI /dashboard/inventory/manage: 403",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > teacher > QA-AUTH-04 UI /dashboard/returns: 403",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > teacher > QA-AUTH-04 UI /dashboard/maintenance: 403",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > teacher > QA-AUTH-04 UI /dashboard/incidents: 403",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > teacher > QA-AUTH-04 UI /dashboard/reports: 403",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > teacher > QA-AUTH-04 UI /dashboard/audit-log: 403",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > teacher > QA-AUTH-04 UI /dashboard/users: 403",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > teacher > QA-AUTH-04 UI /dashboard/users/new: 403",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > teacher > QA-AUTH-04 UI /dashboard/academic: 403",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > teacher > QA-AUTH-04 API /requests/form-options: 200",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > teacher > QA-AUTH-04 API /admin/inventory/items: 403",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > teacher > QA-AUTH-04 API /admin/returns/loans: 403",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > teacher > QA-AUTH-04 API /admin/maintenance: 403",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > teacher > QA-AUTH-04 API /admin/reports/stock: 403",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > teacher > QA-AUTH-04 API /admin/audit: 403",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > teacher > QA-AUTH-04 API /admin/users: 403",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > teacher > QA-AUTH-04 API /admin/academic/periods: 403",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > teacher > QA-NAV menú corresponde exactamente al rol",
+          "state": "passed",
+          "error": null
+        }
+      ]
+    },
+    {
+      "spec": "cypress/e2e/qa-workflow.cy.ts",
+      "tests": [
+        {
+          "title": "QA-DOC / QA-ENC flujo con encargado y consistencia > QA-DOC-05/06 QA-ENC-01/03–09 parcial, historial, stock y cierre",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-DOC / QA-ENC flujo con encargado y consistencia > QA-ENC-02 rechazo exige motivo, confirma y conserva revisión",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-DOC / QA-ENC flujo con encargado y consistencia > QA-ENC-03 aprobación parcial y rechazo de cantidad excesiva",
+          "state": "passed",
+          "error": null
+        }
+      ]
+    },
+    {
+      "spec": "cypress/e2e/request-lifecycle.cy.ts",
+      "tests": [
+        {
+          "title": "ciclo completo de préstamo > recorre solicitud, aprobación, preparación, entrega y devolución",
+          "state": "passed",
+          "error": null
+        }
+      ]
+    },
+    {
+      "spec": "cypress/e2e/return-recovery.cy.ts",
+      "tests": [
+        {
+          "title": "recuperación de devoluciones > mantiene y completa una inspección pendiente después de recargar",
+          "state": "passed",
+          "error": null
+        }
+      ]
+    }
+  ]
+}

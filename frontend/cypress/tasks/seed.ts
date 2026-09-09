@@ -71,7 +71,7 @@ async function insertRow<T extends JsonRecord>(
 async function createUser(
   services: LocalServices,
   marker: string,
-  kind: "admin" | "teacher",
+  kind: "admin" | "teacher" | "manager",
   roleId: number,
 ): Promise<SeedUser> {
   const email = `cypress-${kind}-${marker}@example.test`;
@@ -105,6 +105,7 @@ export async function seedBaseScenario(): Promise<SeedScenario> {
   const services = localServices();
   const marker = randomUUID().replaceAll("-", "").slice(0, 12);
   const admin = await createUser(services, marker, "admin", 1);
+  const manager = await createUser(services, marker, "manager", 2);
   const teacher = await createUser(services, marker, "teacher", 3);
   const teacherProfile = await insertRow<{ id: string }>(services, "teachers", {
     user_id: teacher.id,
@@ -154,6 +155,7 @@ export async function seedBaseScenario(): Promise<SeedScenario> {
   return {
     marker,
     admin,
+    manager,
     teacher,
     courseSectionId: courseSection.id,
     laboratoryId: laboratory.id,
@@ -282,4 +284,30 @@ export async function seedPendingReturnScenario(): Promise<PendingReturnScenario
     loanId: loan.id,
     returnId: equipmentReturn.id,
   };
+}
+
+export async function seedIndividualLoanScenario() {
+  const scenario = await seedBaseScenario();
+  const services = localServices();
+  const category = await insertRow<{ id: string }>(services, "inventory_categories", { name: `QA equipo ${scenario.marker}` });
+  const item = await insertRow<{ id: string }>(services, "inventory_items", { category_id: category.id, name: `QA batidora ${scenario.marker}`, tracking_mode: "INDIVIDUAL", unit_of_measure: "unidad" });
+  const unit = await insertRow<{ id: string }>(services, "inventory_units", { inventory_item_id: item.id, location_id: scenario.locationId, asset_tag: `QA-EQ-${scenario.marker}`, condition: "GOOD", status: "AVAILABLE" });
+  const teacherToken = await authToken(services, scenario.teacher);
+  const managerToken = await authToken(services, scenario.manager);
+  const draft = await api<{ id: string }>(services, teacherToken, "/requests/drafts", "POST", {
+    course_section_id: scenario.courseSectionId, laboratory_id: scenario.laboratoryId,
+    start_at: "2035-08-01T13:00:00Z", end_at: "2035-08-01T16:00:00Z",
+    purpose: `QA equipo ${scenario.marker}`, items: [{ inventory_item_id: item.id, requested_quantity: 1 }],
+  });
+  await api(services, teacherToken, `/requests/${draft.id}/submit`, "POST");
+  const detail = await api<{ items: Array<{ id: string }> }>(services, managerToken, `/requests/${draft.id}`);
+  await api(services, managerToken, `/admin/requests/${draft.id}/approve`, "POST", { items: [{ equipment_request_item_id: detail.items[0].id, approved_quantity: 1 }] });
+  await api(services, managerToken, `/admin/requests/${draft.id}/preparation/start`, "POST");
+  const context = await api<{ items: Array<{ equipment_reservation_detail_id: string }> }>(services, managerToken, `/admin/requests/${draft.id}/preparation`);
+  await api(services, managerToken, `/admin/requests/${draft.id}/preparation/items`, "POST", { items: [{ equipment_reservation_detail_id: context.items[0].equipment_reservation_detail_id, prepared_quantity: 1, inventory_unit_ids: [unit.id] }] });
+  await api(services, managerToken, `/admin/requests/${draft.id}/preparation/complete`, "POST");
+  await api(services, managerToken, `/admin/inspections/requests/${draft.id}/outbound`, "POST", { items: [{ inventory_unit_id: unit.id, observed_condition: "GOOD", is_complete: true }] });
+  const qr = await api<{ token: string }>(services, managerToken, `/admin/deliveries/requests/${draft.id}/qr`, "POST");
+  const loan = await api<{ id: string }>(services, managerToken, "/admin/deliveries/deliver", "POST", { qr_token: qr.token, collected_by_name: `QA equipo ${scenario.marker}`, quantity_locations: [] });
+  return { ...scenario, individualItemId: item.id, unitId: unit.id, loanId: loan.id, requestId: draft.id };
 }
