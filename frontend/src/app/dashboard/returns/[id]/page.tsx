@@ -261,13 +261,16 @@ export default function ReturnDetailPage() {
     }
   };
 
-  if (identity.status === "loading" || loading) {
+  if (identity.status === "loading") {
     return <p className="p-6 text-sm text-stone-600">Cargando datos del préstamo…</p>;
   }
   if (identity.status === "unavailable") {
     return <p className="p-6 text-sm text-red-700">{identity.message}</p>;
   }
   if (!hasAccess) return <GastronomyStatusPage kind="forbidden" />;
+  if (loading) {
+    return <p className="p-6 text-sm text-stone-600">Cargando datos del préstamo…</p>;
+  }
   if (error && !pending) {
     return <main className="p-6"><div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">{error}</div></main>;
   }

@@ -200,13 +200,16 @@ export default function PendingReturnInspectionPage() {
     }
   };
 
-  if (identity.status === "loading" || loading) {
+  if (identity.status === "loading") {
     return <p className="p-6 text-sm text-stone-600">Recuperando devolución…</p>;
   }
   if (identity.status === "unavailable") {
     return <p className="p-6 text-sm text-red-700">{identity.message}</p>;
   }
   if (!hasAccess) return <GastronomyStatusPage kind="forbidden" />;
+  if (loading) {
+    return <p className="p-6 text-sm text-stone-600">Recuperando devolución…</p>;
+  }
   if (!context) {
     return (
       <main className="p-6">

@@ -9,9 +9,9 @@
 | URL | `http://localhost:3000` |
 | API | `http://localhost:8000/api/v1` |
 | Swagger | `http://localhost:8000/api/v1/docs` |
-| Fecha de ejecución | 8 de septiembre de 2026, America/Guayaquil |
+| Fecha de ejecución | 9 de septiembre de 2026, America/Guayaquil |
 | Responsable QA | Axel (reporte manual) + Codex (Cypress e integración local) |
-| Commit o versión | `6d9bebf` + ampliación local de pruebas QA; aplicación sin cambios |
+| Commit o versión | `0f35699` + correcciones locales verificadas |
 | Navegador y versión | Electron 138 headless, Cypress 15.21.1 |
 | Sistema operativo | macOS arm64 |
 
@@ -19,28 +19,29 @@ Este documento permite ejecutar una revisión funcional completa del MVP, regist
 
 ## 2. Resultado general
 
-Última ejecución: **RECHAZADO para cierre del MVP**. Hay defectos reproducidos y criterios todavía parcialmente verificados. El recorrido principal sí funciona; no equivale a aprobar todos los criterios del documento.
+Última ejecución: **REGRESIÓN AUTOMATIZADA APROBADA; cierre manual con observaciones**. Los cinco defectos detectados el 8 de septiembre fueron corregidos y Cypress pasa por completo. Todavía existen criterios manuales parcialmente verificados, por lo que este resultado no equivale a certificar cada checkbox del documento.
 
 - [ ] APROBADO: no existen defectos bloqueantes ni críticos abiertos.
-- [ ] APROBADO CON OBSERVACIONES: solo existen defectos menores aceptados.
-- [x] RECHAZADO: existe al menos un defecto bloqueante o crítico.
+- [x] APROBADO CON OBSERVACIONES: regresión verde y criterios manuales pendientes.
+- [ ] RECHAZADO: existe al menos un defecto bloqueante o crítico.
 
 Resumen:
 
 | Métrica | Cantidad |
 | --- | ---: |
 | Comprobaciones Cypress ejecutadas | 137 |
-| Comprobaciones Cypress aprobadas | 127 |
-| Comprobaciones Cypress fallidas | 10 |
+| Comprobaciones Cypress aprobadas | 137 |
+| Comprobaciones Cypress fallidas | 0 |
 | Comprobaciones Cypress omitidas/bloqueadas | 0 |
-| Defectos críticos | 1 |
-| Defectos altos | 1 |
-| Defectos medios | 3 |
+| Defectos abiertos críticos | 0 |
+| Defectos abiertos altos | 0 |
+| Defectos abiertos medios | 0 |
 | Defectos bajos | 0 |
+| Defectos corregidos y verificados | 5 |
 
-Las 137 comprobaciones automatizadas no son 137 casos completos del plan: un caso puede tener varias comprobaciones y criterios pendientes. Los 10 fallos corresponden a 5 defectos, no a 10 problemas independientes.
+Las 137 comprobaciones automatizadas no son 137 casos completos del plan: un caso puede tener varias comprobaciones y criterios pendientes.
 
-Ver el [informe de ejecución y defectos](./resultado-qa-2026-09-08.md) para evidencia, causas, pasos de reproducción y cobertura exacta.
+Ver el [informe de reverificación](./resultado-reverificacion-2026-09-09.md) para el resultado actual. El [informe del 8 de septiembre](./resultado-qa-2026-09-08.md) conserva las causas y evidencias originales de los cinco defectos.
 
 ### 2.1 Resultados manuales comunicados por Axel
 
@@ -50,7 +51,7 @@ Se conservan como observaciones del usuario, sin atribuirlas a Cypress:
 | --- | --- |
 | SMK-01 a SMK-07 | PASS manual |
 | QA-AUTH-01 a QA-AUTH-03 | PASS manual |
-| QA-AUTH-04 | FAIL manual, confirmado automáticamente |
+| QA-AUTH-04 | FAIL manual inicial; corregido y PASS automático en la reverificación |
 | QA-NAV-01 a QA-NAV-03 | PASS manual, menús confirmados automáticamente |
 | QA-DOC-01 | Tentativo: parece correcto; falta revisión detallada |
 | QA-DOC-02 y QA-DOC-03 | PASS manual |
@@ -67,11 +68,11 @@ Se conservan como observaciones del usuario, sin atribuirlas a Cypress:
 | QA-AUTH-01 | PASS | Login real por formulario; identidad y rol comprobados. |
 | QA-AUTH-02 | PASS | Credenciales incorrectas, error visible y permanencia en login. |
 | QA-AUTH-03 | PASS | Sin sesión y después de logout, ruta privada redirige a login. |
-| QA-AUTH-04 | FAIL | Encargado accede a Auditoría; dos detalles de retorno quedan cargando para Docente. BUG-001 y BUG-003. |
+| QA-AUTH-04 | PASS | Matriz UI/API por rol 75/75; Auditoría niega a Encargado y los detalles de devolución muestran 403 a Docente. BUG-001/003 verificados. |
 | QA-NAV-01 | PASS | Menú exacto Docente. |
-| QA-NAV-02 | PASS | Menú exacto Encargado; el fallo de acceso directo se registra en AUTH-04. |
+| QA-NAV-02 | PASS | Menú exacto Encargado; las restricciones de acceso directo se validan en AUTH-04. |
 | QA-NAV-03 | PASS | Menú exacto Administrador. |
-| QA-NAV-04 | FAIL | Abre, navega y cierra, pero no bloquea scroll de fondo. BUG-005. |
+| QA-NAV-04 | PASS automático / PARCIAL manual | Abre, navega, aplica `inert`, cierra y bloquea el scroll. Falta comprobar todos los enlaces, botón de cierre y gesto sobre el fondo en dispositivo físico. BUG-005 verificado. |
 | QA-DOC-01 | PARCIAL | Panel carga; falta confirmar métricas y aspecto de “Próximo paso” contra datos demo iniciales. |
 | QA-DOC-02 | PASS manual / PARCIAL automático | Historial de préstamo QA y aislamiento entre docentes pasan; no se restablecieron contadores del demo original. |
 | QA-DOC-03 | PASS manual / PARCIAL automático | Solicitud propia y aislamiento pasan; no se restauraron borrador y pendiente del demo. |
@@ -88,19 +89,19 @@ Se conservan como observaciones del usuario, sin atribuirlas a Cypress:
 | QA-ENC-08 | PASS | Exceso inválido; devolución parcial; estado, pendiente y stock comprobados. |
 | QA-ENC-09 | PASS | Segunda devolución cierra solicitud/préstamo, restaura stock y conserva historial. |
 | QA-INV-01 | PARCIAL | Búsqueda por recurso QA y estado vacío pasan; falta combinación de filtro y revisión de todas las imágenes. |
-| QA-INV-02 | FAIL | Alta/edición/activación persisten, pero la recarga muestra catálogos vacíos por fallo de movimientos. BUG-002. |
-| QA-INV-03 | FAIL | Ajuste y kardex pasan, pero listado de movimientos devuelve 500 tras préstamo/devolución. BUG-002. |
+| QA-INV-02 | PARCIAL | Alta/edición/desactivación/reactivación y recarga de categoría/ubicación pasan; una consulta fallida ya no descarta las demás. Faltan CRUD UI completo de artículos/unidades e historial. BUG-002 verificado. |
+| QA-INV-03 | PASS | Ajuste válido, rechazo de cero, saldo y Kardex pasan; el listado admite `LOAN_OUT`/`RETURN_IN`. BUG-002 verificado. |
 | QA-INV-04 | PARCIAL | Unidad e historial de cambios comprobados por API; falta validar todos los datos de la pantalla. |
 | QA-INC-01 | PARCIAL | Incidencia QA visible con evidencia; no se exigió restaurar la incidencia demo original. |
 | QA-INC-02 | PASS | Daño, descripción obligatoria, severidad alta, foto privada, URL firmada y unidad no disponible comprobados. |
 | QA-MAN-01 | PARCIAL | API de mantenimiento, reparación, historial y bloqueo de unidad prestada pasan; falta el recorrido completo de creación/cancelación por UI. |
 | QA-REP-01 | PARCIAL | Cinco pestañas cargan con HTTP 200; stock y kardex contrastados; falta verificar todas las columnas y duplicados en cada reporte. |
-| QA-AUD-01 | FAIL | Encargado accede a página/API restringidas por el plan. BUG-001. No se certificó toda la secuencia de eventos. |
+| QA-AUD-01 | PARCIAL | Página y API están restringidas a Administrador; Encargado recibe 403. Falta certificar toda la secuencia y contenido de eventos. BUG-001 verificado. |
 | QA-ADM-01 | PARCIAL | Cambio de roles, desactivación efectiva incluso con token previo y reactivación pasan; faltan alta UI, contraseña temporal y regla del último ADMIN. |
 | QA-ADM-02 | PARCIAL | Crear/editar/desactivar/reactivar período, materia y laboratorio por API pasa; falta completar perfiles, secciones, exclusión de inactivos y toda la UI. |
 | QA-UX-01 | PARCIAL | 15 combinaciones de página/rol/tamaño sin desbordamiento; faltan tablas, modales y todos los controles en los tres tamaños. |
-| QA-UX-02 | FAIL | Inventario muestra “Failed to fetch” y listas vacías; dos detalles quedan cargando. BUG-002/003. Otras variantes no certificadas. |
-| QA-A11Y-01 | FAIL | Modal no recibe foco ni cierra con Escape. BUG-004. |
+| QA-UX-02 | PARCIAL | Gestión de inventario conserva cargas parciales y los detalles prohibidos ya no quedan cargando. Faltan todos los estados en el resto de módulos. BUG-002/003 verificados. |
+| QA-A11Y-01 | PARCIAL | Modal recibe/retiene foco, cierra con Escape y lo restaura. Falta recorrido manual completo por teclado de todos los módulos. BUG-004 verificado. |
 | QA-A11Y-02 | PARCIAL | Encabezado único y etiquetas de nueva solicitud pasan; faltan contraste, lector de pantalla y resto de módulos. |
 | QA-ERR-01 | PARCIAL | Error de red simulado y recuperación de historial comprobados; no se detuvo físicamente FastAPI. |
 | QA-ERR-02 | PARCIAL | Error de red de Auth simulado y login controlado; no se detuvo físicamente Supabase. |
@@ -121,7 +122,7 @@ npm run test:qa -- --config retries=0 --spec cypress/e2e/qa-permissions.cy.ts
 
 El comando obtiene las claves locales internamente, ejecuta Cypress y añade registros con prefijos `cypress-`, `Cypress` y `QA`. No ejecuta `db reset`, no restaura el demo y no elimina registros al terminar. Guarda resultados JSON, capturas de fallos y vídeos en `frontend/cypress/`; las claves privilegiadas no se exponen al navegador. Los escenarios abiertos creados por las pruebas permanecen identificables para inspección.
 
-La suite debe terminar con código distinto de cero mientras estos defectos sigan abiertos. No cambiar expectativas ni omitir casos para obtener un resultado verde.
+El resultado esperado actual es 137/137. No cambiar expectativas ni omitir casos para conservar un resultado verde.
 
 ## 3. Reglas de seguridad del entorno
 
@@ -860,10 +861,10 @@ npm run lint:backend
 npm run typecheck:backend
 npm run test:backend
 
-npm run test:e2e
+npm run test:qa -- --config retries=0
 ```
 
-Después del E2E, restaurar los datos manuales:
+`test:qa` conserva la base existente. Para una ejecución aislada que además construya producción y reinicie la base, usar `npm run test:e2e`; después restaurar el demo:
 
 ```bash
 npm run seed:demo
@@ -879,9 +880,9 @@ Resultados:
 | Build frontend | NO EJECUTADO en este ciclo | Se comprobó la aplicación dev existente; no se recompiló producción. |
 | Ruff backend | PASS | `ruff check app tests` |
 | mypy backend | PASS | 29 archivos |
-| pytest backend | PASS | 95 pruebas, cobertura 82.40%; 2 integraciones omitidas en ejecución unitaria |
-| Integración local real | PASS | Las 2 integraciones se ejecutaron separadamente con opt-in; 2 PASS |
-| Cypress E2E | FAIL | 137 comprobaciones: 127 PASS, 10 FAIL, 0 omitidas; ver informe |
+| pytest backend | PASS | 96 pruebas, cobertura 82.57%; 2 integraciones opt-in omitidas |
+| Integración local real | NO REPETIDA | Las 2 integraciones pasaron en el ciclo anterior; Cypress sí usó servicios locales reales. |
+| Cypress E2E | PASS | 137 comprobaciones: 137 PASS, 0 FAIL, 0 omitidas; ver reverificación |
 
 ## 19. Plantilla de defecto
 
@@ -913,14 +914,14 @@ Error de consola o terminal:
 
 Antes de aprobar:
 
-- [ ] El flujo Docente → Encargado → préstamo → devolución → historial terminó correctamente.
-- [ ] Todos los controles de permisos fueron comprobados por menú y URL directa.
+- [x] El flujo Docente → Encargado → préstamo → devolución → historial terminó correctamente.
+- [x] Todos los controles automatizados de permisos fueron comprobados por menú, URL directa y API.
 - [ ] No hay errores de consola sin justificar.
 - [ ] No se observaron secretos en navegador, capturas o logs.
-- [ ] El inventario quedó consistente después de la devolución.
+- [x] El inventario quedó consistente después de la devolución.
 - [ ] Los eventos aparecen en reportes y auditoría según el rol.
 - [ ] La interfaz fue revisada en móvil, tableta y escritorio.
-- [ ] Todos los defectos críticos y altos están cerrados y verificados.
+- [x] Todos los defectos críticos y altos detectados están cerrados y verificados.
 
 Firma QA: ____________________
 

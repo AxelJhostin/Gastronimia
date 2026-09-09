@@ -1,5 +1,7 @@
 # Resultado de QA — 8 de septiembre de 2026
 
+> **Actualización del 9 de septiembre:** los cinco defectos de este informe fueron corregidos y verificados. La nueva ejecución terminó con 137/137 comprobaciones Cypress aprobadas. Ver el [informe de reverificación](./resultado-reverificacion-2026-09-09.md). El contenido siguiente se conserva como evidencia histórica de la ejecución que detectó los problemas.
+
 **Resultado: RECHAZADO para cierre del MVP.** El ciclo operativo principal funciona, pero hay cinco defectos abiertos y criterios parcialmente comprobados. No se ha certificado todo el plan ni se han corregido los defectos de aplicación en este trabajo.
 
 Para retomar la corrección sin releer este informe completo, usar la [hoja de arranque de QA](./arranque-qa-2026-09-09.md).

@@ -1,5 +1,6 @@
 from unittest.mock import Mock, patch
 
+from app.api.v1.endpoints.audit import require_audit_admin
 from app.api.v1.endpoints.request_reviews import require_request_reviewer
 from app.core.audit import list_operational_audit_logs
 from app.core.auth import RoleCode
@@ -66,8 +67,8 @@ def test_operational_audit_logs_are_listed_newest_first() -> None:
     assert get.call_args.kwargs["params"]["limit"] == "25"
 
 
-def test_manager_can_read_operational_audit() -> None:
-    app.dependency_overrides[require_request_reviewer] = lambda: {RoleCode.MANAGER}
+def test_admin_can_read_operational_audit() -> None:
+    app.dependency_overrides[require_audit_admin] = lambda: {RoleCode.ADMIN}
     try:
         with patch(
             "app.api.v1.endpoints.audit.list_operational_audit_logs",

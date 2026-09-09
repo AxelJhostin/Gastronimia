@@ -17,6 +17,7 @@ from app.core.inventory import (
     InventoryItemDetail,
     InventoryMovement,
     InventoryMovementType,
+    InventoryRecordedMovementType,
     InventoryTrackingMode,
     QuantityStockMovementCreate,
     calculate_inventory_availability,
@@ -319,6 +320,30 @@ def test_record_quantity_stock_movement_calls_atomic_rpc() -> None:
 
     assert movement.balance_after == 12
     assert post.call_args.kwargs["json"]["p_quantity"] == "12"
+
+
+def test_inventory_movement_accepts_operational_loan_and_return_types() -> None:
+    base_movement = {
+        "id": "760ead3f-0059-43ed-b78b-66a17283475f",
+        "inventory_item_id": "e152d7d4-3eb0-4e7f-b2ff-1f7acb1f1450",
+        "location_id": "9e152d7d-3eb0-4e7f-b2ff-1f7acb1f1450",
+        "quantity": "2",
+        "balance_after": "10",
+        "notes": None,
+        "occurred_at": "2026-08-21T00:00:00+00:00",
+        "performed_by_user_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+        "created_at": "2026-08-21T00:00:00+00:00",
+    }
+
+    loan = InventoryMovement.model_validate(
+        {**base_movement, "movement_type": "LOAN_OUT"}
+    )
+    returned = InventoryMovement.model_validate(
+        {**base_movement, "movement_type": "RETURN_IN"}
+    )
+
+    assert loan.movement_type is InventoryRecordedMovementType.LOAN_OUT
+    assert returned.movement_type is InventoryRecordedMovementType.RETURN_IN
 
 
 def test_calculate_inventory_availability_calls_rpc() -> None:

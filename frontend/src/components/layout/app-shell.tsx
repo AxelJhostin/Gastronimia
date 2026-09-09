@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
 import { cn } from "@/lib/cn";
 
@@ -31,6 +31,18 @@ export function AppShell({
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const pathname = usePathname() ?? "";
   const nav = <Navigation pathname={pathname} items={navigation} onNavigate={() => setIsMenuOpen(false)} />;
+
+  useEffect(() => {
+    if (!isMenuOpen) return;
+    const previousBodyOverflow = document.body.style.overflow;
+    const previousHtmlOverflow = document.documentElement.style.overflow;
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previousBodyOverflow;
+      document.documentElement.style.overflow = previousHtmlOverflow;
+    };
+  }, [isMenuOpen]);
 
   return (
     <div className="min-h-screen bg-gastro-surface-low text-gastro-primary lg:grid lg:grid-cols-[17.5rem_minmax(0,1fr)]">

@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { AlertTriangle, CheckCircle2, X } from "lucide-react";
 
 interface ConfirmModalProps {
@@ -29,12 +29,67 @@ export function ConfirmModal({
   const [incidentNotes, setIncidentNotes] = useState("");
   const titleId = useId();
   const descriptionId = useId();
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const onCloseRef = useRef(onClose);
+  const isSubmittingRef = useRef(isSubmitting);
+
+  useEffect(() => {
+    onCloseRef.current = onClose;
+    isSubmittingRef.current = isSubmitting;
+  }, [isSubmitting, onClose]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const previouslyFocused =
+      document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const focusFrame = window.requestAnimationFrame(() => {
+      (closeButtonRef.current ?? dialogRef.current)?.focus();
+    });
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && !isSubmittingRef.current) {
+        event.preventDefault();
+        onCloseRef.current();
+        return;
+      }
+      if (event.key !== "Tab" || !dialogRef.current) return;
+
+      const focusable = Array.from(
+        dialogRef.current.querySelectorAll<HTMLElement>(
+          'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        ),
+      );
+      if (!focusable.length) {
+        event.preventDefault();
+        dialogRef.current.focus();
+        return;
+      }
+
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && (document.activeElement === first || !dialogRef.current.contains(document.activeElement))) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && (document.activeElement === last || !dialogRef.current.contains(document.activeElement))) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.cancelAnimationFrame(focusFrame);
+      document.removeEventListener("keydown", handleKeyDown);
+      previouslyFocused?.focus();
+    };
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
-      <div aria-describedby={descriptionId} aria-labelledby={titleId} aria-modal="true" className="bg-white w-full max-w-md rounded-xl border border-slate-200 shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-150" role="dialog">
+      <div aria-describedby={descriptionId} aria-labelledby={titleId} aria-modal="true" className="bg-white w-full max-w-md rounded-xl border border-slate-200 shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-150" ref={dialogRef} role="dialog" tabIndex={-1}>
         <div className="flex items-center justify-between p-4 border-b border-slate-100">
           <div className="flex items-center gap-2">
             {type === "incident" ? (
@@ -45,6 +100,7 @@ export function ConfirmModal({
             <h3 className="text-sm font-bold text-slate-900" id={titleId}>{title}</h3>
           </div>
           <button
+            ref={closeButtonRef}
             onClick={onClose}
             className="text-slate-400 hover:text-slate-600 p-1 rounded-lg"
             aria-label="Cerrar confirmación"

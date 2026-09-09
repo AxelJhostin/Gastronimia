@@ -21,6 +21,7 @@ import {
   updateInventoryItem,
   updateInventoryLocation,
   updateInventoryUnit,
+  type InventoryAdjustmentMovementType,
   type InventoryCategory,
   type InventoryItem,
   type InventoryLocation,
@@ -57,7 +58,8 @@ export default function InventoryManagementPage() {
 
   useEffect(() => {
     if (!hasAccess || !token) return;
-    void Promise.all([
+    let active = true;
+    void Promise.allSettled([
       getInventoryCategories(token),
       getInventoryLocations(token),
       getInventoryItems(token),
@@ -65,20 +67,36 @@ export default function InventoryManagementPage() {
       getInventoryMovements(token),
     ])
       .then(([nextCategories, nextLocations, nextItems, nextUnits, nextMovements]) => {
-        setCategories(nextCategories);
-        setLocations(nextLocations);
-        setItems(nextItems);
-        setUnits(nextUnits);
-        setMovements(nextMovements);
+        if (!active) return;
+        if (nextCategories.status === "fulfilled") setCategories(nextCategories.value);
+        if (nextLocations.status === "fulfilled") setLocations(nextLocations.value);
+        if (nextItems.status === "fulfilled") setItems(nextItems.value);
+        if (nextUnits.status === "fulfilled") setUnits(nextUnits.value);
+        if (nextMovements.status === "fulfilled") setMovements(nextMovements.value);
+
+        const firstFailure = [
+          nextCategories,
+          nextLocations,
+          nextItems,
+          nextUnits,
+          nextMovements,
+        ].find((result) => result.status === "rejected");
+        if (firstFailure?.status === "rejected") {
+          setError(
+            firstFailure.reason instanceof Error
+              ? firstFailure.reason.message
+              : "Una sección del inventario no pudo cargarse; las demás siguen disponibles.",
+          );
+        } else {
+          setError(null);
+        }
       })
-      .catch((loadError: unknown) =>
-        setError(
-          loadError instanceof Error
-            ? loadError.message
-            : "No fue posible cargar la administración de inventario.",
-        ),
-      )
-      .finally(() => setLoading(false));
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
   }, [hasAccess, token]);
 
   const runCreate = async (resource: string, action: () => Promise<void>) => {
@@ -276,7 +294,7 @@ export default function InventoryManagementPage() {
           </ManageCard>
 
           <div className="xl:col-span-2"><ManageCard title="Entradas y ajustes de stock" count={movements.length}>
-            <form className="grid gap-3 md:grid-cols-3" onSubmit={(event) => { event.preventDefault(); const formElement = event.currentTarget; const form = new FormData(formElement); void runCreate("movement", async () => { const created = await createInventoryMovement(token!, { inventory_item_id: String(form.get("inventory_item_id")), location_id: String(form.get("location_id")), movement_type: String(form.get("movement_type")) as InventoryMovement["movement_type"], quantity: Number(form.get("quantity")), notes: String(form.get("notes")) || undefined }); setMovements((current) => [created, ...current]); formElement.reset(); }); }}>
+            <form className="grid gap-3 md:grid-cols-3" onSubmit={(event) => { event.preventDefault(); const formElement = event.currentTarget; const form = new FormData(formElement); void runCreate("movement", async () => { const created = await createInventoryMovement(token!, { inventory_item_id: String(form.get("inventory_item_id")), location_id: String(form.get("location_id")), movement_type: String(form.get("movement_type")) as InventoryAdjustmentMovementType, quantity: Number(form.get("quantity")), notes: String(form.get("notes")) || undefined }); setMovements((current) => [created, ...current]); formElement.reset(); }); }}>
               <Select label="Artículo por cantidad" name="inventory_item_id" options={quantityItems.map((item) => ({ value: item.id, label: item.name }))} /><Select label="Ubicación" name="location_id" options={activeLocations.map((location) => ({ value: location.id, label: location.name }))} /><Select label="Movimiento" name="movement_type" options={[{ value: "INITIAL_STOCK", label: "Stock inicial" }, { value: "ADJUSTMENT_IN", label: "Ajuste de entrada" }, { value: "ADJUSTMENT_OUT", label: "Ajuste de salida" }]} /><Field label="Cantidad" name="quantity" required type="number" /><Field label="Notas" name="notes" /><Submit disabled={saving === "movement" || !quantityItems.length || !activeLocations.length} label="Registrar movimiento" />
             </form>
             <SmallList values={movements.slice(0, 12).map((movement) => `${itemById[movement.inventory_item_id]?.name ?? "Artículo"} · ${movement.movement_type} ${movement.quantity} · saldo ${movement.balance_after}`)} />

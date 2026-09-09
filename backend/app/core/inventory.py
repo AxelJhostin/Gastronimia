@@ -121,6 +121,17 @@ class InventoryMovementType(str, Enum):
     ADJUSTMENT_OUT = "ADJUSTMENT_OUT"
 
 
+class InventoryRecordedMovementType(str, Enum):
+    INITIAL_STOCK = "INITIAL_STOCK"
+    ADJUSTMENT_IN = "ADJUSTMENT_IN"
+    ADJUSTMENT_OUT = "ADJUSTMENT_OUT"
+    LOAN_OUT = "LOAN_OUT"
+    RETURN_IN = "RETURN_IN"
+    LOSS = "LOSS"
+    DISPOSAL = "DISPOSAL"
+    REACTIVATION = "REACTIVATION"
+
+
 class EquipmentMaintenanceType(str, Enum):
     PREVENTIVE = "PREVENTIVE"
     CORRECTIVE = "CORRECTIVE"
@@ -181,9 +192,15 @@ class QuantityStockMovementCreate(BaseModel):
     occurred_at: Optional[datetime] = None
 
 
-class InventoryMovement(QuantityStockMovementCreate):
+class InventoryMovement(BaseModel):
     id: UUID
+    inventory_item_id: UUID
+    location_id: UUID
+    movement_type: InventoryRecordedMovementType
+    quantity: Decimal
     balance_after: Decimal
+    notes: Optional[str] = None
+    occurred_at: Optional[datetime] = None
     performed_by_user_id: UUID
     created_at: datetime
 

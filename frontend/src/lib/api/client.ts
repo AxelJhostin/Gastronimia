@@ -219,11 +219,26 @@ export type InventoryUnitHistory = {
   recorded_at: string;
 };
 
+export type InventoryMovementType =
+  | "INITIAL_STOCK"
+  | "ADJUSTMENT_IN"
+  | "ADJUSTMENT_OUT"
+  | "LOAN_OUT"
+  | "RETURN_IN"
+  | "LOSS"
+  | "DISPOSAL"
+  | "REACTIVATION";
+
+export type InventoryAdjustmentMovementType = Extract<
+  InventoryMovementType,
+  "INITIAL_STOCK" | "ADJUSTMENT_IN" | "ADJUSTMENT_OUT"
+>;
+
 export type InventoryMovement = {
   id: string;
   inventory_item_id: string;
   location_id: string;
-  movement_type: "INITIAL_STOCK" | "ADJUSTMENT_IN" | "ADJUSTMENT_OUT";
+  movement_type: InventoryMovementType;
   quantity: number;
   notes: string | null;
   occurred_at: string | null;
@@ -1032,7 +1047,7 @@ export function createInventoryMovement(
   input: {
     inventory_item_id: string;
     location_id: string;
-    movement_type: InventoryMovement["movement_type"];
+    movement_type: InventoryAdjustmentMovementType;
     quantity: number;
     notes?: string;
   },

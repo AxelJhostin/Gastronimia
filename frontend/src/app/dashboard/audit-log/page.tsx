@@ -14,7 +14,7 @@ export default function AuditLogPage() {
   const [error, setError] = useState<string | null>(null);
   const hasAccess =
     identity.status === "authenticated" &&
-    identity.user.roles.some((role) => role === "ADMIN" || role === "MANAGER");
+    identity.user.roles.includes("ADMIN");
 
   useEffect(() => {
     if (!hasAccess || identity.status !== "authenticated") return;

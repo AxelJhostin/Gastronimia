@@ -1,0 +1,26 @@
+{
+  "startedAt": "2026-09-09T12:33:19.651Z",
+  "endedAt": "2026-09-09T12:34:42.008Z",
+  "timezone": "America/Guayaquil",
+  "browser": "electron",
+  "browserVersion": "138.0.7204.251",
+  "cypressVersion": "15.21.1",
+  "command": "npm run test:qa -- --config retries=0",
+  "total": 137,
+  "passed": 137,
+  "failed": 0,
+  "pending": 0,
+  "skipped": 0,
+  "runs": [
+    { "spec": "cypress/e2e/auth.cy.ts", "total": 1, "passed": 1, "failed": 0 },
+    { "spec": "cypress/e2e/qa-boundaries.cy.ts", "total": 18, "passed": 18, "failed": 0 },
+    { "spec": "cypress/e2e/qa-forms-ux.cy.ts", "total": 22, "passed": 22, "failed": 0 },
+    { "spec": "cypress/e2e/qa-incidents.cy.ts", "total": 2, "passed": 2, "failed": 0 },
+    { "spec": "cypress/e2e/qa-management.cy.ts", "total": 14, "passed": 14, "failed": 0 },
+    { "spec": "cypress/e2e/qa-permissions.cy.ts", "total": 75, "passed": 75, "failed": 0 },
+    { "spec": "cypress/e2e/qa-workflow.cy.ts", "total": 3, "passed": 3, "failed": 0 },
+    { "spec": "cypress/e2e/request-lifecycle.cy.ts", "total": 1, "passed": 1, "failed": 0 },
+    { "spec": "cypress/e2e/return-recovery.cy.ts", "total": 1, "passed": 1, "failed": 0 }
+  ],
+  "sourceArtifact": "frontend/cypress/results/qa-2026-09-09T12-33-19-651Z.json"
+}
