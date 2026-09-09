@@ -105,7 +105,8 @@ npm run seed:demo
 ```
 
 El comando inicia Supabase local, crea datos de inventario y solicitudes, y deja
-listas estas cuentas exclusivamente para desarrollo local:
+listas estas cuentas de desarrollo y QA. Sus contraseñas son conocidas y no
+deben reutilizarse en un entorno de producción:
 
 | Rol | Correo | Contraseña |
 | --- | --- | --- |
@@ -135,6 +136,7 @@ Luego abre [http://localhost:3000](http://localhost:3000). La documentación int
 | `frontend/.env.local` | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Cliente público de Supabase | Sí, con RLS |
 | `frontend/.env.local` | `NEXT_PUBLIC_API_BASE_URL` | URL de FastAPI | Sí |
 | `backend/.env` | `SUPABASE_URL` | URL del proyecto Supabase | No hace falta exponerla |
+| `backend/.env` | `SUPABASE_JWKS_URL` | Endpoint JWKS de Auth para validar tokens | No hace falta exponerla |
 | `backend/.env` | `SUPABASE_PUBLISHABLE_KEY` | Verificación/cliente no privilegiado | No hace falta exponerla |
 | `backend/.env` | `SUPABASE_SERVICE_ROLE_KEY` | Operaciones internas privilegiadas | **Nunca** |
 | `backend/.env` | `BACKEND_CORS_ORIGINS` | Orígenes permitidos para la API | No |

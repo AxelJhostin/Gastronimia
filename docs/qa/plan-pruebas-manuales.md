@@ -15,7 +15,7 @@
 | Navegador y versión | Electron 138 headless, Cypress 15.21.1 |
 | Sistema operativo | macOS arm64 |
 
-Este documento permite ejecutar una revisión funcional completa del MVP, registrar evidencia y confirmar que cada rol solo puede realizar las operaciones que le corresponden.
+Este documento permite ejecutar una revisión funcional completa del MVP, registrar evidencia y confirmar que cada rol solo puede realizar las operaciones que le corresponden. Sus comandos y datos demo corresponden al entorno local. Para la exploración compartida en Supabase Cloud, seguir la [guía de arranque](./arranque-qa-2026-09-09.md#guía-para-la-prueba-exploratoria-en-cloud) y no ejecutar los comandos locales de este plan.
 
 ## 2. Resultado general
 
