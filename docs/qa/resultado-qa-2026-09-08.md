@@ -2,6 +2,8 @@
 
 **Resultado: RECHAZADO para cierre del MVP.** El ciclo operativo principal funciona, pero hay cinco defectos abiertos y criterios parcialmente comprobados. No se ha certificado todo el plan ni se han corregido los defectos de aplicación en este trabajo.
 
+Para retomar la corrección sin releer este informe completo, usar la [hoja de arranque de QA](./arranque-qa-2026-09-09.md).
+
 ## Entorno y evidencia
 
 - Aplicación: `main`, commit `6d9bebf`; cambios locales limitados a pruebas, ejecución QA y documentación.
