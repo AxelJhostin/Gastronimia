@@ -1,5 +1,7 @@
 # Plan de trabajo, alcance y control del MVP
 
+> **Retoma del 7 de octubre de 2026:** el estado vigente y el orden de correcciones están en el [seguimiento de cierre del MVP](./seguimiento-cierre-mvp.md). Este documento conserva el alcance y las anotaciones históricas; algunas casillas no reflejan implementaciones y pruebas posteriores.
+
 Este documento define exactamente qué se construirá, en qué orden y qué debe comprobarse antes de dar el proyecto por terminado. Es la referencia de control para evitar funcionalidades improvisadas, crecimiento innecesario del alcance y trabajo que no aporte al ciclo principal del sistema.
 
 ## 1. Objetivo del MVP

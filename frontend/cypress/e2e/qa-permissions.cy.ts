@@ -1,4 +1,5 @@
 import type { SeedScenario } from "../support/types";
+import { api } from "../support/api";
 
 type Role = "admin" | "manager" | "teacher";
 const staff: Role[] = ["admin", "manager"];
@@ -34,11 +35,57 @@ const endpoints: Array<[string, Role[]]> = [
 
 describe("QA-AUTH-04 / QA-NAV permisos por rol", () => {
   let scenario: SeedScenario;
-  before(() => cy.seedBase().then((value) => { scenario = value; }));
+  let auditMovementId: string;
+  before(() => cy.seedBase().then((value) => {
+    scenario = value;
+    cy.loginAs(scenario.manager.email, scenario.manager.password);
+    cy.visit("/dashboard");
+    // El Encargado sigue generando auditoría al operar, aunque no pueda leerla.
+    return api<{ id: string }>("/admin/inventory/movements", "POST", {
+      inventory_item_id: scenario.inventoryItemId,
+      location_id: scenario.locationId,
+      movement_type: "ADJUSTMENT_IN",
+      quantity: 1,
+      notes: `QA auditoría RLS ${scenario.marker}`,
+    }, 201).then((movement) => { auditMovementId = movement.id; });
+  }));
+
+  it("R-02 Data API rechaza lectura de auditoría sin sesión", () => {
+    cy.request({
+      url: `${Cypress.expose("supabaseUrl")}/rest/v1/operational_audit_log`,
+      qs: { select: "id", entity_id: `eq.${auditMovementId}` },
+      headers: { apikey: Cypress.expose("supabasePublishableKey") },
+      failOnStatusCode: false,
+      log: false,
+    }).its("status").should("be.oneOf", [401, 403]);
+  });
 
   for (const role of ["admin", "manager", "teacher"] as const) {
     describe(role, () => {
       beforeEach(() => cy.loginAs(scenario[role].email, scenario[role].password));
+
+      it(`R-02 Data API auditoría ${role}: ${role === "admin" ? "visible" : "sin filas"}`, () => {
+        cy.visit("/dashboard");
+        cy.window({ log: false }).then((window) => {
+          cy.request<Array<{ id: string }>>({
+            url: `${Cypress.expose("supabaseUrl")}/rest/v1/operational_audit_log`,
+            qs: {
+              select: "id",
+              entity_id: `eq.${auditMovementId}`,
+              action: "eq.INVENTORY_MOVEMENT",
+            },
+            headers: {
+              apikey: Cypress.expose("supabasePublishableKey"),
+              Authorization: `Bearer ${window.localStorage.getItem("access_token")}`,
+            },
+            failOnStatusCode: false,
+            log: false,
+          }).then((response) => {
+            expect(response.status).to.equal(200);
+            expect(response.body).to.have.length(role === "admin" ? 1 : 0);
+          });
+        });
+      });
 
       for (const [path, allowed] of routes) {
         it(`QA-AUTH-04 UI ${path}: ${allowed.includes(role) ? "permitido" : "403"}`, () => {

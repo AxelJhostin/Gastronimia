@@ -1,5 +1,9 @@
 # Plan completo de pruebas manuales y QA
 
+> **Corrección posterior del 7 de octubre:** R-02 ya está cerrado en local y la suite ampliada pasa 141/141. Ver el [cierre de auditoría](./cierre-r02-auditoria-2026-10-07.md). Los demás defectos siguen pendientes en el tablero.
+
+> **Seguimiento vigente, 7 de octubre de 2026:** la nueva ejecución pasó 137/137 Cypress y 2/2 integraciones. Hay defectos adicionales abiertos, incluido acceso directo a auditoría por MANAGER. Consultar el [resultado actual](./resultado-flujo-2026-10-07.md) y el [tablero de cierre](../roadmap/seguimiento-cierre-mvp.md). La matriz y el resumen de septiembre que siguen son históricos; sus cero defectos abiertos no describen el estado actual.
+
 ## 1. Información del ciclo
 
 | Campo | Valor |

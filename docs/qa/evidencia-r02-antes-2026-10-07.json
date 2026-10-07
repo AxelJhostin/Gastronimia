@@ -1,0 +1,413 @@
+{
+  "startedAt": "2026-10-07T13:48:01.611Z",
+  "endedAt": "2026-10-07T13:48:08.481Z",
+  "browser": "electron",
+  "browserVersion": "138.0.7204.251",
+  "total": 79,
+  "passed": 78,
+  "failed": 1,
+  "pending": 0,
+  "skipped": 0,
+  "runs": [
+    {
+      "spec": "cypress/e2e/qa-permissions.cy.ts",
+      "tests": [
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > R-02 Data API rechaza lectura de auditoría sin sesión",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > admin > R-02 Data API auditoría admin: visible",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > admin > QA-AUTH-04 UI /dashboard: permitido",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > admin > QA-AUTH-04 UI /dashboard/requests: permitido",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > admin > QA-AUTH-04 UI /dashboard/requests/new: 403",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > admin > QA-AUTH-04 UI /dashboard/loans: 403",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > admin > QA-AUTH-04 UI /dashboard/preparations: permitido",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > admin > QA-AUTH-04 UI /dashboard/deliveries: permitido",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > admin > QA-AUTH-04 UI /dashboard/inventory: permitido",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > admin > QA-AUTH-04 UI /dashboard/inventory/manage: permitido",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > admin > QA-AUTH-04 UI /dashboard/returns: permitido",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > admin > QA-AUTH-04 UI /dashboard/maintenance: permitido",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > admin > QA-AUTH-04 UI /dashboard/incidents: permitido",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > admin > QA-AUTH-04 UI /dashboard/reports: permitido",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > admin > QA-AUTH-04 UI /dashboard/audit-log: permitido",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > admin > QA-AUTH-04 UI /dashboard/users: permitido",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > admin > QA-AUTH-04 UI /dashboard/users/new: permitido",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > admin > QA-AUTH-04 UI /dashboard/academic: permitido",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > admin > QA-AUTH-04 API /requests/form-options: 403",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > admin > QA-AUTH-04 API /admin/inventory/items: 200",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > admin > QA-AUTH-04 API /admin/returns/loans: 200",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > admin > QA-AUTH-04 API /admin/maintenance: 200",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > admin > QA-AUTH-04 API /admin/reports/stock: 200",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > admin > QA-AUTH-04 API /admin/audit: 200",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > admin > QA-AUTH-04 API /admin/users: 200",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > admin > QA-AUTH-04 API /admin/academic/periods: 200",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > admin > QA-NAV menú corresponde exactamente al rol",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > manager > R-02 Data API auditoría manager: sin filas",
+          "state": "failed",
+          "error": "AssertionError: expected [ Array(1) ] to have a length of 0 but got 1\n    at Context.eval (webpack://frontend/./cypress/e2e/qa-permissions.cy.ts:85:42)\n    at getRet (http://localhost:3000/__cypress/runner/cypress_runner.js:121394:20)\n    at tryCatcher (http://localhost:3000/__cypress/runner/cypress_runner.js:1780:23)\n    at Promise.attempt.Promise.try (http://localhost:3000/__cypress/runner/cypress_runner.js:4288:29)"
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > manager > QA-AUTH-04 UI /dashboard: permitido",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > manager > QA-AUTH-04 UI /dashboard/requests: permitido",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > manager > QA-AUTH-04 UI /dashboard/requests/new: 403",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > manager > QA-AUTH-04 UI /dashboard/loans: 403",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > manager > QA-AUTH-04 UI /dashboard/preparations: permitido",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > manager > QA-AUTH-04 UI /dashboard/deliveries: permitido",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > manager > QA-AUTH-04 UI /dashboard/inventory: permitido",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > manager > QA-AUTH-04 UI /dashboard/inventory/manage: permitido",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > manager > QA-AUTH-04 UI /dashboard/returns: permitido",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > manager > QA-AUTH-04 UI /dashboard/maintenance: permitido",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > manager > QA-AUTH-04 UI /dashboard/incidents: permitido",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > manager > QA-AUTH-04 UI /dashboard/reports: permitido",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > manager > QA-AUTH-04 UI /dashboard/audit-log: 403",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > manager > QA-AUTH-04 UI /dashboard/users: 403",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > manager > QA-AUTH-04 UI /dashboard/users/new: 403",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > manager > QA-AUTH-04 UI /dashboard/academic: 403",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > manager > QA-AUTH-04 API /requests/form-options: 403",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > manager > QA-AUTH-04 API /admin/inventory/items: 200",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > manager > QA-AUTH-04 API /admin/returns/loans: 200",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > manager > QA-AUTH-04 API /admin/maintenance: 200",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > manager > QA-AUTH-04 API /admin/reports/stock: 200",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > manager > QA-AUTH-04 API /admin/audit: 403",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > manager > QA-AUTH-04 API /admin/users: 403",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > manager > QA-AUTH-04 API /admin/academic/periods: 403",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > manager > QA-NAV menú corresponde exactamente al rol",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > teacher > R-02 Data API auditoría teacher: sin filas",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > teacher > QA-AUTH-04 UI /dashboard: permitido",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > teacher > QA-AUTH-04 UI /dashboard/requests: permitido",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > teacher > QA-AUTH-04 UI /dashboard/requests/new: permitido",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > teacher > QA-AUTH-04 UI /dashboard/loans: permitido",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > teacher > QA-AUTH-04 UI /dashboard/preparations: 403",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > teacher > QA-AUTH-04 UI /dashboard/deliveries: 403",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > teacher > QA-AUTH-04 UI /dashboard/inventory: 403",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > teacher > QA-AUTH-04 UI /dashboard/inventory/manage: 403",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > teacher > QA-AUTH-04 UI /dashboard/returns: 403",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > teacher > QA-AUTH-04 UI /dashboard/maintenance: 403",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > teacher > QA-AUTH-04 UI /dashboard/incidents: 403",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > teacher > QA-AUTH-04 UI /dashboard/reports: 403",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > teacher > QA-AUTH-04 UI /dashboard/audit-log: 403",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > teacher > QA-AUTH-04 UI /dashboard/users: 403",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > teacher > QA-AUTH-04 UI /dashboard/users/new: 403",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > teacher > QA-AUTH-04 UI /dashboard/academic: 403",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > teacher > QA-AUTH-04 API /requests/form-options: 200",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > teacher > QA-AUTH-04 API /admin/inventory/items: 403",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > teacher > QA-AUTH-04 API /admin/returns/loans: 403",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > teacher > QA-AUTH-04 API /admin/maintenance: 403",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > teacher > QA-AUTH-04 API /admin/reports/stock: 403",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > teacher > QA-AUTH-04 API /admin/audit: 403",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > teacher > QA-AUTH-04 API /admin/users: 403",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > teacher > QA-AUTH-04 API /admin/academic/periods: 403",
+          "state": "passed",
+          "error": null
+        },
+        {
+          "title": "QA-AUTH-04 / QA-NAV permisos por rol > teacher > QA-NAV menú corresponde exactamente al rol",
+          "state": "passed",
+          "error": null
+        }
+      ]
+    }
+  ]
+}

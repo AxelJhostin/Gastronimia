@@ -1,0 +1,96 @@
+# Seguimiento de cierre del MVP
+
+Actualizado: **7 de octubre de 2026**, America/Guayaquil.
+
+Este es el tablero vigente. Los requisitos originales se conservan en el plan de alcance; sus casillas históricas no sustituyen este seguimiento.
+
+**Regla de avance:** corregir un punto a la vez, comprobarlo, guardar evidencia y marcarlo antes de pasar al siguiente. `[x]` significa verificado en el alcance descrito; `[ ]` significa abierto. Un módulo con pruebas aprobadas puede conservar defectos en otros escenarios.
+
+## Bloque 0 — Entorno y verificación inicial: completado
+
+- [x] Docker y Supabase local operativos; 36 migraciones aplicadas.
+- [x] Configuración local de frontend/backend coincidente con Supabase.
+- [x] Compilación de producción, tipos y controles de calidad aprobados hoy.
+- [x] 28 pruebas frontend y 96 backend aprobadas hoy.
+- [x] Cypress: **137/137 aprobadas**, sin fallos, omisiones ni reintentos.
+- [x] Integración real de autenticación, JWT y permisos aprobada.
+- [x] Integración real de solicitud hasta devolución aprobada.
+- [x] Base existente conservada: no se restauró ni reinició.
+
+Evidencia: [resultado del flujo real](../qa/resultado-flujo-2026-10-07.md), [JSON Cypress](../qa/evidencia-cypress-2026-10-07.json) y [diagnóstico](../qa/diagnostico-retoma-2026-10-07.md).
+
+## Flujo disponible y comprobado
+
+- [x] Acceso/salida y navegación de Administrador, Encargado y Docente.
+- [x] Creación/envío de solicitud con validaciones.
+- [x] Aprobación total/parcial y rechazo con motivo.
+- [x] Preparación e inspección de salida.
+- [x] Token temporal y entrega, registrando quién retira.
+- [x] Consulta del préstamo por el docente responsable.
+- [x] Devolución parcial/final con stock y pendientes correctos.
+- [x] Cierre de solicitud/préstamo e historial.
+- [x] Daño de unidad, evidencia privada y mantenimiento correctivo.
+- [x] Recuperación de inspección pendiente después de recargar.
+
+Estas marcas corresponden a escenarios automatizados concretos; no certifican todos los criterios manuales de cada módulo.
+
+## Bloque 1 — Reglas y permisos: en curso
+
+**Punto 1.1 cerrado en local. Siguiente: 1.2, contraseña temporal.** La auditoría ya se comprobó por interfaz, API y acceso directo a Supabase. Ver el [cierre de R-02](../qa/cierre-r02-auditoria-2026-10-07.md). Mantener los demás en espera para corregir uno por uno.
+
+| Orden | Estado | Punto | Criterio para cerrarlo |
+| --- | --- | --- | --- |
+| 1.1 | [x] | R-02: auditoría exclusiva de ADMIN también en Supabase | Migración 37 aplicada localmente; lectura directa probada con los tres roles y sin sesión; 141/141 Cypress |
+| 1.2 | [ ] | R-01: cambio obligatorio de contraseña temporal | Llamada directa sin cambio rechazada; cambio válido y renovación de sesión funcionan |
+| 1.3 | [ ] | R-03: estados de unidades protegidos | No saltarse préstamo/mantenimiento ni prestar unidades dañadas; devolución e historial coherentes |
+| 1.4 | [ ] | R-04: responsable en auditoría de unidades | Registrar usuario real y valores anterior/nuevo en la misma operación |
+
+## Bloque 2 — Concurrencia, saldos y recuperación: pendiente
+
+- [ ] R-07: reproducir y proteger entrega simultánea con inicio de mantenimiento.
+- [ ] Dos aprobaciones simultáneas sin sobre-reserva.
+- [ ] Reserva/entrega/devolución duplicada sin duplicar movimientos.
+- [ ] Expiración del token y distribución inválida por ubicación.
+- [ ] Preparación insuficiente/excesiva desde interfaz.
+- [ ] R-06: error recuperable cuando falla la identidad en detalle de solicitud.
+- [ ] Recuperar y reenviar borradores sin duplicarlos tras fallar el envío.
+
+## Bloque 3 — Funciones pendientes del MVP
+
+- [ ] QR visible para Docente y escaneable por Encargado.
+- [ ] Cancelación en estados permitidos, liberación de reservas y auditoría.
+- [ ] Pérdidas/roturas por cantidad y cierre del saldo con trazabilidad.
+- [ ] R-05: paginación, filtros y totales con más de 1000 registros.
+
+## Bloque 4 — Aceptación manual y presentación: pendiente
+
+- [ ] CRUD completo de artículos/unidades y configuración académica por interfaz.
+- [ ] Alta de usuario, contraseña temporal y protección del último Administrador.
+- [ ] Creación/cancelación de mantenimiento por interfaz.
+- [ ] Métricas contrastadas con datos y revisión completa de reportes.
+- [ ] Secuencia de auditoría con actor, acción y valores.
+- [ ] Móvil/tablet/escritorio: tablas, formularios y modales de todos los módulos.
+- [ ] Teclado, foco, contraste y lector de pantalla.
+- [ ] Carga, vacío, error y recuperación en todos los módulos.
+- [ ] Textos antiguos y documentación de pantallas actualizados.
+
+La [matriz manual histórica](../qa/plan-pruebas-manuales.md) conserva los criterios detallados. No convertir sus casos PARCIAL a PASS automáticamente por tener la suite verde.
+
+## Bloque 5 — Despliegue y entrega: pendiente
+
+- [ ] Unificar configuración e instrucciones de despliegue.
+- [ ] Verificar Auth, CORS, rutas API, permisos de base y Storage en entorno de prueba.
+- [ ] Ejecutar el ciclo completo desplegado con datos representativos.
+- [ ] Documentar operación, respaldo y recuperación.
+- [ ] Cerrar el MVP sin defectos altos; cada pendiente debe estar cerrado o excluido explícitamente del alcance.
+
+## Registro de avances
+
+| Fecha | Avance | Evidencia |
+| --- | --- | --- |
+| 2026-10-07 | Diagnóstico inicial; compilación y pruebas unitarias aprobadas | Diagnóstico técnico |
+| 2026-10-07 | Bloque 0 completado; flujo real y regresión aprobados | 137/137 Cypress y 2/2 integraciones |
+| 2026-10-07 | R-02 confirmado en base activa; sigue abierto | Lectura con identidad MANAGER en transacción revertida |
+| 2026-10-07 | R-02 corregido y cerrado en local; siguiente R-01 | Regresión falla antes y pasa después; 141/141 Cypress; migraciones alineadas |
+
+El bloque inicial no cambió código funcional. El cierre de R-02 añade la migración de permisos y las pruebas de regresión. Las cuentas y recursos QA permanecen identificables en la base local; no son datos para producción.
