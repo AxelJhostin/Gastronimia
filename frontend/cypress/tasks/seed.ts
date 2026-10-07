@@ -286,7 +286,7 @@ export async function seedPendingReturnScenario(): Promise<PendingReturnScenario
   };
 }
 
-export async function seedIndividualLoanScenario() {
+export async function seedIndividualLoanScenario(stage: "loan" | "prepared" = "loan") {
   const scenario = await seedBaseScenario();
   const services = localServices();
   const category = await insertRow<{ id: string }>(services, "inventory_categories", { name: `QA equipo ${scenario.marker}` });
@@ -305,6 +305,7 @@ export async function seedIndividualLoanScenario() {
   await api(services, managerToken, `/admin/requests/${draft.id}/preparation/start`, "POST");
   const context = await api<{ items: Array<{ equipment_reservation_detail_id: string }> }>(services, managerToken, `/admin/requests/${draft.id}/preparation`);
   await api(services, managerToken, `/admin/requests/${draft.id}/preparation/items`, "POST", { items: [{ equipment_reservation_detail_id: context.items[0].equipment_reservation_detail_id, prepared_quantity: 1, inventory_unit_ids: [unit.id] }] });
+  if (stage === "prepared") return { ...scenario, individualItemId: item.id, unitId: unit.id, requestId: draft.id };
   await api(services, managerToken, `/admin/requests/${draft.id}/preparation/complete`, "POST");
   await api(services, managerToken, `/admin/inspections/requests/${draft.id}/outbound`, "POST", { items: [{ inventory_unit_id: unit.id, observed_condition: "GOOD", is_complete: true }] });
   const qr = await api<{ token: string }>(services, managerToken, `/admin/deliveries/requests/${draft.id}/qr`, "POST");

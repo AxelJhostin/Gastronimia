@@ -1,0 +1,38 @@
+{
+  "startedAt": "2026-10-07T22:18:14.201Z",
+  "endedAt": "2026-10-07T22:18:18.296Z",
+  "browser": "electron",
+  "browserVersion": "138.0.7204.251",
+  "total": 4,
+  "passed": 0,
+  "failed": 4,
+  "pending": 0,
+  "skipped": 0,
+  "runs": [
+    {
+      "spec": "cypress/e2e/inventory-unit-guards.cy.ts",
+      "tests": [
+        {
+          "title": "R-03 protección de unidades > rechaza estados operativos, daño disponible y cambio de artículo; conserva edición e historial",
+          "state": "failed",
+          "error": "AssertionError: POST /admin/inventory/units: expected 201 to equal 422\n    at Context.eval (webpack://frontend/./cypress/support/api.ts:16:54)\n    at getRet (http://localhost:3000/__cypress/runner/cypress_runner.js:121394:20)\n    at tryCatcher (http://localhost:3000/__cypress/runner/cypress_runner.js:1780:23)\n    at Promise.attempt.Promise.try (http://localhost:3000/__cypress/runner/cypress_runner.js:4288:29)\n    at Context.thenFn (http://localhost:3000/__cypress/runner/cypress_runner.js:121405:66)\n    at Context.then (http://localhost:3000/__cypress/runner/cypress_runner.js:121656:21)"
+        },
+        {
+          "title": "R-03 protección de unidades > bloquea la edición de una unidad seleccionada para preparación",
+          "state": "failed",
+          "error": "AssertionError: PATCH /admin/inventory/units/9e4d83bb-6df2-413d-96b9-0c5e264a431b: expected 200 to equal 409\n    at Context.eval (webpack://frontend/./cypress/support/api.ts:16:54)\n    at getRet (http://localhost:3000/__cypress/runner/cypress_runner.js:121394:20)\n    at tryCatcher (http://localhost:3000/__cypress/runner/cypress_runner.js:1780:23)\n    at Promise.attempt.Promise.try (http://localhost:3000/__cypress/runner/cypress_runner.js:4288:29)\n    at Context.thenFn (http://localhost:3000/__cypress/runner/cypress_runner.js:121405:66)\n    at Context.then (http://localhost:3000/__cypress/runner/cypress_runner.js:121656:21)"
+        },
+        {
+          "title": "R-03 protección de unidades > impide liberar un préstamo o saltar la inspección y permite la devolución normal",
+          "state": "failed",
+          "error": "AssertionError: PATCH /admin/inventory/units/252c6b7a-a6c1-4533-ab01-881d3c3138e3: expected 200 to equal 409\n    at Context.eval (webpack://frontend/./cypress/support/api.ts:16:54)\n    at getRet (http://localhost:3000/__cypress/runner/cypress_runner.js:121394:20)\n    at tryCatcher (http://localhost:3000/__cypress/runner/cypress_runner.js:1780:23)\n    at Promise.attempt.Promise.try (http://localhost:3000/__cypress/runner/cypress_runner.js:4288:29)\n    at Context.thenFn (http://localhost:3000/__cypress/runner/cypress_runner.js:121405:66)\n    at Context.then (http://localhost:3000/__cypress/runner/cypress_runner.js:121656:21)"
+        },
+        {
+          "title": "R-03 protección de unidades > impide editar una unidad en mantenimiento y permite cerrarlo por su flujo",
+          "state": "failed",
+          "error": "AssertionError: PATCH /admin/inventory/units/ba35347a-74cf-424a-8199-78af2adacd28: expected 200 to equal 409\n    at Context.eval (webpack://frontend/./cypress/support/api.ts:16:54)\n    at getRet (http://localhost:3000/__cypress/runner/cypress_runner.js:121394:20)\n    at tryCatcher (http://localhost:3000/__cypress/runner/cypress_runner.js:1780:23)\n    at Promise.attempt.Promise.try (http://localhost:3000/__cypress/runner/cypress_runner.js:4288:29)\n    at Context.thenFn (http://localhost:3000/__cypress/runner/cypress_runner.js:121405:66)\n    at Context.then (http://localhost:3000/__cypress/runner/cypress_runner.js:121656:21)"
+        }
+      ]
+    }
+  ]
+}

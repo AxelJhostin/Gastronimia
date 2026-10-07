@@ -50,6 +50,8 @@ La presencia de un módulo no implica que todos sus escenarios estén certificad
 
 ### R-01 · Alta · El cambio obligatorio de contraseña se puede dar por completado sin cambiarla
 
+> **Corregido y verificado posteriormente en local:** el servidor exige y guarda una contraseña nueva antes de retirar la obligación; cambio real, renovación de sesión y nuevo ingreso comprobados, con 142/142 Cypress aprobadas. Ver [cierre R-01](./cierre-r01-contrasena-temporal-2026-10-07.md). Lo siguiente describe el defecto original.
+
 `backend/app/api/v1/endpoints/auth.py:37` acepta `POST /auth/password-change-complete` con un usuario autenticado, sin recibir ni comprobar una nueva contraseña. `backend/app/core/admin.py:253` cambia directamente `must_change_password` a `false` mediante la API administrativa. La interfaz sí cambia primero la contraseña, pero el servidor confía en que el cliente haya hecho ese paso.
 
 **Impacto:** quien tenga la contraseña temporal puede llamar directamente al endpoint, renovar su sesión y continuar usando la contraseña temporal sin cumplir la regla obligatoria.
@@ -69,6 +71,8 @@ La presencia de un módulo no implica que todos sus escenarios estén certificad
 **Cierre esperado:** alinear RLS con la política ADMIN y probar los tres roles tanto contra FastAPI como contra la Data API. Hallazgo confirmado en código; falta comprobarlo contra la base activa.
 
 ### R-03 · Alta · La edición de unidades permite saltarse préstamos, devoluciones y mantenimiento
+
+> **Corregido y verificado posteriormente en local:** edición transaccional, protección de condición y artículo, bloqueos por procesos pendientes y 146/146 comprobaciones Cypress aprobadas. Ver [cierre R-03](./cierre-r03-estados-unidades-2026-10-07.md). Lo siguiente describe el defecto original.
 
 `frontend/src/app/dashboard/inventory/manage/page.tsx:326` permite elegir libremente Disponible, Prestado, Mantenimiento y Fuera de servicio. `backend/app/api/v1/endpoints/inventory.py:175` recibe el mismo modelo usado para creación y `backend/app/core/inventory.py:415` lo envía como actualización directa privilegiada. Los triggers versionados no validan esas transiciones contra préstamos o mantenimientos abiertos.
 

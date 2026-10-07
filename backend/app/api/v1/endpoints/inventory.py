@@ -16,11 +16,12 @@ from app.core.inventory import (
     InventoryLocationCreate,
     InventoryMovement,
     InventoryUnit,
-    InventoryUnitCreate,
     InventoryUnitHistory,
+    InventoryUnitWrite,
     QuantityStockMovementCreate,
     calculate_inventory_availability,
     create_inventory_resource,
+    edit_inventory_unit,
     get_inventory_item_detail,
     list_inventory_resources,
     list_inventory_unit_history,
@@ -165,7 +166,7 @@ def get_inventory_units(
     status_code=status.HTTP_201_CREATED,
 )
 def create_inventory_unit(
-    payload: InventoryUnitCreate,
+    payload: InventoryUnitWrite,
     _: set[RoleCode] = Depends(require_inventory_staff),  # noqa: B008
 ) -> InventoryUnit:
     return create_inventory_resource("inventory_units", payload, InventoryUnit)
@@ -174,15 +175,11 @@ def create_inventory_unit(
 @router.patch("/units/{unit_id}", response_model=InventoryUnit)
 def update_inventory_unit(
     unit_id: UUID,
-    payload: InventoryUnitCreate,
+    payload: InventoryUnitWrite,
+    current_user: AuthenticatedUser = Depends(get_current_user),  # noqa: B008
     _: set[RoleCode] = Depends(require_inventory_staff),  # noqa: B008
 ) -> InventoryUnit:
-    return update_inventory_resource(
-        "inventory_units",
-        unit_id,
-        payload,
-        InventoryUnit,
-    )
+    return edit_inventory_unit(unit_id, payload, current_user.id)
 
 
 @router.get("/units/{unit_id}/history", response_model=list[InventoryUnitHistory])

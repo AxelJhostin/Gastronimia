@@ -6,7 +6,7 @@ import httpx
 from fastapi import HTTPException, status
 from pydantic import BaseModel, Field
 
-from app.core.auth import RoleCode
+from app.core.auth import AuthenticatedUser, RoleCode
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
@@ -203,7 +203,7 @@ def provision_managed_user(
             ) from error
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail="No fue posible crear el usuario.",
+            detail="No fue posible crear el usuario.",
         ) from error
     except httpx.HTTPError as error:
         raise HTTPException(
@@ -253,10 +253,49 @@ def provision_managed_user(
     )
 
 
-def complete_temporary_password_change(user_id: str) -> None:
+def complete_temporary_password_change(
+    current_user: AuthenticatedUser, password: str
+) -> None:
+    # Auth valida la sesión, la política de contraseña y que sea distinta.
+    # No se elimina la obligación si este primer paso falla.
+    try:
+        password_response = httpx.put(
+            f"{_supabase_url()}/auth/v1/user",
+            json={"password": password},
+            headers={
+                "apikey": settings.supabase_publishable_key or "",
+                "Authorization": f"Bearer {current_user.access_token}",
+            },
+            timeout=10.0,
+        )
+        password_response.raise_for_status()
+    except httpx.HTTPStatusError as error:
+        if error.response.status_code in {400, 422}:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+                detail=(
+                    "Usa una contraseña distinta de la actual que cumpla "
+                    "los requisitos de seguridad."
+                ),
+            ) from error
+        if error.response.status_code in {401, 403}:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Tu sesión no permite cambiar la contraseña. Inicia sesión.",
+            ) from error
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="No fue posible guardar la nueva contraseña. Intenta nuevamente.",
+        ) from error
+    except httpx.HTTPError as error:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="No fue posible guardar la nueva contraseña. Intenta nuevamente.",
+        ) from error
+
     try:
         response = httpx.put(
-            f"{_supabase_url()}/auth/v1/admin/users/{user_id}",
+            f"{_supabase_url()}/auth/v1/admin/users/{current_user.id}",
             json={"app_metadata": {"must_change_password": False}},
             headers=_service_headers(),
             timeout=5.0,
@@ -265,5 +304,9 @@ def complete_temporary_password_change(user_id: str) -> None:
     except httpx.HTTPError as error:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="No fue posible finalizar el cambio de contraseña.",
+            detail=(
+                "La contraseña se guardó, pero no pudimos confirmar la activación. "
+                "Inicia sesión con la nueva contraseña; si se solicita el cambio "
+                "otra vez, elige una contraseña distinta para completarlo."
+            ),
         ) from error

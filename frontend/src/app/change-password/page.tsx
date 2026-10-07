@@ -16,34 +16,38 @@ export default function ChangePasswordPage() {
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    setErrorMessage(null);
     const formData = new FormData(event.currentTarget);
     const submittedPassword = String(formData.get("password") ?? "");
     const confirmation = String(formData.get("confirmation") ?? "");
-    if (submittedPassword.length < 8 || submittedPassword !== confirmation) {
-      setErrorMessage("Usa al menos 8 caracteres y confirma la misma contraseña.");
+    if (submittedPassword.length < 8 || submittedPassword.length > 128 || submittedPassword !== confirmation) {
+      setErrorMessage("Usa entre 8 y 128 caracteres y confirma la misma contraseña.");
       return;
     }
     setIsSubmitting(true);
-    const supabase = createClient();
-    const { data, error } = await supabase.auth.updateUser({ password: submittedPassword });
-    if (error || !data.user) {
-      setErrorMessage("No fue posible cambiar la contraseña.");
-      setIsSubmitting(false);
-      return;
-    }
-    const { data: sessionData } = await supabase.auth.getSession();
-    if (!sessionData.session) {
-      setErrorMessage("Tu sesión expiró. Inicia sesión nuevamente.");
-      setIsSubmitting(false);
-      return;
-    }
     try {
-      await completeTemporaryPasswordChange(sessionData.session.access_token);
-      await supabase.auth.refreshSession();
+      const supabase = createClient();
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError || !sessionData.session) {
+        setErrorMessage("Tu sesión expiró. Inicia sesión nuevamente.");
+        return;
+      }
+      await completeTemporaryPasswordChange(sessionData.session.access_token, submittedPassword);
+      const { data: refreshed, error: refreshError } = await supabase.auth.refreshSession();
+      if (refreshError || !refreshed.session) {
+        localStorage.removeItem("access_token");
+        localStorage.removeItem("token");
+        router.replace("/login?reason=password-changed");
+        router.refresh();
+        return;
+      }
+      localStorage.setItem("access_token", refreshed.session.access_token);
+      localStorage.setItem("token", refreshed.session.access_token);
       router.replace("/dashboard");
       router.refresh();
-    } catch {
-      setErrorMessage("La contraseña cambió, pero no fue posible finalizar la activación.");
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "No fue posible cambiar la contraseña.");
+    } finally {
       setIsSubmitting(false);
     }
   }

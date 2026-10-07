@@ -38,6 +38,10 @@ Si FastAPI responde `401`, renovar sesión o enviar a login. Si responde `403`, 
 
 `MAINTENANCE` no es seleccionable para preparar ni prestar. Una unidad devuelta permanece en ese estado hasta que se complete su inspección; la inspección la habilita o la mantiene fuera de servicio según condición y novedades.
 
+El alta y la edición de catálogo de unidades admiten únicamente `AVAILABLE` o `DISABLED`; los estados `LOANED` y `MAINTENANCE` se asignan mediante sus flujos operativos. Una unidad `DAMAGED` no puede quedar `AVAILABLE` ni `LOANED`. El artículo asociado a una unidad es inmutable. La edición se rechaza si hay preparación activa, préstamo sin devolución, inspección pendiente o mantenimiento abierto, o si el estado actual es operativo. La interfaz conserva el artículo y deshabilita la edición de unidades prestadas o en mantenimiento; el servidor comprueba también los bloqueos que no se deducen del estado visible.
+
+`PATCH /admin/inventory/units/{id}` mantiene el cuerpo completo del contrato anterior, pero ahora ejecuta `edit_inventory_unit` en una transacción con bloqueo de la unidad y coordinación con la selección de preparación. Devuelve 422 para un estado o condición de catálogo inválidos, 409 para conflictos operativos o cambio de artículo y 404 si no existe. La operación de base solo puede ejecutarla el servidor y recibe la identidad autenticada, no un actor elegido por el cliente. Aplicar la migración `20261007222224_guard_inventory_unit_edits.sql` antes de desplegar este backend. El registro del actor en auditoría sigue siendo el punto R-04.
+
 ## Rutas FastAPI
 
 Todos los paths siguientes son relativos a `/api/v1`. Las rutas `ADMIN/MANAGER` se identifican como **Personal**.
@@ -68,7 +72,7 @@ Todos los paths siguientes son relativos a `/api/v1`. Las rutas `ADMIN/MANAGER` 
 | `GET/POST /admin/inventory/items` | Personal | Artículos; `tracking_mode` es `QUANTITY` o `INDIVIDUAL`. |
 | `PATCH /admin/inventory/items/{id}` | Personal | Actualizar artículo. |
 | `GET/POST /admin/inventory/units` | Personal | Unidades físicas; solo para artículos `INDIVIDUAL`. |
-| `PATCH /admin/inventory/units/{id}` | Personal | Estado, condición, ubicación y datos de la unidad. |
+| `PATCH /admin/inventory/units/{id}` | Personal | Edición protegida de una unidad libre; conserva su artículo y no sustituye los flujos operativos. |
 | `GET /admin/inventory/units/{id}/history` | Personal | Hoja de vida automática. |
 | `GET /admin/inventory/stock` | Personal | Stock actual por artículo y ubicación. |
 | `GET /admin/inventory/movements` | Personal | Kardex de artículos por cantidad. |
@@ -186,6 +190,10 @@ Los UUID se envían como texto; las fechas como ISO 8601 con zona horaria y los 
 ```
 
 La respuesta de alta contiene `user_id`, `email`, `full_name`, `roles` y `temporary_password`. La contraseña se muestra una sola vez en el frontend para que un `ADMIN` comparta correo, contraseña y roles por un canal acordado. La persona inicia sesión con esas credenciales y debe cambiar la contraseña antes de continuar. El frontend no recibe ni usa `SUPABASE_SERVICE_ROLE_KEY`; tampoco persiste la contraseña temporal. Las migraciones `20260825155213_direct_user_provisioning.sql` y `20260825162256_prefix_user_provisioning_parameters.sql` están aplicadas al proyecto compartido.
+
+**Cambio obligatorio de contraseña, actualizado el 7 de octubre de 2026:** enviar `POST /auth/password-change-complete` con Bearer de la sesión actual, `Content-Type: application/json` y cuerpo `{ "password": "nueva contraseña personal" }`. La contraseña debe tener entre 8 y 128 caracteres y cumplir la política de Supabase. La API guarda la contraseña usando la sesión del usuario; solo después de que Auth acepte el cambio retira `must_change_password`. No admite la llamada anterior sin cuerpo ni reutilizar la contraseña actual. El frontend no debe llamar primero a `auth.updateUser` en este flujo.
+
+La respuesta correcta es 204. Después, renovar la sesión de Supabase, guardar el nuevo token en `access_token` y `token` y entrar al dashboard. Si la renovación falla, regresar al login y usar la nueva contraseña. Errores 422 indican cuerpo inválido o contraseña rechazada; 401 pide renovar/iniciar sesión; 503 indica fallo de comunicación. Si la contraseña se guardó pero la actualización del indicador falló, el mensaje explica que debe iniciarse sesión con la nueva contraseña y elegir otra distinta si se vuelve a pedir el cambio. Los errores de validación de este endpoint no reflejan la contraseña recibida.
 
 `inventory_unit_ids` solo se manda para artículos `INDIVIDUAL`; para `QUANTITY` se omite. En devolución, `loan_unit_ids` contiene IDs de **detalle de préstamo**, obtenidos en `GET /admin/returns/loans/{id}/pending`, no IDs de inventario.
 

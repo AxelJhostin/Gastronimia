@@ -6,7 +6,7 @@ from uuid import UUID
 
 import httpx
 from fastapi import HTTPException, status
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 from app.core.admin import _service_headers, _supabase_url
 
@@ -98,6 +98,26 @@ class InventoryUnit(InventoryUnitCreate):
     id: UUID
     created_at: datetime
     updated_at: datetime
+
+
+class InventoryUnitWrite(InventoryUnitCreate):
+    """Edición de catálogo; los estados operativos pertenecen a sus flujos."""
+
+    @model_validator(mode="after")
+    def validate_catalog_state(self) -> "InventoryUnitWrite":
+        if self.status not in {
+            InventoryUnitStatus.AVAILABLE,
+            InventoryUnitStatus.DISABLED,
+        }:
+            raise ValueError(
+                "Usa el flujo de préstamo o mantenimiento para ese estado."
+            )
+        if (
+            self.status == InventoryUnitStatus.AVAILABLE
+            and self.condition == InventoryUnitCondition.DAMAGED
+        ):
+            raise ValueError("Una unidad dañada debe quedar fuera de servicio.")
+        return self
 
 
 class InventoryUnitHistory(BaseModel):
@@ -440,6 +460,39 @@ def update_inventory_resource(
             detail="No se encontró el recurso de inventario.",
         )
     return model.model_validate(rows[0])
+
+
+def edit_inventory_unit(
+    unit_id: UUID, payload: InventoryUnitWrite, user_id: str
+) -> InventoryUnit:
+    try:
+        response = httpx.post(
+            f"{_supabase_url()}/rest/v1/rpc/edit_inventory_unit",
+            json={
+                "p_unit_id": str(unit_id),
+                "p_changes": payload.model_dump(mode="json"),
+                "p_user_id": user_id,
+            },
+            headers=_service_headers(),
+            timeout=5.0,
+        )
+        response.raise_for_status()
+    except httpx.HTTPStatusError as error:
+        if error.response.status_code == 404:
+            raise HTTPException(
+                404, "No se encontró la unidad de inventario."
+            ) from error
+        raise _inventory_error(
+            "No se puede editar la unidad: conserva su artículo original y completa "
+            "la preparación, devolución, inspección o mantenimiento pendiente.",
+            error,
+        ) from error
+    except httpx.HTTPError as error:
+        raise _inventory_error("No fue posible actualizar la unidad.", error) from error
+    data = response.json()
+    if isinstance(data, list):
+        data = data[0]
+    return InventoryUnit.model_validate(data)
 
 
 def list_inventory_unit_history(unit_id: UUID) -> list[InventoryUnitHistory]:

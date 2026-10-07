@@ -49,7 +49,8 @@ export default defineConfig({
       on("task", {
         "seed:base": seedBaseScenario,
         "seed:pending-return": seedPendingReturnScenario,
-        "seed:individual-loan": seedIndividualLoanScenario,
+        "seed:individual-loan": () => seedIndividualLoanScenario(),
+        "seed:individual-prepared": () => seedIndividualLoanScenario("prepared"),
       });
       return config;
     },

@@ -818,8 +818,10 @@ export function updateLaboratory(
   );
 }
 
-export function completeTemporaryPasswordChange(accessToken: string) {
+export function completeTemporaryPasswordChange(accessToken: string, password: string) {
   return requestApi<void>("/auth/password-change-complete", accessToken, {
+    body: JSON.stringify({ password }),
+    headers: { "Content-Type": "application/json" },
     method: "POST",
   });
 }
