@@ -7,6 +7,9 @@ import {
   seedIndividualLoanScenario,
 } from "./cypress/tasks/seed";
 
+import { raceApprovals } from "./cypress/tasks/approval-concurrency";
+import { raceDeliveryAndMaintenance } from "./cypress/tasks/unit-concurrency";
+
 export default defineConfig({
   allowCypressEnv: false,
   expose: {
@@ -48,6 +51,8 @@ export default defineConfig({
       });
       on("task", {
         "seed:base": seedBaseScenario,
+        "qa:unit-concurrency": raceDeliveryAndMaintenance,
+        "qa:approval-concurrency": raceApprovals,
         "seed:pending-return": seedPendingReturnScenario,
         "seed:individual-loan": () => seedIndividualLoanScenario(),
         "seed:individual-prepared": () => seedIndividualLoanScenario("prepared"),

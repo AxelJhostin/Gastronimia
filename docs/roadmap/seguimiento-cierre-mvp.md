@@ -34,20 +34,20 @@ Evidencia: [resultado del flujo real](../qa/resultado-flujo-2026-10-07.md), [JSO
 
 Estas marcas corresponden a escenarios automatizados concretos; no certifican todos los criterios manuales de cada módulo.
 
-## Bloque 1 — Reglas y permisos: en curso
+## Bloque 1 — Reglas y permisos: completado en local
 
-**Puntos 1.1, 1.2 y 1.3 cerrados en local. Siguiente: 1.4, responsable en auditoría de unidades.** Ver los cierres de [R-02](../qa/cierre-r02-auditoria-2026-10-07.md), [R-01](../qa/cierre-r01-contrasena-temporal-2026-10-07.md) y [R-03](../qa/cierre-r03-estados-unidades-2026-10-07.md). Mantener los demás en espera para corregir uno por uno.
+**Puntos 1.1 a 1.4 cerrados en local. Bloque 2 iniciado; siguiente: aprobaciones simultáneas sin sobre-reserva.** Ver los cierres de [R-02](../qa/cierre-r02-auditoria-2026-10-07.md), [R-01](../qa/cierre-r01-contrasena-temporal-2026-10-07.md), [R-03](../qa/cierre-r03-estados-unidades-2026-10-07.md) y [R-04](../qa/cierre-r04-responsable-auditoria-2026-10-07.md). La aceptación manual y el despliegue siguen pendientes.
 
 | Orden | Estado | Punto | Criterio para cerrarlo |
 | --- | --- | --- | --- |
 | 1.1 | [x] | R-02: auditoría exclusiva de ADMIN también en Supabase | Migración 37 aplicada localmente; lectura directa probada con los tres roles y sin sesión; 141/141 Cypress |
 | 1.2 | [x] | R-01: cambio obligatorio de contraseña temporal | Sin contraseña o reutilizando la temporal: rechazado; cambio, renovación de sesión y nuevo ingreso comprobados; 142/142 Cypress |
 | 1.3 | [x] | R-03: estados de unidades protegidos | Edición bloqueada durante procesos pendientes; condición y artículo protegidos; devolución e historial comprobados; migración 38 y 146/146 Cypress |
-| 1.4 | [ ] | R-04: responsable en auditoría de unidades | Registrar usuario real y valores anterior/nuevo en la misma operación |
+| 1.4 | [x] | R-04: responsable en auditoría de unidades | Ediciones manuales con identidad, valores y fecha en la misma transacción; nombre y detalle visibles; 148/148 Cypress y migración 39 |
 
-## Bloque 2 — Concurrencia, saldos y recuperación: pendiente
+## Bloque 2 — Concurrencia, saldos y recuperación: en curso
 
-- [ ] R-07: reproducir y proteger entrega simultánea con inicio de mantenimiento.
+- [x] R-07: entrega e inicio de mantenimiento simultáneos; defecto reproducido y corregido en local, ambos órdenes probados. [Cierre y evidencia](../qa/cierre-r07-entrega-mantenimiento-2026-10-07.md).
 - [ ] Dos aprobaciones simultáneas sin sobre-reserva.
 - [ ] Reserva/entrega/devolución duplicada sin duplicar movimientos.
 - [ ] Expiración del token y distribución inválida por ubicación.
@@ -92,9 +92,11 @@ La [matriz manual histórica](../qa/plan-pruebas-manuales.md) conserva los crite
 | 2026-10-07 | Bloque 0 completado; flujo real y regresión aprobados | 137/137 Cypress y 2/2 integraciones |
 | 2026-10-07 | R-02 confirmado en base activa; sigue abierto | Lectura con identidad MANAGER en transacción revertida |
 | 2026-10-07 | R-02 corregido y cerrado en local; siguiente R-01 | Regresión falla antes y pasa después; 141/141 Cypress; migraciones alineadas |
-
 | 2026-10-07 | R-01 corregido y cerrado en local; siguiente R-03 | 109 backend, 32 frontend y 142/142 Cypress; cambio real y sesión renovada comprobados |
-
 | 2026-10-07 | R-03 corregido y cerrado en local; siguiente R-04 | 4 pruebas fallan antes y pasan después; 146/146 Cypress, 120 backend, 32 frontend; migración 38 alineada |
 
-El bloque inicial no cambió código funcional. El cierre de R-02 añade la migración de permisos y las pruebas de regresión. El cierre de R-01 coordina el cambio real de contraseña desde el servidor y renueva la sesión en la interfaz. El cierre de R-03 protege la edición de unidades con la migración 38 y pruebas de los flujos reales. Las cuentas y recursos QA permanecen identificables en la base local; no son datos para producción.
+| 2026-10-07 | R-04 cerrado en local; bloque 1 completo | 148/148 Cypress; fallo de auditoría revierte edición; 39 migraciones alineadas |
+
+| 2026-10-07 | R-07 cerrado en local; siguiente aprobaciones simultáneas | Dos conexiones coordinadas; 150/150 Cypress; 40 migraciones alineadas |
+
+El bloque inicial no cambió código funcional. El cierre de R-02 añade la migración de permisos y las pruebas de regresión. El cierre de R-01 coordina el cambio real de contraseña desde el servidor y renueva la sesión en la interfaz. El cierre de R-03 protege la edición de unidades con la migración 38 y pruebas de los flujos reales. El cierre de R-04 atribuye las ediciones manuales y muestra su detalle en auditoría. El cierre de R-07 serializa la validación de mantenimiento con la entrega sobre la misma unidad. Las cuentas y recursos QA permanecen identificables en la base local; no son datos para producción.

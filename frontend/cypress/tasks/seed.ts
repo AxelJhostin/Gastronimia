@@ -286,7 +286,7 @@ export async function seedPendingReturnScenario(): Promise<PendingReturnScenario
   };
 }
 
-export async function seedIndividualLoanScenario(stage: "loan" | "prepared" = "loan") {
+export async function seedIndividualLoanScenario(stage: "loan" | "prepared" | "ready" = "loan") {
   const scenario = await seedBaseScenario();
   const services = localServices();
   const category = await insertRow<{ id: string }>(services, "inventory_categories", { name: `QA equipo ${scenario.marker}` });
@@ -309,6 +309,46 @@ export async function seedIndividualLoanScenario(stage: "loan" | "prepared" = "l
   await api(services, managerToken, `/admin/requests/${draft.id}/preparation/complete`, "POST");
   await api(services, managerToken, `/admin/inspections/requests/${draft.id}/outbound`, "POST", { items: [{ inventory_unit_id: unit.id, observed_condition: "GOOD", is_complete: true }] });
   const qr = await api<{ token: string }>(services, managerToken, `/admin/deliveries/requests/${draft.id}/qr`, "POST");
+  if (stage === "ready") return { ...scenario, individualItemId: item.id, unitId: unit.id, requestId: draft.id, qrToken: qr.token };
   const loan = await api<{ id: string }>(services, managerToken, "/admin/deliveries/deliver", "POST", { qr_token: qr.token, collected_by_name: `QA equipo ${scenario.marker}`, quantity_locations: [] });
   return { ...scenario, individualItemId: item.id, unitId: unit.id, loanId: loan.id, requestId: draft.id };
+}
+
+export type ApprovalRaceOptions = {
+  mode: "QUANTITY" | "INDIVIDUAL";
+  firstQuantity: number;
+  secondQuantity: number;
+  adjacent?: boolean;
+  rollbackFirst?: boolean;
+};
+
+export async function seedApprovalRace(options: ApprovalRaceOptions) {
+  if (!["QUANTITY", "INDIVIDUAL"].includes(options.mode) ||
+      ![options.firstQuantity, options.secondQuantity].every((quantity) => Number.isInteger(quantity) && quantity > 0 && quantity <= (options.mode === "QUANTITY" ? 10 : 1))) {
+    throw new Error("Cantidades QA inválidas.");
+  }
+  const scenario = await seedBaseScenario();
+  const services = localServices();
+  let itemId = scenario.inventoryItemId;
+  if (options.mode === "INDIVIDUAL") {
+    const category = await insertRow<{ id: string }>(services, "inventory_categories", { name: `QA reservas ${scenario.marker}` });
+    const item = await insertRow<{ id: string }>(services, "inventory_items", { category_id: category.id, name: `QA unidad reserva ${scenario.marker}`, tracking_mode: "INDIVIDUAL" });
+    itemId = item.id;
+    await insertRow(services, "inventory_units", { inventory_item_id: item.id, asset_tag: `QA-RES-${scenario.marker}`, status: "AVAILABLE", condition: "GOOD" });
+  }
+  const token = await authToken(services, scenario.teacher);
+  const requests: Array<{ id: string; itemId: string; start: string; end: string; quantity: number }> = [];
+  for (const [index, quantity] of [options.firstQuantity, options.secondQuantity].entries()) {
+    const start = index === 1 && options.adjacent ? "2035-09-01T15:00:00Z" : "2035-09-01T13:00:00Z";
+    const end = index === 1 && options.adjacent ? "2035-09-01T17:00:00Z" : "2035-09-01T15:00:00Z";
+    const draft = await api<{ id: string }>(services, token, "/requests/drafts", "POST", {
+      course_section_id: scenario.courseSectionId, laboratory_id: scenario.laboratoryId,
+      start_at: start, end_at: end, purpose: `QA aprobaciones ${scenario.marker} ${index}`,
+      items: [{ inventory_item_id: itemId, requested_quantity: quantity }],
+    });
+    await api(services, token, `/requests/${draft.id}/submit`, "POST");
+    const detail = await api<{ items: Array<{ id: string }> }>(services, token, `/requests/${draft.id}`);
+    requests.push({ id: draft.id, itemId: detail.items[0].id, start, end, quantity });
+  }
+  return { ...scenario, contestedItemId: itemId, requests };
 }

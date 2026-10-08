@@ -21,7 +21,7 @@ Después de `supabase.auth.signInWithPassword`, conservar `session.access_token`
 | Rol | Pantallas principales |
 | --- | --- |
 | `TEACHER` | Crear/enviar solicitudes, ver las propias y consultar disponibilidad. |
-| `MANAGER` | Inventario, revisión, preparación, entrega, devolución, inspección, mantenimiento y auditoría operativa. |
+| `MANAGER` | Inventario, revisión, preparación, entrega, devolución, inspección y mantenimiento. Sus operaciones generan auditoría; la consulta es exclusiva de ADMIN. |
 | `ADMIN` | Todo lo de encargado más usuarios, roles y configuración académica. |
 
 Si FastAPI responde `401`, renovar sesión o enviar a login. Si responde `403`, mostrar pantalla sin permisos. `409` representa una regla de negocio o conflicto (por ejemplo, stock insuficiente, estado inválido o doble operación). `422` indica payload inválido.
@@ -40,7 +40,7 @@ Si FastAPI responde `401`, renovar sesión o enviar a login. Si responde `403`, 
 
 El alta y la edición de catálogo de unidades admiten únicamente `AVAILABLE` o `DISABLED`; los estados `LOANED` y `MAINTENANCE` se asignan mediante sus flujos operativos. Una unidad `DAMAGED` no puede quedar `AVAILABLE` ni `LOANED`. El artículo asociado a una unidad es inmutable. La edición se rechaza si hay preparación activa, préstamo sin devolución, inspección pendiente o mantenimiento abierto, o si el estado actual es operativo. La interfaz conserva el artículo y deshabilita la edición de unidades prestadas o en mantenimiento; el servidor comprueba también los bloqueos que no se deducen del estado visible.
 
-`PATCH /admin/inventory/units/{id}` mantiene el cuerpo completo del contrato anterior, pero ahora ejecuta `edit_inventory_unit` en una transacción con bloqueo de la unidad y coordinación con la selección de preparación. Devuelve 422 para un estado o condición de catálogo inválidos, 409 para conflictos operativos o cambio de artículo y 404 si no existe. La operación de base solo puede ejecutarla el servidor y recibe la identidad autenticada, no un actor elegido por el cliente. Aplicar la migración `20261007222224_guard_inventory_unit_edits.sql` antes de desplegar este backend. El registro del actor en auditoría sigue siendo el punto R-04.
+`PATCH /admin/inventory/units/{id}` mantiene el cuerpo completo del contrato anterior, pero ahora ejecuta `edit_inventory_unit` en una transacción con bloqueo de la unidad y coordinación con la selección de preparación. Devuelve 422 para un estado o condición de catálogo inválidos, 409 para conflictos operativos o cambio de artículo y 404 si no existe. La operación de base solo puede ejecutarla el servidor y recibe la identidad autenticada, no un actor elegido por el cliente. Aplicar la migración `20261007222224_guard_inventory_unit_edits.sql` antes de desplegar este backend. La migración `20261008033527_attribute_inventory_unit_edits.sql` registra al actor de las ediciones manuales en el mismo cambio. Se auditan estado, condición, ubicación, activación, etiqueta, serie y notas; reenviar los mismos valores no genera otro evento de auditoría. Si falla el registro, se revierte la edición. Los registros antiguos sin actor se conservan sin atribuciones inventadas.
 
 ## Rutas FastAPI
 
@@ -117,7 +117,11 @@ La interfaz actual registra y finaliza una preparación completa en una sola acc
 el registro parcial permanece soportado por el backend, pero aún no se expone como
 acción incremental en la UI.
 
+La aprobación vuelve a comprobar la disponibilidad al crear la reserva, bajo un bloqueo por artículo. Dos aprobaciones simultáneas para horarios superpuestos no pueden comprometer más de lo disponible en los escenarios verificados de cantidad e individual. La operación que excede la disponibilidad devuelve 409 y conserva la solicitud pendiente, sin reserva ni revisión parcial persistida. Los horarios contiguos sin superposición pueden reutilizar el mismo stock. Ver [pruebas de aprobaciones simultáneas](../qa/cierre-aprobaciones-simultaneas-2026-10-07.md).
+
 ### Mantenimiento y evidencias
+
+Desde la migración `20261008034524_serialize_maintenance_with_delivery.sql`, iniciar mantenimiento bloquea la unidad antes de comprobar su estado. Si una entrega confirma primero, el mantenimiento espera y luego se rechaza con 409 porque la unidad está prestada. Si confirma primero el mantenimiento, la entrega se rechaza con 409 y revierte su préstamo provisional, sin consumir el QR ni la reserva. Después de completar el mantenimiento puede reintentarse la entrega con el mismo QR mientras siga vigente. Esta protección no cambia los cuerpos ni las respuestas exitosas de la API.
 
 | Método y ruta | Rol | Uso |
 | --- | --- | --- |
@@ -259,3 +263,9 @@ Las entidades de base de datos ya disponibles son: academia (`academic_periods`,
 - [ ] Cargar fotos al bucket privado antes de registrar su `storage_path`.
 - [ ] Consultar Swagger para cualquier campo opcional o respuesta que se quiera tipar exactamente.
 - [ ] Ejecutar manualmente las solicitudes Postman relevantes, con el environment seleccionado, antes de integrar cada módulo. La colección no debe correrse completa porque crea datos y tiene rutas alternativas.
+
+### Responsable y detalle de auditoría
+
+`GET /admin/audit` sigue reservado a ADMIN. Cada evento conserva `performed_by_user_id`, `previous_data`, `current_data` y `recorded_at`, y ahora incluye `actor: {id, full_name} | null`. El nombre se consulta desde el perfil actual; la identidad persistida es el identificador del evento. La interfaz muestra el responsable y, en cambios de unidad, los valores anteriores y nuevos. Los eventos sin responsable se presentan como «No registrado».
+
+La atribución nueva cubre la edición manual de catálogo mediante `edit_inventory_unit`. Las operaciones de entrega, devolución, inspección y mantenimiento conservan su auditoría específica con el responsable de cada operación; sus eventos derivados de unidad sin contexto no reciben un actor inferido.

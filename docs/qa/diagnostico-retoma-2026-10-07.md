@@ -84,6 +84,8 @@ Además, el modelo acepta `status=AVAILABLE` junto con `condition=DAMAGED`; se v
 
 ### R-04 · Media · Los cambios manuales de unidades pierden al responsable en auditoría
 
+> **Corregido y verificado posteriormente en local:** actor autenticado y valores en la misma transacción; nombre y detalle visibles al Administrador; 148/148 Cypress aprobadas. Ver [cierre R-04](./cierre-r04-responsable-auditoria-2026-10-07.md). Lo siguiente describe el defecto original.
+
 El trigger `private.audit_inventory_unit_change`, en `supabase/migrations/20260821200142_operational_audit_and_history_views.sql:37`, inserta el evento sin `performed_by_user_id`. La ruta de actualización tampoco transmite al actor a una operación transaccional. La pantalla muestra «Sistema» cuando ese campo está vacío.
 
 **Impacto:** una modificación hecha por un Encargado o Administrador conserva los valores anterior y nuevo, pero no permite responder quién la hizo. Esto incumple parte de la trazabilidad exigida.
@@ -105,6 +107,8 @@ En `frontend/src/app/dashboard/requests/[id]/page.tsx:107`, la condición de car
 **Cierre esperado:** resolver primero el estado de identidad no disponible y ofrecer recuperación. Verificar el detalle con fallo de consulta de identidad; no asumir que los arreglos previos de devoluciones cubren esta pantalla.
 
 ### R-07 · Media · Revisar la concurrencia entre entrega e inicio de mantenimiento
+
+> **Reproducido, corregido y verificado posteriormente en local:** dos conexiones reales confirmaron el préstamo y mantenimiento simultáneos antes del cambio; la migración 40 bloquea y valida la unidad antes de iniciar mantenimiento. Ambos órdenes pasan y la regresión completa alcanza 150/150 Cypress. Ver [cierre R-07](./cierre-r07-entrega-mantenimiento-2026-10-07.md). Lo siguiente conserva el diagnóstico original.
 
 `supabase/migrations/20260821195707_maintenance_operations.sql:40` comprueba que una unidad no está prestada con un SELECT sin bloqueo. Luego la actualización solo exige que no esté ya en MAINTENANCE. Una entrega concurrente puede cambiarla a LOANED entre ambas operaciones, y el mantenimiento sobrescribir ese estado.
 

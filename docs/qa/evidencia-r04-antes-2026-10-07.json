@@ -1,0 +1,28 @@
+{
+  "startedAt": "2026-10-08T03:36:30.112Z",
+  "endedAt": "2026-10-08T03:36:32.216Z",
+  "browser": "electron",
+  "browserVersion": "138.0.7204.251",
+  "total": 2,
+  "passed": 0,
+  "failed": 2,
+  "pending": 0,
+  "skipped": 0,
+  "runs": [
+    {
+      "spec": "cypress/e2e/inventory-unit-audit.cy.ts",
+      "tests": [
+        {
+          "title": "R-04 responsable de la edición de unidades > registra a manager, conserva los valores y muestra los cambios al administrador",
+          "state": "failed",
+          "error": "AssertionError: expected [ Array(1) ] to have a length of 2 but got 1\n    at Context.eval (webpack://frontend/./cypress/e2e/inventory-unit-audit.cy.ts:26:39)\n    at getRet (http://localhost:3000/__cypress/runner/cypress_runner.js:121394:20)\n    at tryCatcher (http://localhost:3000/__cypress/runner/cypress_runner.js:1780:23)\n    at Promise.attempt.Promise.try (http://localhost:3000/__cypress/runner/cypress_runner.js:4288:29)"
+        },
+        {
+          "title": "R-04 responsable de la edición de unidades > registra a admin, conserva los valores y muestra los cambios al administrador",
+          "state": "failed",
+          "error": "AssertionError: expected [ Array(1) ] to have a length of 2 but got 1\n    at Context.eval (webpack://frontend/./cypress/e2e/inventory-unit-audit.cy.ts:26:39)\n    at getRet (http://localhost:3000/__cypress/runner/cypress_runner.js:121394:20)\n    at tryCatcher (http://localhost:3000/__cypress/runner/cypress_runner.js:1780:23)\n    at Promise.attempt.Promise.try (http://localhost:3000/__cypress/runner/cypress_runner.js:4288:29)"
+        }
+      ]
+    }
+  ]
+}

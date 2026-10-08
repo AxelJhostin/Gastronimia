@@ -9,12 +9,18 @@ from pydantic import BaseModel
 from app.core.admin import _service_headers, _supabase_url
 
 
+class AuditActor(BaseModel):
+    id: UUID
+    full_name: str
+
+
 class OperationalAuditLog(BaseModel):
     id: UUID
     action: str
     entity_table: str
     entity_id: UUID
     performed_by_user_id: Optional[UUID] = None
+    actor: Optional[AuditActor] = None
     previous_data: Optional[dict[str, Any]] = None
     current_data: dict[str, Any]
     recorded_at: datetime
@@ -24,7 +30,14 @@ def list_operational_audit_logs(limit: int) -> list[OperationalAuditLog]:
     try:
         response = httpx.get(
             f"{_supabase_url()}/rest/v1/operational_audit_log",
-            params={"select": "*", "order": "recorded_at.desc", "limit": str(limit)},
+            params={
+                "select": (
+                    "*,actor:users!operational_audit_log_performed_by_user_id_fkey"
+                    "(id,full_name)"
+                ),
+                "order": "recorded_at.desc",
+                "limit": str(limit),
+            },
             headers=_service_headers(),
             timeout=5.0,
         )

@@ -480,6 +480,9 @@ export type OperationalAuditLog = {
   entity_table: string;
   entity_id: string;
   performed_by_user_id: string | null;
+  actor?: { id: string; full_name: string } | null;
+  previous_data?: Record<string, unknown> | null;
+  current_data?: Record<string, unknown>;
   recorded_at: string;
 };
 
